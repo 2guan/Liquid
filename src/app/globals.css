@@ -1,0 +1,273 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Chinese display face: 猫啃网风雅宋 (Maoken Fengyasong), self-hosted ──
+   Full-coverage WOFF2 so every Chinese glyph renders in this serif; swaps in
+   over the system Songti fallback once loaded. */
+@font-face {
+  font-family: "Maoken Fengyasong";
+  src: url("/fonts/maoken-fengyasong.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   The Sip & Sigh — global atmosphere
+   Warm-dark base, amber light, paper & wood texture.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --vh: 1vh;
+  color-scheme: dark;
+  /* Font stacks referenced by tailwind.config.ts (var(--font-*)). The webfonts
+     load at runtime via <link> in the root layout; these fallbacks keep the
+     app readable offline. */
+  --font-cinzel: "Cinzel", "Maoken Fengyasong", "Songti SC", serif;
+  --font-cormorant: "Cormorant Garamond", "Maoken Fengyasong", "Songti SC", serif;
+  --font-inter: "Inter", "Maoken Fengyasong", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: #0e0b08;
+  color: #e7d6b1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font-inter), "Inter", system-ui, sans-serif;
+}
+
+/* Honour reduced-motion preferences across all decorative animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ── Layered ambient backdrop: candle glow + wood grain + film grain ── */
+.atelier-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      120% 80% at 50% -10%,
+      rgba(240, 177, 75, 0.10) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      90% 60% at 50% 120%,
+      rgba(60, 38, 20, 0.55) 0%,
+      transparent 60%
+    ),
+    linear-gradient(180deg, #15110d 0%, #0e0b08 60%, #080603 100%);
+}
+
+.atelier-ambient::after {
+  /* subtle film grain so the dark fields never look flat */
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Texture utilities ── */
+.paper-texture {
+  background-color: #e7d6b1;
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(120, 90, 50, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 82% 78%, rgba(120, 90, 50, 0.12) 0%, transparent 45%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.06'/%3E%3C/svg%3E");
+  color: #2a231b;
+}
+
+.wood-panel {
+  background-color: #2a1d14;
+  background-image:
+    linear-gradient(180deg, rgba(78, 56, 38, 0.55), rgba(40, 28, 20, 0.85)),
+    repeating-linear-gradient(
+      94deg,
+      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0.22) 2px,
+      rgba(0, 0, 0, 0) 6px,
+      rgba(231, 214, 177, 0.03) 9px
+    );
+}
+
+.glass-panel {
+  background: rgba(231, 214, 177, 0.045);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(231, 214, 177, 0.10);
+  box-shadow:
+    inset 0 1px 0 0 rgba(231, 214, 177, 0.08),
+    0 18px 40px -22px rgba(0, 0, 0, 0.9);
+}
+
+/* Engraved gold hairline used to frame panels & dividers */
+.gold-frame {
+  position: relative;
+  border: 1px solid rgba(200, 164, 93, 0.28);
+}
+.gold-frame::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(200, 164, 93, 0.12);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Text treatments */
+.title-engrave {
+  background: linear-gradient(180deg, #e3c684 0%, #c8a45d 45%, #8a6a32 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.amber-text {
+  color: #f0b14b;
+  text-shadow: 0 0 18px rgba(240, 177, 75, 0.35);
+}
+
+/* Custom scrollbar so panels stay in-world */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200, 164, 93, 0.35) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(200, 164, 93, 0.30);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Focus ring tuned to the gold palette for keyboard users */
+:focus-visible {
+  outline: 2px solid rgba(227, 198, 132, 0.7);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Range slider tuned to the brass palette (Mixology ratio dials) */
+.mixo-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(216, 156, 58, 0.6), rgba(200, 164, 93, 0.2));
+  outline: none;
+}
+.mixo-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0d49a, #c8a45d 60%, #8a6a32);
+  border: 1px solid rgba(231, 214, 177, 0.5);
+  box-shadow: 0 0 10px -2px rgba(216, 156, 58, 0.6);
+  cursor: pointer;
+}
+.mixo-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0d49a, #c8a45d 60%, #8a6a32);
+  border: 1px solid rgba(231, 214, 177, 0.5);
+  box-shadow: 0 0 10px -2px rgba(216, 156, 58, 0.6);
+  cursor: pointer;
+}
+
+/* line clamp helper for journal cards */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Glassware micro-motion (design_spec §9 perpetual micro-motion) ──
+   Light dancing on the liquid, a drifting specular, a breathing rim glint.
+   All transform-box: fill-box so SVG transforms pivot on the element itself.
+   The global prefers-reduced-motion rule above neutralises these. */
+.glint-drift {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: glintDrift 6.5s ease-in-out infinite;
+}
+@keyframes glintDrift {
+  0%, 100% { opacity: 0.22; transform: translateX(-3px); }
+  50% { opacity: 0.6; transform: translateX(3px); }
+}
+.surface-shimmer {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: surfaceShimmer 4.6s ease-in-out infinite;
+}
+@keyframes surfaceShimmer {
+  0%, 100% { opacity: 0.45; transform: scaleX(0.95); }
+  50% { opacity: 0.85; transform: scaleX(1.05); }
+}
+.specular-breathe {
+  animation: specularBreathe 5.5s ease-in-out infinite;
+}
+@keyframes specularBreathe {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.28; }
+}
+.rim-glint {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rimGlint 7s ease-in-out infinite;
+}
+@keyframes rimGlint {
+  0%, 100% { opacity: 0.3; }
+  45% { opacity: 0.85; }
+}
+
+/* Carbonation: bubbles drift up the drink and pop at the surface. */
+.bubble-rise {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-name: bubbleRise;
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+}
+@keyframes bubbleRise {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 0.7; }
+  80% { opacity: 0.5; }
+  100% { transform: translateY(var(--rise, -40px)); opacity: 0; }
+}
+
+/* Pour stream used by the Pure Pour canvas overlay */
+.pour-stream {
+  background: linear-gradient(
+    180deg,
+    rgba(232, 169, 78, 0.0) 0%,
+    rgba(232, 169, 78, 0.85) 12%,
+    rgba(185, 116, 42, 0.9) 100%
+  );
+  filter: blur(0.4px);
+}
