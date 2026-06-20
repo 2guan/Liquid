@@ -2,6 +2,7 @@ import type { CocktailResult } from "@/types";
 import { liquidRamp, isFizzy } from "@/lib/tokens";
 import { glassById, iceById } from "@/lib/data/catalog";
 import { geomFor, halfWidthAt } from "@/lib/data/glasses";
+import { garnishesFor, type GarnishSpec, type GarnishKind } from "@/lib/data/garnish";
 
 /**
  * Share card — rendered to a PNG on a <canvas> so it bakes in the *page's*
@@ -148,7 +149,7 @@ export async function renderShareCard(result: CocktailResult): Promise<HTMLCanva
   strokeRoundRect(ctx, 32, 32, W - 64, H - 64, 15, "rgba(200,164,93,0.16)", 1);
 
   // ── glass ──
-  drawGlass(ctx, result, hi, body, shadow, 124, 210, isFizzy(result.ingredients));
+  drawGlass(ctx, result, hi, body, shadow, 124, 210, isFizzy(result.ingredients), garnishesFor(result.ingredients));
 
   // ── text + rules ──
   for (const op of ops) {
@@ -182,6 +183,7 @@ function drawGlass(
   topY: number,
   targetH: number,
   fizzy: boolean,
+  garnishes: GarnishSpec[],
 ): void {
   const geom = geomFor(result.glass);
   const rim = geom.rim;
@@ -278,6 +280,14 @@ function drawGlass(
     ctx.restore();
   }
 
+  // ── in-drink garnishes (clipped inside the glass, behind the front wall) ──
+  if (garnishes.length) {
+    ctx.save();
+    ctx.clip(outline);
+    drawGarnishLayer(ctx, garnishes, "back", rim, geom.cup.top, liquidTop, surfHW);
+    ctx.restore();
+  }
+
   // ── glass optics: window sheen + specular streaks (clipped) ──
   ctx.save();
   ctx.clip(outline);
@@ -325,6 +335,11 @@ function drawGlass(
   ctx.strokeStyle = "rgba(255,247,224,0.5)";
   ctx.lineWidth = 1.5;
   ctx.stroke(new Path2D(lip));
+
+  // ── on-rim garnishes: salt/sugar crust + sprigs resting on the lip ──
+  if (garnishes.length) {
+    drawGarnishLayer(ctx, garnishes, "front", rim, geom.cup.top, liquidTop, surfHW);
+  }
 
   ctx.restore();
 }
@@ -543,6 +558,258 @@ function roundRectPath(x: number, y: number, w: number, h: number, r: number): P
     p.rect(x, y, w, h);
   }
   return p;
+}
+
+/* ── garnishes (canvas port of <GarnishLayer> / <Shape>) ── */
+const TAU = Math.PI * 2;
+function mixHex(hex: string, target: number, amt: number): string {
+  const m = hex.replace("#", "");
+  const ch = (i: number) => {
+    const c = parseInt(m.slice(i, i + 2), 16);
+    return Math.max(0, Math.min(255, Math.round(c + (target - c) * amt))).toString(16).padStart(2, "0");
+  };
+  return `#${ch(0)}${ch(2)}${ch(4)}`;
+}
+const lighten = (hex: string, amt: number) => mixHex(hex, 255, amt);
+const darken = (hex: string, amt: number) => mixHex(hex, 0, amt);
+const deg = (d: number) => (d * Math.PI) / 180;
+
+/** Draw one garnish around the current origin (ctx already translated/rotated). */
+function drawGarnishShape(ctx: CanvasRenderingContext2D, kind: GarnishKind, color: string, s: number): void {
+  const fillPath = (d: string, style: string) => { ctx.fillStyle = style; ctx.fill(new Path2D(d)); };
+  const strokePath = (d: string, style: string, w: number) => { ctx.strokeStyle = style; ctx.lineWidth = w; ctx.stroke(new Path2D(d)); };
+  const dot = (x: number, y: number, r: number, style: string) => { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = style; ctx.fill(); };
+  const ell = (x: number, y: number, rx: number, ry: number, style: string) => { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.fillStyle = style; ctx.fill(); };
+
+  switch (kind) {
+    case "citrusWheel":
+    case "cucumberSlice": {
+      const cuke = kind === "cucumberSlice";
+      dot(0, 0, s, cuke ? darken(color, 0.12) : color);
+      dot(0, 0, s * (cuke ? 0.84 : 0.82), lighten(color, cuke ? 0.5 : 0.62));
+      if (cuke) {
+        for (let i = 0; i < 5; i++) { const a = (i / 5) * TAU; ell(Math.cos(a) * s * 0.32, Math.sin(a) * s * 0.32, s * 0.07, s * 0.1, withAlpha(darken(color, 0.2), 0.5)); }
+      } else {
+        ctx.strokeStyle = withAlpha(color, 0.5); ctx.lineWidth = s * 0.05;
+        for (let i = 0; i < 9; i++) { const a = (i / 9) * TAU; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * s * 0.74, Math.sin(a) * s * 0.74); ctx.stroke(); }
+        dot(0, 0, s * 0.12, lighten(color, 0.4));
+      }
+      ctx.save(); ctx.translate(-s * 0.35, -s * 0.4); ctx.rotate(deg(-30)); ell(0, 0, s * 0.22, s * 0.12, "rgba(255,255,255,0.4)"); ctx.restore();
+      break;
+    }
+    case "citrusTwist":
+      strokePath(`M${-s * 0.7},${-s} C${s * 0.7},${-s} ${s * 0.8},${s * 0.6} ${-s * 0.2},${s} C${-s * 0.9},${s * 1.2} ${-s},${s * 0.2} ${-s * 0.45},${0}`, color, s * 0.42);
+      strokePath(`M${-s * 0.7},${-s} C${s * 0.7},${-s} ${s * 0.8},${s * 0.6} ${-s * 0.2},${s}`, lighten(color, 0.45), s * 0.16);
+      break;
+    case "berry":
+      dot(0, 0, s * 0.78, color);
+      for (let i = 0; i < 7; i++) { const a = (i / 7) * TAU; dot(Math.cos(a) * s * 0.4, Math.sin(a) * s * 0.4, s * 0.18, withAlpha(darken(color, 0.12), 0.55)); }
+      dot(-s * 0.24, -s * 0.28, s * 0.16, "rgba(255,255,255,0.5)");
+      break;
+    case "cherry":
+      strokePath(`M${s * 0.2},${-s * 1.7} C${s * 0.1},${-s * 0.9} ${-s * 0.1},${-s * 0.6} 0,${-s * 0.55}`, "#6E5A2A", s * 0.12);
+      dot(0, 0, s * 0.7, color);
+      ctx.strokeStyle = withAlpha(darken(color, 0.3), 0.5); ctx.lineWidth = s * 0.06; ctx.beginPath(); ctx.arc(0, 0, s * 0.7, 0, TAU); ctx.stroke();
+      dot(-s * 0.26, -s * 0.26, s * 0.16, "rgba(255,255,255,0.55)");
+      break;
+    case "fruitSlice": {
+      const wedge = `M0,${s} A${s} ${s} 0 0 1 ${-s},0 L0,0 Z`;
+      fillPath(wedge, lighten(color, 0.45));
+      strokePath(wedge, color, s * 0.12);
+      strokePath(`M0,${s} A${s} ${s} 0 0 1 ${-s},0`, darken(color, 0.1), s * 0.22);
+      ctx.save(); ctx.translate(-s * 0.45, s * 0.42); ctx.rotate(deg(40)); ell(0, 0, s * 0.12, s * 0.2, "rgba(255,255,255,0.3)"); ctx.restore();
+      break;
+    }
+    case "mintSprig": {
+      strokePath(`M0,0 C${s * 0.1},${-s} 0,${-s * 1.8} ${-s * 0.1},${-s * 2.4}`, darken(color, 0.2), s * 0.1);
+      const leaf = (lx: number, ly: number, rot: number, sc: number) => {
+        ctx.save(); ctx.translate(lx, ly); ctx.rotate(deg(rot)); ctx.scale(sc, sc);
+        fillPath(`M0,0 C${s * 0.55},${-s * 0.2} ${s * 0.55},${-s * 0.9} 0,${-s * 1.15} C${-s * 0.55},${-s * 0.9} ${-s * 0.55},${-s * 0.2} 0,0 Z`, color);
+        ctx.strokeStyle = darken(color, 0.25); ctx.lineWidth = s * 0.05; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -s * 1.05); ctx.stroke();
+        ctx.restore();
+      };
+      leaf(0, -s * 2.2, 8, 1); leaf(-s * 0.3, -s * 1.5, -32, 0.85); leaf(s * 0.32, -s * 1.4, 34, 0.85); leaf(-s * 0.3, -s * 0.85, -50, 0.7); leaf(s * 0.3, -s * 0.8, 52, 0.7);
+      break;
+    }
+    case "herbSprig":
+      strokePath(`M0,0 L0,${-s * 2.8}`, darken(color, 0.2), s * 0.1);
+      ctx.strokeStyle = color; ctx.lineWidth = s * 0.08;
+      for (let i = 0; i < 12; i++) { const y = -i * s * 0.22 - s * 0.2; const side = i % 2 === 0 ? 1 : -1; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(side * s * 0.5, y - s * 0.28); ctx.stroke(); }
+      break;
+    case "lavender":
+      strokePath(`M0,0 L0,${-s * 2.2}`, "#6E7A4A", s * 0.1);
+      ctx.globalAlpha = 0.9;
+      for (let i = 0; i < 6; i++) ell((i % 2 === 0 ? 1 : -1) * s * 0.16, -s * 2.1 + i * s * 0.22, s * 0.2, s * 0.16, color);
+      ctx.globalAlpha = 1;
+      break;
+    case "leaf":
+      fillPath(`M0,${s} C${s * 0.9},${s * 0.3} ${s * 0.9},${-s * 0.7} 0,${-s} C${-s * 0.9},${-s * 0.7} ${-s * 0.9},${s * 0.3} 0,${s} Z`, color);
+      ctx.strokeStyle = darken(color, 0.28); ctx.lineWidth = s * 0.06; ctx.beginPath(); ctx.moveTo(0, s); ctx.lineTo(0, -s); ctx.stroke();
+      break;
+    case "flower":
+      ctx.globalAlpha = 0.92;
+      for (let i = 0; i < 6; i++) { ctx.save(); ctx.rotate((i / 6) * TAU); ell(0, -s * 0.55, s * 0.28, s * 0.55, color); ctx.restore(); }
+      ctx.globalAlpha = 1;
+      dot(0, 0, s * 0.26, lighten(color, 0.5));
+      break;
+    case "cinnamonStick":
+      ctx.fillStyle = color; ctx.fill(roundRectPath(-s * 0.32, -s * 2.6, s * 0.64, s * 2.6, s * 0.3));
+      ctx.fillStyle = darken(color, 0.25); ctx.fill(roundRectPath(-s * 0.32, -s * 2.6, s * 0.26, s * 2.6, s * 0.13));
+      ctx.globalAlpha = 0.7; ctx.fillStyle = lighten(color, 0.25); ctx.fill(roundRectPath(s * 0.06, -s * 2.6, s * 0.16, s * 2.6, s * 0.08)); ctx.globalAlpha = 1;
+      break;
+    case "clove": {
+      const one = (x: number, y: number, rot: number) => {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(deg(rot));
+        ctx.strokeStyle = color; ctx.lineWidth = s * 0.14; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, s * 0.9); ctx.stroke();
+        dot(0, -s * 0.05, s * 0.28, lighten(color, 0.2));
+        ctx.strokeStyle = darken(color, 0.2); ctx.lineWidth = s * 0.07;
+        for (let i = 0; i < 4; i++) { const a = (i / 4) * 6.28; ctx.beginPath(); ctx.moveTo(0, -s * 0.05); ctx.lineTo(Math.cos(a) * s * 0.26, -s * 0.05 + Math.sin(a) * s * 0.26); ctx.stroke(); }
+        ctx.restore();
+      };
+      one(-s * 0.5, -s * 0.4, -20); one(s * 0.5, -s * 0.3, 22);
+      break;
+    }
+    case "starAnise": {
+      let d = "";
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * TAU - Math.PI / 2;
+        const a2 = ((i + 0.5) / 8) * TAU - Math.PI / 2;
+        d += `${i === 0 ? "M" : "L"}${Math.cos(a) * s},${Math.sin(a) * s} L${Math.cos(a2) * s * 0.4},${Math.sin(a2) * s * 0.4} `;
+      }
+      d += "Z";
+      fillPath(d, color);
+      strokePath(d, darken(color, 0.3), s * 0.04);
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU - Math.PI / 2; dot(Math.cos(a) * s * 0.62, Math.sin(a) * s * 0.62, s * 0.13, lighten(color, 0.4)); }
+      break;
+    }
+    case "seeds": {
+      const pos: [number, number][] = [[-s * 0.5, 0], [s * 0.2, -s * 0.4], [s * 0.5, s * 0.3], [-s * 0.2, s * 0.4], [0, -s * 0.05], [-s * 0.6, s * 0.5]];
+      pos.forEach(([x, y], i) => dot(x, y, s * 0.22, i % 2 ? lighten(color, 0.15) : color));
+      break;
+    }
+    case "gingerSlice": {
+      const d = `M${-s * 0.9},${-s * 0.2} C${-s * 0.6},${-s} ${s * 0.8},${-s * 0.9} ${s},${-s * 0.1} C${s * 1.1},${s * 0.7} ${-s * 0.3},${s} ${-s * 0.9},${-s * 0.2} Z`;
+      fillPath(d, lighten(color, 0.2)); strokePath(d, darken(color, 0.18), s * 0.07);
+      ctx.strokeStyle = withAlpha(darken(color, 0.15), 0.4); ctx.lineWidth = s * 0.05;
+      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(-s * 0.5 + i * s * 0.4, -s * 0.5); ctx.lineTo(-s * 0.4 + i * s * 0.4, s * 0.5); ctx.stroke(); }
+      break;
+    }
+    case "chili":
+      fillPath(`M0,${-s * 2.4} C${s * 0.1},${-s * 2.2} ${s * 0.55},${-s} ${s * 0.3},${-s * 0.2} C${s * 0.1},${s * 0.3} ${-s * 0.4},${s * 0.1} ${-s * 0.2},${-s * 0.8} C${-s * 0.05},${-s * 1.6} ${-s * 0.15},${-s * 2.2} 0,${-s * 2.4} Z`, color);
+      strokePath(`M0,${-s * 2.4} C${s * 0.05},${-s * 1.6} ${s * 0.1},${-s} ${s * 0.15},${-s * 0.5}`, "rgba(255,255,255,0.4)", s * 0.1);
+      strokePath(`M0,${-s * 2.4} C${-s * 0.2},${-s * 2.6} ${-s * 0.5},${-s * 2.5} ${-s * 0.6},${-s * 2.3}`, "#5A7A3A", s * 0.16);
+      break;
+    case "vanillaPod": {
+      const d = `M0,0 C${s * 0.3},${-s} ${-s * 0.2},${-s * 1.9} ${s * 0.1},${-s * 2.8}`;
+      strokePath(d, color, s * 0.34); strokePath(d, lighten(color, 0.25), s * 0.1);
+      break;
+    }
+    case "coffeeBeans": {
+      const bean = (x: number, y: number, rot: number) => {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(deg(rot));
+        ell(0, 0, s * 0.42, s * 0.6, color);
+        strokePath(`M0,${-s * 0.5} C${s * 0.12},${-s * 0.2} ${s * 0.12},${s * 0.2} 0,${s * 0.5}`, darken(color, 0.4), s * 0.09);
+        ell(-s * 0.14, -s * 0.18, s * 0.1, s * 0.16, "rgba(255,255,255,0.25)");
+        ctx.restore();
+      };
+      bean(-s * 0.55, s * 0.2, -18); bean(s * 0.5, -s * 0.1, 16); bean(0, s * 0.55, 4);
+      break;
+    }
+    case "olive":
+      ctx.strokeStyle = "#C9A45D"; ctx.lineWidth = s * 0.12; ctx.beginPath(); ctx.moveTo(s * 0.1, -s * 1.6); ctx.lineTo(-s * 0.1, s * 0.4); ctx.stroke();
+      ell(0, 0, s * 0.6, s * 0.8, color);
+      ctx.strokeStyle = withAlpha(darken(color, 0.25), 0.5); ctx.lineWidth = s * 0.06; ctx.beginPath(); ctx.ellipse(0, 0, s * 0.6, s * 0.8, 0, 0, TAU); ctx.stroke();
+      dot(0, s * 0.35, s * 0.2, "#C5402A");
+      ell(-s * 0.2, -s * 0.3, s * 0.12, s * 0.2, "rgba(255,255,255,0.4)");
+      break;
+    case "onion":
+      ctx.strokeStyle = "#C9A45D"; ctx.lineWidth = s * 0.12; ctx.beginPath(); ctx.moveTo(s * 0.1, -s * 1.6); ctx.lineTo(-s * 0.1, s * 0.3); ctx.stroke();
+      dot(0, 0, s * 0.72, color);
+      strokePath(`M${-s * 0.5},${-s * 0.3} A${s * 0.72} ${s * 0.72} 0 0 1 ${s * 0.4},${-s * 0.5}`, withAlpha(darken(color, 0.15), 0.5), s * 0.05);
+      dot(-s * 0.24, -s * 0.26, s * 0.16, "rgba(255,255,255,0.5)");
+      break;
+    case "goldLeaf": {
+      const flakes: [number, number, number][] = [[-s * 0.5, -s * 0.2, 20], [s * 0.3, s * 0.3, -15], [s * 0.1, -s * 0.5, 40], [-s * 0.2, s * 0.5, -30]];
+      flakes.forEach(([x, y, r], i) => { ctx.save(); ctx.translate(x, y); ctx.rotate(deg(r)); ctx.globalAlpha = 0.85 - i * 0.12; ctx.fillStyle = color; ctx.fillRect(0, 0, s * (0.3 + (i % 2) * 0.18), s * 0.26); ctx.restore(); });
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case "drops": {
+      const pos: [number, number][] = [[-s * 0.5, 0], [s * 0.08, -s * 0.32], [s * 0.46, s * 0.22], [-s * 0.1, s * 0.34]];
+      ctx.globalAlpha = 0.65;
+      pos.forEach(([x, y]) => ell(x, y, s * 0.2, s * 0.26, color));
+      ctx.globalAlpha = 1;
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+/** Canvas port of <GarnishLayer> — two passes, mirroring the SVG layering. */
+function drawGarnishLayer(
+  ctx: CanvasRenderingContext2D,
+  specs: GarnishSpec[],
+  layer: "back" | "front",
+  rim: { cx: number; cy: number; rx: number; ry: number },
+  cupTop: number,
+  liquidTop: number,
+  surfHW: number,
+): void {
+  const surf = specs.filter((g) => g.placement === "surface");
+  const tall = specs.filter((g) => g.placement === "tall");
+  const rimG = specs.find((g) => g.placement === "rim");
+  const foam = specs.find((g) => g.placement === "foam");
+  const dust = specs.find((g) => g.placement === "dust");
+  const sItem = Math.max(6, Math.min(16, surfHW * 0.38));
+  const surfRy = surfHW * 0.14 + 1.5;
+  const tallH = rim.cy - cupTop + 60;
+
+  if (layer === "back") {
+    if (foam) {
+      ctx.globalAlpha = 0.92; ctx.fillStyle = foam.color;
+      ctx.beginPath(); ctx.ellipse(100, liquidTop - surfRy * 0.4, surfHW, surfRy * 1.5, 0, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "rgba(255,255,255,0.6)";
+      [-0.4, 0, 0.45].forEach((d) => { ctx.beginPath(); ctx.arc(100 + d * surfHW, liquidTop - surfRy * 0.7, surfHW * 0.1, 0, TAU); ctx.fill(); });
+    }
+    surf.forEach((g, i) => {
+      const m = surf.length;
+      const gap = Math.min(surfHW * 0.72, sItem * 1.8);
+      const x = 100 + (i - (m - 1) / 2) * gap;
+      const y = liquidTop + sItem * 0.1;
+      ctx.save(); ctx.translate(x, y); drawGarnishShape(ctx, g.kind, g.color, sItem); ctx.restore();
+    });
+    if (dust) {
+      ctx.fillStyle = withAlpha(dust.color, 0.55);
+      for (let i = 0; i < 14; i++) {
+        const x = 100 + (((i * 37) % 100) / 100) * surfHW - surfHW * 0.5;
+        const y = liquidTop - 1 + (((i * 53) % 30) / 30) * surfRy - surfRy * 0.4;
+        ctx.beginPath(); ctx.arc(x, y, 0.6 + (i % 3) * 0.3, 0, TAU); ctx.fill();
+      }
+    }
+    return;
+  }
+
+  // front
+  if (rimG) {
+    ctx.fillStyle = withAlpha(rimG.color, 0.9);
+    for (let i = 0; i < 16; i++) {
+      const t = i / 15;
+      const ang = Math.PI * (0.15 + 0.7 * t);
+      const x = rim.cx + Math.cos(ang) * rim.rx * (i % 2 ? 1 : 0.94);
+      const y = rim.cy + Math.sin(ang) * rim.ry * 1.1;
+      ctx.beginPath(); ctx.arc(x, y, 0.9 + (i % 3) * 0.4, 0, TAU); ctx.fill();
+    }
+  }
+  tall.forEach((g, i) => {
+    const side = i === 0 ? 1 : -1;
+    const ax = 100 + side * rim.rx * 0.4;
+    const ay = rim.cy + 1;
+    const sTall = Math.max(7, Math.min(14, surfHW * 0.34));
+    const grow = tallH / (sTall * 2.8) > 1.6 ? 1.4 : 1;
+    ctx.save(); ctx.translate(ax, ay); ctx.rotate(deg(side * 12)); ctx.scale(grow, grow); drawGarnishShape(ctx, g.kind, g.color, sTall); ctx.restore();
+  });
 }
 
 export async function downloadShareCard(result: CocktailResult): Promise<void> {
