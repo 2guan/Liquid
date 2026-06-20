@@ -5,7 +5,9 @@ import type { GlassType, IceType, LiquidState } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
 import { liquidRamp } from "@/lib/tokens";
 import { geomFor, halfWidthAt } from "@/lib/data/glasses";
+import type { GarnishSpec } from "@/lib/data/garnish";
 import { IceGroup } from "./Ice";
+import { GarnishLayer } from "./Garnish";
 
 export interface GlassProps {
   glassType: GlassType;
@@ -23,6 +25,8 @@ export interface GlassProps {
   fill?: boolean;
   /** carbonated drink → rising bubbles in the liquid (champagne, soda, tonic…) */
   fizzy?: boolean;
+  /** physical garnishes shown in/around the glass (mint, citrus, cinnamon…) */
+  garnishes?: GarnishSpec[];
   className?: string;
   title?: string;
 }
@@ -61,6 +65,7 @@ export default function Glass({
   fit = false,
   fill = false,
   fizzy = false,
+  garnishes,
   className,
   title,
 }: GlassProps) {
@@ -261,6 +266,11 @@ export default function Glass({
         </g>
       )}
 
+      {/* in-drink garnishes (clipped inside the glass, behind the front wall) */}
+      {detailed && hasLiquid && garnishes && garnishes.length > 0 && (
+        <GarnishLayer layer="back" clipId={`cup-${uid}`} specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} />
+      )}
+
       {/* ── glass optics: smooth window sheen + specular streaks (clipped) ── */}
       <g clipPath={`url(#cup-${uid})`}>
         {/* broad soft window reflection, upper-left */}
@@ -331,6 +341,11 @@ export default function Glass({
           className={detailed ? "rim-glint" : undefined}
         />
       </g>
+
+      {/* on-rim garnishes: salt/sugar crust + sprigs & sticks resting on the lip */}
+      {detailed && garnishes && garnishes.length > 0 && (
+        <GarnishLayer layer="front" specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} />
+      )}
     </svg>
   );
 }
