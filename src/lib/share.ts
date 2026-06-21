@@ -1,8 +1,17 @@
+import QRCode from "qrcode";
 import type { CocktailResult } from "@/types";
 import { liquidRamp, isFizzy } from "@/lib/tokens";
 import { glassById, iceById } from "@/lib/data/catalog";
 import { geomFor, halfWidthAt } from "@/lib/data/glasses";
 import { garnishesFor, type GarnishSpec, type GarnishKind } from "@/lib/data/garnish";
+
+/** The site the card's QR links back to (env-overridable, else the live origin). */
+function siteUrl(): string {
+  const env = process.env.NEXT_PUBLIC_SITE_URL;
+  if (env) return env;
+  if (typeof window !== "undefined" && window.location?.origin) return window.location.origin;
+  return "https://github.com/2guan/Liquid";
+}
 
 /**
  * Share card — rendered to a PNG on a <canvas> so it bakes in the *page's*
@@ -26,7 +35,8 @@ const EN = 'Georgia, "Times New Roman", serif';
 
 type Op =
   | { t: "text"; x: number; y: number; size: number; color: string; stack: string; align: CanvasTextAlign; italic?: boolean; spacing?: number; text: string }
-  | { t: "line"; x1: number; x2: number; y: number; opacity: number };
+  | { t: "line"; x1: number; x2: number; y: number; opacity: number }
+  | { t: "qr"; x: number; y: number; area: number; size: number; data: ArrayLike<number>; color: string };
 
 interface Layout {
   H: number;
@@ -72,29 +82,38 @@ function layout(result: CocktailResult): Layout {
   // story
   const storyBody = result.story.replace(/\n[\s\S]*$/, "").trim();
   const lines = wrapCJK(storyBody, 21).slice(0, 6);
+  // a small, semi-transparent gold QR floated to the right of the STORY divider
+  const matrix = QRCode.create(siteUrl(), { errorCorrectionLevel: "M" }).modules;
+  const QSIZE = 58; // edge length (card units) — small & unobtrusive
+  const qrX = W - PAD - QSIZE; // right side, kept off the frame edge
+  const QR_GOLD = "rgba(200,164,93,0.5)";
   if (lines.length) {
-    divider(ops, y, "微醺絮语 · THE STORY");
+    divider(ops, y, "微醺絮语 · THE STORY", qrX - 16); // cap the right rule before the QR
+    ops.push({ t: "qr", x: qrX, y: y - 5 - QSIZE / 2, area: QSIZE, size: matrix.size, data: matrix.data, color: QR_GOLD });
     y += 42;
     for (const line of lines) {
       ops.push({ t: "text", x: CX, y, size: 18, color: "rgba(231,214,177,0.82)", stack: CN, align: "center", text: line });
       y += 33;
     }
     y += 14;
+  } else {
+    ops.push({ t: "qr", x: qrX, y, area: QSIZE, size: matrix.size, data: matrix.data, color: QR_GOLD });
+    y += QSIZE + 10;
   }
 
   // signature
   const signature = result.story.match(/——\s*([^\n]+)\s*$/)?.[1]?.trim() || "The Sip & Sigh";
   ops.push({ t: "text", x: CX, y, size: 18, color: "rgba(200,164,93,0.85)", stack: CN, align: "center", italic: true, text: `—— ${signature}` });
-  y += 44; // bottom margin (the brand footer was removed at the user's request)
+  y += 44; // bottom margin
 
   return { H: Math.round(y), ops, haloCy };
 }
 
-/** A centred small-caps label flanked by short rules. */
-function divider(ops: Op[], y: number, label: string): void {
+/** A centred small-caps label flanked by short rules (right rule end overridable). */
+function divider(ops: Op[], y: number, label: string, rightEnd: number = W - PAD): void {
   const gap = 96;
   ops.push({ t: "line", x1: PAD, x2: CX - gap, y: y - 5, opacity: 0.3 });
-  ops.push({ t: "line", x1: CX + gap, x2: W - PAD, y: y - 5, opacity: 0.3 });
+  ops.push({ t: "line", x1: CX + gap, x2: rightEnd, y: y - 5, opacity: 0.3 });
   ops.push({ t: "text", x: CX, y, size: 13, color: "#C8A45D", stack: CN, align: "center", spacing: 2, text: label });
 }
 
@@ -155,6 +174,21 @@ export async function renderShareCard(result: CocktailResult): Promise<HTMLCanva
       ctx.moveTo(op.x1, op.y);
       ctx.lineTo(op.x2, op.y);
       ctx.stroke();
+      continue;
+    }
+    if (op.t === "qr") {
+      // bare modules in semi-transparent gold — quiet, no chip behind it
+      const n = op.size;
+      const cell = op.area / n;
+      ctx.fillStyle = op.color;
+      for (let r = 0; r < n; r++) {
+        for (let c = 0; c < n; c++) {
+          if (op.data[r * n + c]) {
+            // +0.5 overlap avoids hairline seams between modules
+            ctx.fillRect(op.x + c * cell, op.y + r * cell, cell + 0.5, cell + 0.5);
+          }
+        }
+      }
       continue;
     }
     ctx.font = `${op.italic ? "italic " : ""}${op.size}px ${op.stack}`;

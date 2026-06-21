@@ -11,14 +11,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "framer-motion": "11.3.30",
     "next": "14.2.30",
+    "qrcode": "^1.5.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "framer-motion": "11.3.30",
     "zustand": "4.5.5"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "autoprefixer": "10.4.19",
