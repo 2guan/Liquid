@@ -25,6 +25,7 @@ import Bottle from "@/components/art/Bottle";
 import { Ice } from "@/components/art/Ice";
 import Button from "@/components/ui/Button";
 import { BilingualTitle, StepDots, Divider } from "@/components/ui/atoms";
+import { StepFooter } from "@/components/ui/ornaments";
 import { Icon } from "@/components/art/icons";
 import { cocktailAI } from "@/lib/ai/cocktailAI";
 import { sound } from "@/lib/sound";
@@ -290,7 +291,7 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
           </div>
 
           {/* footer actions */}
-          <div className="mt-3 flex items-center justify-between gap-3">
+          <StepFooter>
             <Button
               variant="ghost"
               onClick={() => {
@@ -313,7 +314,7 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
                 {busy ? "调制中…" : "完成调制"} <Icon name="sparkle" size={16} />
               </Button>
             )}
-          </div>
+          </StepFooter>
         </div>
       </div>
     </div>

@@ -62,6 +62,12 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
   const { result, mode } = last;
   const modeMeta = modeById(mode);
 
+  // Split the witty sign-off (落款) off the poem so it can be right-aligned,
+  // book-inscription style, under the body of the narrative.
+  const sigMatch = result.story.match(/\n?\s*——\s*([^\n]+)\s*$/);
+  const storyBody = sigMatch ? result.story.slice(0, sigMatch.index).trimEnd() : result.story;
+  const storySig = sigMatch ? sigMatch[1].trim() : null;
+
   function flash(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 1800);
@@ -204,9 +210,12 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
             <Icon name="sparkle" size={18} />
             <BilingualTitle zh="品酒指南" en="Tasting Notes" size="sm" tone="ink" />
           </div>
-          <p className="mt-4 font-cn text-sm leading-relaxed text-ink/80">{result.taste_profile}</p>
+          <p className="mt-4 font-cn text-[15px] leading-loose text-ink/80">{result.taste_profile}</p>
           <Divider className="my-4 opacity-60" />
-          <p className="whitespace-pre-line font-cn text-[15px] leading-loose text-ink/85">{result.story}</p>
+          <p className="whitespace-pre-line font-cn text-[15px] leading-loose text-ink/85">{storyBody}</p>
+          {storySig && (
+            <p className="mt-3 text-right font-cn text-[13px] italic text-ink/60">—— {storySig}</p>
+          )}
         </div>
       </div>
     </div>

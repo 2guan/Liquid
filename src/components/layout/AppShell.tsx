@@ -8,7 +8,7 @@ import { useAtelier } from "@/store/useAtelier";
 import { sound } from "@/lib/sound";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
-import { MobileHeader, MobileTabBar } from "./MobileChrome";
+import { MobileHeader } from "./MobileChrome";
 
 import HomeScreen from "@/components/screens/HomeScreen";
 import PurePourScreen from "@/components/screens/PurePourScreen";
@@ -86,6 +86,9 @@ function ViewRouter({ layout }: { layout: "landscape" | "portrait" }) {
 export default function AppShell() {
   const layout = useLayout();
   const soundOn = useAtelier((s) => s.soundOn);
+  // the Home view is a full-bleed landing (its own header + bottom nav) — the
+  // sidebar / top bar / mobile chrome only appear once a section is open.
+  const isHome = useNav((s) => s.view) === "home";
 
   // Keep the synth's enabled flag in sync with the persisted preference, and
   // re-arm the AudioContext on the first user gesture (browser autoplay policy).
@@ -102,11 +105,10 @@ export default function AppShell() {
     return (
       <MotionConfig reducedMotion="user">
         <div className="relative z-10 flex h-[100dvh] flex-col">
-          <MobileHeader />
+          {!isHome && <MobileHeader />}
           <main className="relative flex-1 overflow-y-auto overflow-x-hidden">
             <ViewRouter layout="portrait" />
           </main>
-          <MobileTabBar />
         </div>
       </MotionConfig>
     );
@@ -115,9 +117,9 @@ export default function AppShell() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative z-10 flex h-[100dvh]">
-        <Sidebar />
+        {!isHome && <Sidebar />}
         <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar />
+          {!isHome && <TopBar />}
           <main className="relative min-h-0 flex-1 overflow-hidden">
             <ViewRouter layout="landscape" />
           </main>

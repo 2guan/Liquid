@@ -3,6 +3,7 @@
 import LogoMark from "@/components/art/Logo";
 import ModeEmblem from "@/components/art/ModeEmblem";
 import { Icon } from "@/components/art/icons";
+import { Flourish } from "@/components/ui/ornaments";
 import { MODES } from "@/lib/data/catalog";
 import { useNav } from "@/store/useNav";
 
@@ -17,21 +18,21 @@ export default function Sidebar() {
   const home = useNav((s) => s.home);
 
   return (
-    <aside className="flex h-full w-[248px] shrink-0 flex-col gap-5 border-r border-gold/15 bg-bg-secondary/55 px-4 py-6 backdrop-blur-sm">
+    <aside className="flex h-full w-[248px] shrink-0 flex-col gap-4 border-r border-gold/15 bg-bg-secondary/55 px-4 py-6 backdrop-blur-sm">
       {/* brand */}
       <button onClick={home} className="flex items-center gap-3 px-1 text-left">
         <LogoMark size={42} />
         <div>
-          <div className="font-cn text-lg leading-none text-paper" style={{ letterSpacing: "0.08em" }}>
+          <div className="title-engrave font-cn text-lg leading-none" style={{ letterSpacing: "0.08em" }}>
             微醺时刻
           </div>
-          <div className="font-title text-[10px] uppercase tracking-title text-gold/70">
-            The Sip & Sigh
-          </div>
+          <div className="font-serif text-[12px] italic text-gold/75">The Sip &amp; Sigh</div>
         </div>
       </button>
 
-      <div className="h-px bg-gold-line" />
+      <div className="flex justify-center py-0.5">
+        <Flourish w={72} />
+      </div>
 
       {/* mode nav */}
       <nav className="flex flex-1 flex-col gap-2">
@@ -41,14 +42,16 @@ export default function Sidebar() {
             <button
               key={m.id}
               onClick={() => enterMode(m.id)}
-              className={`group relative flex items-center gap-3 rounded-lg border px-3 py-3 text-left transition-all duration-200 ${
+              className={`group relative flex items-center gap-3 overflow-hidden rounded-lg border px-3 py-3 text-left transition-all duration-200 ${
                 active
                   ? "border-gold/55 bg-gold/10 shadow-amber-soft"
                   : "border-transparent hover:border-gold/25 hover:bg-gold/5"
               }`}
             >
+              {/* inner engraved hairline on the active entry */}
+              {active && <span className="pointer-events-none absolute inset-[3px] rounded-[7px] border border-gold/20" aria-hidden />}
               <span
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-md border transition-colors"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full border transition-colors"
                 style={{
                   borderColor: active ? "rgba(200,164,93,0.5)" : "rgba(200,164,93,0.18)",
                   color: active ? m.accent : "rgba(231,214,177,0.7)",
@@ -57,12 +60,10 @@ export default function Sidebar() {
                 <ModeEmblem mode={m.id} size={30} />
               </span>
               <span className="min-w-0">
-                <span className={`block font-cn text-[15px] ${active ? "text-gold-bright" : "text-paper/90"}`}>
+                <span className={`block font-cn text-[15px] ${active ? "title-engrave" : "text-paper/90"}`} style={{ letterSpacing: "0.04em" }}>
                   {m.name}
                 </span>
-                <span className="block truncate font-title text-[9px] uppercase tracking-wide text-gold/55">
-                  {m.nameEn}
-                </span>
+                <span className="block truncate font-serif text-[11px] italic text-gold/65">{m.nameEn}</span>
               </span>
               {active && <span className="absolute right-3 h-1.5 w-1.5 rounded-full bg-amber-glow animate-breathe" />}
             </button>
@@ -70,7 +71,9 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="h-px bg-gold-line" />
+      <div className="flex justify-center py-0.5">
+        <Flourish w={72} />
+      </div>
 
       {/* library + journal shortcuts */}
       <div className="flex flex-col gap-1.5">
@@ -104,7 +107,7 @@ function SideLink({
       <Icon name={icon} size={20} />
       <span>
         <span className="block font-cn text-sm">{zh}</span>
-        <span className="block font-title text-[8px] uppercase tracking-wide text-gold/50">{en}</span>
+        <span className="block font-serif text-[11px] italic text-gold/55">{en}</span>
       </span>
     </button>
   );

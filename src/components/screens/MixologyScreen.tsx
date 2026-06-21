@@ -17,6 +17,7 @@ import { isFizzy } from "@/lib/tokens";
 import { garnishesFor } from "@/lib/data/garnish";
 import Button from "@/components/ui/Button";
 import { BilingualTitle, StepDots, Divider } from "@/components/ui/atoms";
+import { StepFooter } from "@/components/ui/ornaments";
 import { Icon } from "@/components/art/icons";
 import { sound } from "@/lib/sound";
 import { useAtelier } from "@/store/useAtelier";
@@ -39,7 +40,12 @@ function buildResult(recipe: Recipe, success: boolean, accuracy: number): Cockta
   });
   // carry the witty sign-off the composer chose, but place it after the tail line.
   const sig = composed.story.match(/——\s*([^\n]+)\s*$/)?.[1]?.trim() ?? randomSignature();
-  const baseStory = (recipe.story ?? composed.story).replace(/\s*\n?\s*——[^\n]*$/, "").trimEnd();
+  // Weave the composer's longer scene in after the recipe's own line (if any), so
+  // even authored recipe stories read as a fuller narrative rather than one line.
+  const strip = (s: string) => s.replace(/\s*\n?\s*——[^\n]*$/, "").trimEnd();
+  const composedBody = strip(composed.story);
+  const recipeBody = recipe.story ? strip(recipe.story) : "";
+  const baseStory = recipeBody ? `${recipeBody}\n${composedBody}` : composedBody;
 
   // Tasting notes ≈ the recipe's authored line + a richer composed elaboration.
   const lead = recipe.tasting.replace(/[。.]$/, "");
@@ -360,7 +366,7 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
 
       {/* footer nav (recipe step has no footer) */}
       {step !== "recipe" && (
-        <div className="mt-3 flex items-center justify-between">
+        <StepFooter>
           <Button variant="ghost" onClick={() => setStep(STEPS[Math.max(0, stepIndex - 1)].key)}>
             <Icon name="back" size={16} /> 上一步
           </Button>
@@ -369,7 +375,7 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
               下一步 · 手法 <Icon name="forward" size={16} />
             </Button>
           )}
-        </div>
+        </StepFooter>
       )}
     </div>
   );

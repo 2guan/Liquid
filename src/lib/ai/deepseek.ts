@@ -170,7 +170,7 @@ const SYSTEM = `你是「微醺时刻 The Sip & Sigh」的 AI 调酒师，同时
   "ice": "none | sphere | cube | crushed",
   "family": "酒液主色，从给定列表中选：${FAMILIES.join(" | ")}",
   "taste_profile": "中文品酒笔记，3-4句、约90-140字，依次描写香气、入口、中段口感与尾韵，细腻具体、富有画面感",
-  "story": "中文散文式叙事，2-3句，富有画面与情绪（不要在结尾署名）",
+  "story": "中文散文式叙事，5-7句、约100-150字，铺陈意象与情绪的起承转合，画面层层展开、有呼吸感与留白（不要在结尾署名）",
   "emotion_mapping": "中文一句，把用户的心情/选择映射到这杯酒",
   "signature": "一个风趣俏皮的酒评人化名/落款，自带人设与梗，6-14字，最好与这杯酒或用户心情呼应。风格参考（请勿照抄）：千杯不醉的白领酒评师 / 深夜便利店哲学家 / 把周一调成周五的魔法师。每次都要原创、新鲜、有反差萌"
 }
@@ -228,7 +228,7 @@ export async function dsZenMix(picks: FlavorPick[]): Promise<MixAnalysis> {
   const dominant = picks.find((p) => p.family)?.family ?? "default";
   const user = `用户在自由创作画布上组合了以下风味原料：
 ${list}
-请以风味化学家的视角分析这个组合，并产出一杯成品。额外要求：
+请以风味化学家和诗人的视角分析这个组合，并产出一杯成品。额外要求：
 - 在 JSON 中再加两个字段："harmony"（0~1 的数字，表示风味和谐度），"verdict"（一句中文点评）。
 - 若该组合恰好构成某款知名经典鸡尾酒（如金酒+金巴利+红味美思=尼格罗尼），把 "hidden" 设为 true，并用该经典之名命名。
 - ingredients 使用上面列出的原料。`;

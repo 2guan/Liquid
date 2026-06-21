@@ -85,12 +85,7 @@ function layout(result: CocktailResult): Layout {
   // signature
   const signature = result.story.match(/——\s*([^\n]+)\s*$/)?.[1]?.trim() || "The Sip & Sigh";
   ops.push({ t: "text", x: CX, y, size: 18, color: "rgba(200,164,93,0.85)", stack: CN, align: "center", italic: true, text: `—— ${signature}` });
-  y += 52;
-
-  // footer
-  ops.push({ t: "line", x1: CX - 26, x2: CX + 26, y: y - 16, opacity: 0.3 });
-  ops.push({ t: "text", x: CX, y, size: 11, color: "rgba(200,164,93,0.5)", stack: CN, align: "center", spacing: 3, text: "SAVOUR THE MOMENT · 微醺时刻" });
-  y += 40;
+  y += 44; // bottom margin (the brand footer was removed at the user's request)
 
   return { H: Math.round(y), ops, haloCy };
 }

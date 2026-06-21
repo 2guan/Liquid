@@ -27,16 +27,26 @@ export function BilingualTitle({
     lg: "text-3xl",
     xl: "text-4xl md:text-5xl",
   }[size];
-  const enSize = { sm: "text-[10px]", md: "text-xs", lg: "text-sm", xl: "text-base" }[size];
-  const zhColor = tone === "ink" ? "text-ink" : "text-paper";
-  const enColor = tone === "ink" ? "text-copper/80" : "text-gold/70";
+  const enSize = { sm: "text-[11px]", md: "text-[13px]", lg: "text-[15px]", xl: "text-lg" }[size];
+  // Paper tone borrows the Home brand treatment — an engraved gold gradient on
+  // the Chinese title and a serif-italic English line. The "ink" tone (used on
+  // the light paper book) stays as solid dark type.
+  const ink = tone === "ink";
   return (
     <div className={`${align === "center" ? "text-center" : ""} ${className}`}>
-      <h2 className={`font-cn ${zhSize} leading-tight ${zhColor}`} style={{ letterSpacing: "0.04em" }}>
+      <h2
+        className={`font-cn ${zhSize} leading-tight ${ink ? "text-ink" : "title-engrave"}`}
+        style={{ letterSpacing: "0.06em" }}
+      >
         {zh}
       </h2>
       {en && (
-        <p className={`font-title ${enSize} mt-1 uppercase tracking-title ${enColor}`}>{en}</p>
+        <p
+          className={`mt-1 font-serif italic ${enSize} ${ink ? "text-copper/80" : "text-gold/80"}`}
+          style={{ letterSpacing: "0.03em" }}
+        >
+          {en}
+        </p>
       )}
     </div>
   );

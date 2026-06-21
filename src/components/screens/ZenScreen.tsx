@@ -18,6 +18,7 @@ import { useAtelier } from "@/store/useAtelier";
 import { useNav } from "@/store/useNav";
 import Button from "@/components/ui/Button";
 import { BilingualTitle, Divider } from "@/components/ui/atoms";
+import { StepFooter } from "@/components/ui/ornaments";
 import { Icon } from "@/components/art/icons";
 import SceneBackdrop from "@/components/art/SceneBackdrop";
 import LoadingVeil from "@/components/ui/LoadingVeil";
@@ -297,10 +298,16 @@ export default function ZenScreen({ layout }: { layout: LayoutMode }) {
         {list.length === 0 && <p className="py-6 text-center font-cn text-sm text-paper/40">没有找到匹配的风味</p>}
       </div>
 
-      <Button className="mt-3" onClick={analyze} disabled={busy || nodes.length === 0}>
-        <Icon name="sparkle" size={16} /> 分析风味
-      </Button>
-      {nodes.length > 3 && <p className="mt-2 text-center font-cn text-[10px] text-paper/40">组合越复杂，越可能触发隐藏配方…</p>}
+      {/* landscape: the action lives in the panel; portrait pins it to the
+          bottom of the screen via <StepFooter> (see the root return). */}
+      {layout !== "portrait" && (
+        <>
+          <Button className="mt-3" onClick={analyze} disabled={busy || nodes.length === 0}>
+            <Icon name="sparkle" size={16} /> 分析风味
+          </Button>
+          {nodes.length > 3 && <p className="mt-2 text-center font-cn text-[10px] text-paper/40">组合越复杂，越可能触发隐藏配方…</p>}
+        </>
+      )}
     </div>
   );
 
@@ -308,6 +315,14 @@ export default function ZenScreen({ layout }: { layout: LayoutMode }) {
     <div className={`flex h-full ${layout === "portrait" ? "flex-col" : "flex-row"} gap-4 px-4 py-4 md:px-6 md:py-5`}>
       {canvas}
       {panel}
+      {/* portrait: pin 分析风味 to the bottom of the screen, like 下一步 */}
+      {layout === "portrait" && (
+        <StepFooter>
+          <Button className="flex-1" onClick={analyze} disabled={busy || nodes.length === 0}>
+            <Icon name="sparkle" size={16} /> 分析风味
+          </Button>
+        </StepFooter>
+      )}
       <AnimatePresence>{busy && <LoadingVeil visible line={veilLine} />}</AnimatePresence>
     </div>
   );

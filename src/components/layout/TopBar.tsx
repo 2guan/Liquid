@@ -2,27 +2,50 @@
 
 import RankBadge from "./RankBadge";
 import { IconButton } from "@/components/ui/atoms";
+import { Flourish } from "@/components/ui/ornaments";
 import { useNav } from "@/store/useNav";
 import { useAtelier } from "@/store/useAtelier";
 
-/** Landscape top HUD: contextual back, spacer, rank badge + global actions. */
+const SECTION: Record<string, { zh: string; en: string }> = {
+  pure: { zh: "纯饮", en: "The Pure Pour" },
+  mixology: { zh: "酒谱", en: "The Liquid Codex" },
+  mood: { zh: "心事", en: "Whisper of Mood" },
+  zen: { zh: "魔法", en: "The Alchemy Atelier" },
+  library: { zh: "酒库", en: "The Cellar" },
+  journal: { zh: "微醺日记", en: "Liquid Journal" },
+  achievements: { zh: "工坊档案", en: "The Ledger" },
+  result: { zh: "酒卡", en: "The Tasting Card" },
+};
+
+/** Landscape top HUD: contextual back, engraved section title, rank + actions. */
 export default function TopBar() {
   const view = useNav((s) => s.view);
   const go = useNav((s) => s.go);
   const home = useNav((s) => s.home);
   const soundOn = useAtelier((s) => s.soundOn);
   const toggleSound = useAtelier((s) => s.toggleSound);
+  const section = SECTION[view];
 
   return (
-    <header className="flex h-16 items-center justify-between gap-4 border-b border-gold/12 px-6">
+    <header className="relative flex h-16 items-center justify-between gap-4 px-6">
+      <span className="pointer-events-none absolute inset-x-6 bottom-0 h-px bg-gold-line" aria-hidden />
       <div className="flex items-center gap-3">
-        {view !== "home" && (
-          <IconButton icon="back" label="返回首页" onClick={home} />
+        {view !== "home" && <IconButton icon="back" label="返回首页" onClick={home} />}
+        {section && (
+          <span className="flex items-baseline gap-2">
+            <span className="title-engrave font-cn text-lg" style={{ letterSpacing: "0.08em" }}>
+              {section.zh}
+            </span>
+            <span className="font-serif text-[13px] italic text-gold/65">{section.en}</span>
+          </span>
         )}
-        <span className="font-title text-[11px] uppercase tracking-title text-gold/40">
-          {view === "home" ? "今日创作 · Today’s Craft" : ""}
-        </span>
       </div>
+
+      {view === "home" && (
+        <span className="absolute left-1/2 -translate-x-1/2">
+          <Flourish w={28} />
+        </span>
+      )}
 
       <div className="flex items-center gap-4">
         <RankBadge />

@@ -80,66 +80,122 @@ function noiseBurst(at: number, dur: number, filter: BiquadFilterType, freq: num
 
 function startAmbient() {
   if (!ctx || !master || ambient) return;
-  const now = ctx.currentTime;
+  const audio = ctx; // captured non-null so the nested schedulers stay typed
+  const out = master;
+  const now = audio.currentTime;
 
-  // low warm drone
-  const drone = ctx.createOscillator();
-  drone.type = "triangle";
-  drone.frequency.value = 110;
-  const droneG = ctx.createGain();
-  droneG.gain.value = 0.014;
+  // a dedicated bus so the whole bed (pad + bass + room) fades out as one
+  const bus = audio.createGain();
+  bus.gain.value = 1;
+  bus.connect(out);
 
-  const detune = ctx.createOscillator();
-  detune.type = "sine";
-  detune.frequency.value = 55;
-  const detuneG = ctx.createGain();
-  detuneG.gain.value = 0.01;
+  // ── warm low body ──
+  const drone = audio.createOscillator();
+  drone.type = "sine";
+  drone.frequency.value = 65.41; // C2
+  const droneG = audio.createGain();
+  droneG.gain.value = 0.012;
+  drone.connect(droneG).connect(bus);
+  drone.start(now);
 
-  // soft room noise through a lowpass
-  const frames = Math.floor(ctx.sampleRate * 2);
-  const buf = ctx.createBuffer(1, frames, ctx.sampleRate);
+  // ── quiet smoky room tone (brown noise through a lowpass) ──
+  const frames = Math.floor(audio.sampleRate * 2);
+  const buf = audio.createBuffer(1, frames, audio.sampleRate);
   const data = buf.getChannelData(0);
   let last = 0;
   for (let i = 0; i < frames; i++) {
     last = (last + (Math.random() * 2 - 1) * 0.4) * 0.97;
-    data[i] = last * 0.6;
+    data[i] = last * 0.5;
   }
-  const room = ctx.createBufferSource();
+  const room = audio.createBufferSource();
   room.buffer = buf;
   room.loop = true;
-  const lp = ctx.createBiquadFilter();
+  const lp = audio.createBiquadFilter();
   lp.type = "lowpass";
-  lp.frequency.value = 380;
-  const roomG = ctx.createGain();
-  roomG.gain.value = 0.02;
-
-  // slow breathing LFO on the room gain
-  const lfo = ctx.createOscillator();
-  lfo.frequency.value = 0.07;
-  const lfoG = ctx.createGain();
-  lfoG.gain.value = 0.012;
-  lfo.connect(lfoG).connect(roomG.gain);
-
-  drone.connect(droneG).connect(master);
-  detune.connect(detuneG).connect(master);
-  room.connect(lp).connect(roomG).connect(master);
-
-  drone.start(now);
-  detune.start(now);
+  lp.frequency.value = 300;
+  const roomG = audio.createGain();
+  roomG.gain.value = 0.009;
+  room.connect(lp).connect(roomG).connect(bus);
   room.start(now);
-  lfo.start(now);
+
+  // ── a mellow Rhodes-ish pad voice (sine + soft octave partial, lowpassed) ──
+  const padNote = (freq: number, at: number, dur: number, gain: number) => {
+    const o = audio.createOscillator();
+    o.type = "sine";
+    o.frequency.value = freq;
+    const harm = audio.createOscillator();
+    harm.type = "triangle";
+    harm.frequency.value = freq * 2;
+    const hg = audio.createGain();
+    hg.gain.value = 0.14;
+    const g = audio.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(gain, at + 0.24);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    const warm = audio.createBiquadFilter();
+    warm.type = "lowpass";
+    warm.frequency.value = 1500;
+    o.connect(g);
+    harm.connect(hg).connect(g);
+    g.connect(warm).connect(bus);
+    o.start(at);
+    harm.start(at);
+    o.stop(at + dur + 0.1);
+    harm.stop(at + dur + 0.1);
+  };
+
+  // ── a soft upright-bass pluck ──
+  const bassNote = (freq: number, at: number, dur: number, gain: number) => {
+    const o = audio.createOscillator();
+    o.type = "sine";
+    o.frequency.value = freq;
+    const g = audio.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(gain, at + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g).connect(bus);
+    o.start(at);
+    o.stop(at + dur + 0.05);
+  };
+
+  // slow ii–V–I–vi in C, voiced as mellow seventh chords (jazz lounge)
+  const CHORDS: { bass: number; notes: number[] }[] = [
+    { bass: 146.83, notes: [293.66, 349.23, 440.0, 523.25] }, // Dm7
+    { bass: 98.0, notes: [349.23, 392.0, 493.88, 587.33] }, //   G7
+    { bass: 130.81, notes: [261.63, 329.63, 392.0, 493.88] }, // Cmaj7
+    { bass: 110.0, notes: [329.63, 392.0, 440.0, 523.25] }, //   Am7
+  ];
+  const CHORD_DUR = 3.8; // seconds per chord — unhurried
+
+  let idx = 0;
+  let next = now + 0.15;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let stopped = false;
+
+  const tick = () => {
+    if (stopped) return;
+    const c = CHORDS[idx % CHORDS.length];
+    // roll the chord tones in slightly for a hand-played feel
+    c.notes.forEach((f, i) => padNote(f, next + i * 0.06, CHORD_DUR * 0.92, 0.016));
+    bassNote(c.bass, next, CHORD_DUR * 0.5, 0.045); // root on beat 1
+    bassNote(c.bass * 1.5, next + CHORD_DUR * 0.5, CHORD_DUR * 0.45, 0.036); // fifth on beat 3
+    idx++;
+    next += CHORD_DUR;
+    timer = setTimeout(tick, CHORD_DUR * 1000 - 250);
+  };
+  tick();
 
   ambient = {
     stop: () => {
-      const t = ctx!.currentTime;
-      [droneG, detuneG, roomG].forEach((g) => {
-        g.gain.cancelScheduledValues(t);
-        g.gain.setValueAtTime(g.gain.value, t);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
-      });
-      [drone, detune, room, lfo].forEach((n) => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+      const t = audio.currentTime;
+      bus.gain.cancelScheduledValues(t);
+      bus.gain.setValueAtTime(bus.gain.value, t);
+      bus.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+      [drone, room].forEach((n) => {
         try {
-          n.stop(t + 0.7);
+          n.stop(t + 0.8);
         } catch {
           /* already stopped */
         }

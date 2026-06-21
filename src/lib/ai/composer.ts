@@ -98,14 +98,25 @@ function composeName(family: SpiritFamily, rng: Rng, keyword?: string) {
 
 function composeStory(family: SpiritFamily, rng: Rng): string {
   const v = VOICE[family] ?? VOICE.default;
-  const scene = rng.pick(v.scenes);
+  // Two distinct scenes, joined by a soft turn, then a closing line — a longer,
+  // more unspooled narrative than a single scene.
+  const picks = rng.pickN(v.scenes, Math.min(2, v.scenes.length));
+  const open = picks[0];
+  const turn = picks[1] ?? rng.pick(v.scenes);
+  const bridge = rng.pick(["而后，", "不知何时，", "再抬眼，", "恍惚间，", "与此同时，"]);
+  const middle = rng.pick([
+    "酒液在杯壁上挂出细长的泪，把时间拉得很慢",
+    "香气一层层散开，像有人在耳边低声说着往事",
+    "光顺着杯沿流转，将周遭的喧嚣都隔在了很远的地方",
+    "第一口落下，喉间漫开的暖意替你松开了紧绷的肩",
+  ]);
   const close = rng.pick([
     "把这一切收进杯底，便是此刻的你。",
     "于是我斟出这一杯，敬尚未说出口的那句话。",
     "请慢饮——它会替你把今晚妥帖地收好。",
     "举杯时，光会替你记住这个瞬间。",
   ]);
-  return `${scene}。${close}\n—— ${rng.pick(SIGNATURES)}`;
+  return `${open}。${middle}。${bridge}${turn}。${close}\n—— ${rng.pick(SIGNATURES)}`;
 }
 
 function composeTaste(family: SpiritFamily, rng: Rng): string {
