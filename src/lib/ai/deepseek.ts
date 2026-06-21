@@ -6,13 +6,14 @@
  * contract, then normalises the reply into safe, typed values. On any failure
  * the route handler falls back to the offline composer, so the app always works.
  */
-import type { CocktailResult, FlavorPick, GlassType, IceType, Ingredient, MoodInput } from "@/types";
+import type { CocktailResult, FlavorPick, GlassType, IceType, Ingredient, MoodInput, Recipe } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
 import { liquidRamp, inferLiquidFamily } from "@/lib/tokens";
 import { GLASSES, isGlassId } from "@/lib/data/glasses";
 import { spiritById } from "@/lib/data/spirits";
 import { aromaticForFamily } from "@/lib/data/garnish";
 import { randomSignature, withSignature } from "./lexicon";
+import { assembleMixResult } from "./composer";
 import type { MixAnalysis } from "./cocktailAI";
 
 const API_KEY = process.env.DEEPSEEK_API_KEY;
@@ -248,4 +249,28 @@ ${list}
     harmony,
     verdict: str(raw.verdict, harmony > 0.7 ? "结构和谐，风味彼此成全。" : "大胆的实验，自有其风格。"),
   };
+}
+
+/* ── 4. Mixology (write prose for a recreated classic) ── */
+const MIX_SYSTEM = `你是「微醺时刻 The Sip & Sigh」的 AI 调酒师，同时是诗人与风味化学家。
+只输出一个 JSON 对象，不要多余文本。语气复古、温暖、克制而富诗意；signature 落款要俏皮幽默、有反差萌。`;
+
+export async function dsMixology(recipe: Recipe, success: boolean, accuracy: number): Promise<CocktailResult> {
+  const ing = recipe.ingredients.map((i) => `${i.name} ${i.amount}`).join("、");
+  const user = `这是一杯经典鸡尾酒「${recipe.name} ${recipe.nameEn}」。
+配方：${ing}。
+盛具：${recipe.glass}；冰：${recipe.ice}。
+请为这杯酒撰写品鉴文字，只输出 JSON：{"taste_profile":"…","story":"…","signature":"…"}
+- taste_profile：中文品酒笔记，3-4句、约90-140字，依次描写香气、入口、中段口感与尾韵，细腻具体；
+- story：中文散文式叙事，5-7句、约100-150字，富有画面与情绪，不要署名、不要提及百分比或“复刻/精准”等字眼；
+- signature：风趣俏皮的酒评人化名/落款，6-14字，自带人设与反差萌。`;
+  const raw = await callDeepSeek([
+    { role: "system", content: MIX_SYSTEM },
+    { role: "user", content: user },
+  ]);
+  return assembleMixResult(recipe, success, accuracy, {
+    story: str(raw.story),
+    taste_profile: str(raw.taste_profile ?? raw.tasting),
+    signature: str(raw.signature ?? raw.signoff),
+  });
 }

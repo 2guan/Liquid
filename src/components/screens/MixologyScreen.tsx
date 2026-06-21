@@ -3,15 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { LayoutMode } from "@/hooks/useLayout";
-import type { CocktailResult, Recipe, RecipeCategory } from "@/types";
+import type { Recipe, RecipeCategory } from "@/types";
 import {
   RECIPE_CATEGORIES,
   RECIPE_COUNT,
   recipesByCategory,
   searchRecipes,
 } from "@/lib/data/recipes";
-import { composeFromMood } from "@/lib/ai/composer";
-import { randomSignature } from "@/lib/ai/lexicon";
+import { cocktailAI } from "@/lib/ai/cocktailAI";
+import LoadingVeil from "@/components/ui/LoadingVeil";
 import Glass from "@/components/art/Glass";
 import { isFizzy } from "@/lib/tokens";
 import { garnishesFor } from "@/lib/data/garnish";
@@ -30,45 +30,6 @@ const STEPS: { key: Step; label: string }[] = [
   { key: "timing", label: "手法定时" },
 ];
 
-function buildResult(recipe: Recipe, success: boolean, accuracy: number): CocktailResult {
-  // Use the recipe's own story if it has one, else compose one in-character,
-  // seeded by the recipe id so it's deterministic and varied per cocktail.
-  const composed = composeFromMood({
-    family: recipe.family,
-    moodText: recipe.id,
-    keywords: [...recipe.ingredients.map((i) => i.name), recipe.tasting].slice(0, 4),
-  });
-  // carry the witty sign-off the composer chose, but place it after the tail line.
-  const sig = composed.story.match(/——\s*([^\n]+)\s*$/)?.[1]?.trim() ?? randomSignature();
-  // Weave the composer's longer scene in after the recipe's own line (if any), so
-  // even authored recipe stories read as a fuller narrative rather than one line.
-  const strip = (s: string) => s.replace(/\s*\n?\s*——[^\n]*$/, "").trimEnd();
-  const composedBody = strip(composed.story);
-  const recipeBody = recipe.story ? strip(recipe.story) : "";
-  const baseStory = recipeBody ? `${recipeBody}\n${composedBody}` : composedBody;
-
-  // Tasting notes ≈ the recipe's authored line + a richer composed elaboration.
-  const lead = recipe.tasting.replace(/[。.]$/, "");
-  const taste = `${lead}。${composed.taste_profile}`;
-
-  const tail = success
-    ? `你以 ${Math.round(accuracy * 100)}% 的精准复刻了这杯${recipe.alcoholFree ? "特调" : "经典"}。`
-    : "比例偏离了经典的轨道，却也调出了独属于你的版本——失败，有时是另一种配方的开始。";
-
-  return {
-    name: success ? recipe.name : `${recipe.name}（即兴版）`,
-    nameEn: recipe.nameEn,
-    ingredients: recipe.ingredients,
-    ratio: recipe.ingredients.map((i) => i.parts ?? 1),
-    glass: recipe.glass,
-    ice: recipe.ice,
-    family: recipe.family,
-    taste_profile: taste,
-    story: `${baseStory}\n${tail}\n—— ${sig}`,
-    emotion_mapping: success ? "对经典的敬意，藏在每一毫升的精确里。" : "偏差也是风格，干杯。",
-  };
-}
-
 export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
   const [step, setStep] = useState<Step>("recipe");
   const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -76,6 +37,15 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
   const [showHint, setShowHint] = useState(true);
   const [category, setCategory] = useState<RecipeCategory>("golden");
   const [query, setQuery] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [veilLine, setVeilLine] = useState(0);
+
+  // cycle the loading status lines while the AI writes the tasting notes
+  useEffect(() => {
+    if (!busy) return;
+    const id = setInterval(() => setVeilLine((l) => l + 1), 900);
+    return () => clearInterval(id);
+  }, [busy]);
 
   const recipeList = useMemo(
     () => (query.trim() ? searchRecipes(query) : recipesByCategory(category)),
@@ -147,14 +117,19 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
     setTimingQuality(q);
   }
 
-  function finish() {
-    if (!recipe) return;
+  async function finish() {
+    if (!recipe || busy) return;
     const accuracy = ratioAccuracy * 0.6 + (timingQuality ?? 0) * 0.4;
     const success = accuracy >= 0.7;
+    setBusy(true);
+    setVeilLine(0);
     sound.play("success");
     addXp(success ? 60 : 30);
     recordPour();
-    setLastResult(buildResult(recipe, success, accuracy), "mixology");
+    // AI writes the tasting notes & prose; falls back to the offline poet
+    const result = await cocktailAI.describeMix(recipe, success, accuracy);
+    setBusy(false);
+    setLastResult(result, "mixology");
     showResult();
   }
 
@@ -352,8 +327,8 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
                         {timingQuality > 0.8 ? "手法精湛 ✦" : timingQuality > 0.5 ? "稳健的一手" : "稍有偏差"}
                       </p>
                       <p className="mt-1 font-ui text-sm text-paper/50">手法评分 {Math.round(timingQuality * 100)}%</p>
-                      <Button className="mt-5 px-8 py-3" onClick={finish}>
-                        完成这一杯 <Icon name="sparkle" size={16} />
+                      <Button className="mt-5 px-8 py-3" onClick={finish} disabled={busy}>
+                        {busy ? "调制中…" : "完成这一杯"} <Icon name="sparkle" size={16} />
                       </Button>
                     </motion.div>
                   )}
@@ -377,6 +352,8 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
           )}
         </StepFooter>
       )}
+
+      <AnimatePresence>{busy && <LoadingVeil visible line={veilLine} />}</AnimatePresence>
     </div>
   );
 }

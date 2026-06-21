@@ -7,11 +7,11 @@
  * results with no network. `RemoteCocktailAI` shows exactly how to swap in a
  * real LLM endpoint (FastAPI → GPT-4.1 / Claude) without touching any screen.
  */
-import type { CocktailResult, FlavorPick, GlassType, IceType, MoodInput } from "@/types";
+import type { CocktailResult, FlavorPick, GlassType, IceType, MoodInput, Recipe } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
 import { inferLiquidFamily } from "@/lib/tokens";
 import { MOOD_SEEDS } from "@/lib/data/moods";
-import { composeFromMood, composePour } from "./composer";
+import { composeFromMood, composePour, assembleMixResult } from "./composer";
 import { randomSignature, withSignature } from "./lexicon";
 import { hashString } from "./rng";
 
@@ -28,6 +28,8 @@ export interface CocktailAI {
   describePour(spiritId: string, glass: GlassType, ice: IceType): Promise<CocktailResult>;
   /** Zen Atelier: free-mix flavour validation, may unlock a hidden recipe. */
   analyzeFlavorMix(picks: FlavorPick[]): Promise<MixAnalysis>;
+  /** Mixology: write the prose for a recreated classic (success/accuracy aware). */
+  describeMix(recipe: Recipe, success: boolean, accuracy: number): Promise<CocktailResult>;
 }
 
 /* ── Hidden recipes unlocked by specific family combinations (gamification §5.2) ── */
@@ -179,6 +181,10 @@ export class MockCocktailAI implements CocktailAI {
     return this.think(composePour(spiritId, glass, ice));
   }
 
+  async describeMix(recipe: Recipe, success: boolean, accuracy: number): Promise<CocktailResult> {
+    return this.think(assembleMixResult(recipe, success, accuracy));
+  }
+
   async analyzeFlavorMix(picks: FlavorPick[]): Promise<MixAnalysis> {
     const families = new Set(picks.map((p) => p.family).filter(Boolean) as SpiritFamily[]);
     const hidden = HIDDEN.find(
@@ -289,6 +295,9 @@ export class RemoteCocktailAI implements CocktailAI {
   analyzeFlavorMix(picks: FlavorPick[]) {
     return this.post<MixAnalysis>("/zen-mix", { picks });
   }
+  describeMix(recipe: Recipe, success: boolean, accuracy: number) {
+    return this.post<CocktailResult>("/mixology", { recipe, success, accuracy });
+  }
 }
 
 /**
@@ -319,6 +328,9 @@ class HybridCocktailAI implements CocktailAI {
   }
   analyzeFlavorMix(picks: FlavorPick[]) {
     return this.withFallback(() => this.remote.analyzeFlavorMix(picks), () => this.fallback.analyzeFlavorMix(picks));
+  }
+  describeMix(recipe: Recipe, success: boolean, accuracy: number) {
+    return this.withFallback(() => this.remote.describeMix(recipe, success, accuracy), () => this.fallback.describeMix(recipe, success, accuracy));
   }
 }
 

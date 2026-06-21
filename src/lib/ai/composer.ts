@@ -3,11 +3,11 @@
  * CocktailResult. This is the "调酒师 + 诗人 + 化学家" rendered as pure functions.
  * Swap this for a real LLM by implementing the same return shape (see cocktailAI.ts).
  */
-import type { CocktailResult, GlassType, IceType, Ingredient } from "@/types";
+import type { CocktailResult, GlassType, IceType, Ingredient, Recipe } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
 import { spiritById, SPIRITS } from "@/lib/data/spirits";
 import { aromaticForFamily } from "@/lib/data/garnish";
-import { VOICE, SIGNATURES, EMOTION_BRIDGES } from "./lexicon";
+import { VOICE, SIGNATURES, EMOTION_BRIDGES, randomSignature } from "./lexicon";
 import { makeRng, hashString, type Rng } from "./rng";
 
 /** Modifiers & accents the chemist reaches for, grouped by purpose. */
@@ -229,5 +229,56 @@ export function composePour(spiritId: string, glass: GlassType, ice: IceType): C
     taste_profile: `${spirit.note}；${composeTaste(spirit.family, rng)}`,
     story: `${spirit.origin}的风土被封进这一杯。${iceNote}。${composeStory(spirit.family, rng)}`,
     emotion_mapping: `专注于本味，是对${spirit.nameEn}最坦诚的致敬。`,
+  };
+}
+
+/**
+ * Mixology — assemble the result for a recreated classic. Prose (品酒笔记 +
+ * 散文叙事 + 落款) may come from the LLM via `prose`; whatever is missing falls
+ * back to the offline poet. The recipe's own data (name / ingredients / glass /
+ * ice / colour) is authoritative; the success line is appended after the story.
+ */
+export function assembleMixResult(
+  recipe: Recipe,
+  success: boolean,
+  accuracy: number,
+  prose?: { story?: string; taste_profile?: string; signature?: string },
+): CocktailResult {
+  // a deterministic offline draft, seeded by the recipe, used to fill any gaps
+  const composed = composeFromMood({
+    family: recipe.family,
+    moodText: recipe.id,
+    keywords: [...recipe.ingredients.map((i) => i.name), recipe.tasting].slice(0, 4),
+  });
+  const strip = (s: string) => s.replace(/\s*\n?\s*——[^\n]*$/, "").trimEnd();
+
+  const sig =
+    prose?.signature?.trim() ||
+    composed.story.match(/——\s*([^\n]+)\s*$/)?.[1]?.trim() ||
+    randomSignature();
+
+  const aiStory = prose?.story?.trim();
+  const composedBody = strip(composed.story);
+  const recipeBody = recipe.story ? strip(recipe.story) : "";
+  const baseStory = aiStory || (recipeBody ? `${recipeBody}\n${composedBody}` : composedBody);
+
+  const lead = recipe.tasting.replace(/[。.]$/, "");
+  const taste = prose?.taste_profile?.trim() || `${lead}。${composed.taste_profile}`;
+
+  const tail = success
+    ? `你以 ${Math.round(accuracy * 100)}% 的精准复刻了这杯${recipe.alcoholFree ? "特调" : "经典"}。`
+    : "比例偏离了经典的轨道，却也调出了独属于你的版本——失败，有时是另一种配方的开始。";
+
+  return {
+    name: success ? recipe.name : `${recipe.name}（即兴版）`,
+    nameEn: recipe.nameEn,
+    ingredients: recipe.ingredients,
+    ratio: recipe.ingredients.map((i) => i.parts ?? 1),
+    glass: recipe.glass,
+    ice: recipe.ice,
+    family: recipe.family,
+    taste_profile: taste,
+    story: `${baseStory}\n${tail}\n—— ${sig}`,
+    emotion_mapping: success ? "对经典的敬意，藏在每一毫升的精确里。" : "偏差也是风格，干杯。",
   };
 }
