@@ -268,7 +268,7 @@ export default function Glass({
 
       {/* in-drink garnishes (clipped inside the glass, behind the front wall) */}
       {detailed && hasLiquid && garnishes && garnishes.length > 0 && (
-        <GarnishLayer layer="back" clipId={`cup-${uid}`} specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} />
+        <GarnishLayer layer="back" clipId={`cup-${uid}`} specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} liquidColor={body} liquidShadow={shadow} />
       )}
 
       {/* ── glass optics: smooth window sheen + specular streaks (clipped) ── */}
@@ -344,7 +344,7 @@ export default function Glass({
 
       {/* on-rim garnishes: salt/sugar crust + sprigs & sticks resting on the lip */}
       {detailed && garnishes && garnishes.length > 0 && (
-        <GarnishLayer layer="front" specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} />
+        <GarnishLayer layer="front" specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} liquidColor={body} liquidShadow={shadow} />
       )}
     </svg>
   );

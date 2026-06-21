@@ -189,6 +189,33 @@ export function garnishFor(name: string, category?: string): GarnishSpec | null 
  * count (a tidy 1 sprig + a couple of surface items + a rim/dust) so the glass
  * reads as garnished, not cluttered. Returns them in draw order.
  */
+/**
+ * A classic aromatic garnish to pair with a spirit served neat / on the rocks
+ * (Pure Pour) — a twist or wedge that lifts the nose, the way a bartender would
+ * finish a pour. Returns an ingredient row so it flows to the glass + card.
+ */
+export function aromaticForFamily(family: string | undefined): { name: string; amount: string } | null {
+  switch (family) {
+    case "whisky":
+    case "campari":
+    case "brandy":
+      return { name: "橙皮", amount: "1 卷" };
+    case "whiskyPeat":
+    case "gin":
+    case "vodka":
+    case "vermouth":
+      return { name: "柠檬皮卷", amount: "1 卷" };
+    case "rum":
+    case "rumWhite":
+    case "tequila":
+      return { name: "青柠角", amount: "1 块" };
+    case "cream":
+      return { name: "肉豆蔻", amount: "少许" };
+    default:
+      return null;
+  }
+}
+
 export function garnishesFor(ingredients: { name?: string; category?: string }[] | undefined | null): GarnishSpec[] {
   if (!ingredients || ingredients.length === 0) return [];
   const seen = new Set<GarnishKind>();

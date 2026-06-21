@@ -11,6 +11,7 @@ import type { SpiritFamily } from "@/lib/tokens";
 import { liquidRamp, inferLiquidFamily } from "@/lib/tokens";
 import { GLASSES, isGlassId } from "@/lib/data/glasses";
 import { spiritById } from "@/lib/data/spirits";
+import { aromaticForFamily } from "@/lib/data/garnish";
 import { randomSignature, withSignature } from "./lexicon";
 import type { MixAnalysis } from "./cocktailAI";
 
@@ -211,6 +212,12 @@ export async function dsPurePour(spiritId: string, glass: GlassType, ice: IceTyp
   result.glass = glass;
   result.ice = ice;
   if (sp) result.family = sp.family;
+  // finish the neat pour with a classic aromatic garnish (twist / wedge) so the
+  // glass + card show a pairing, unless the model already added one
+  const aromatic = aromaticForFamily(sp?.family);
+  if (aromatic && !result.ingredients.some((i) => /皮|柠檬|青柠|橙|肉豆蔻|薄荷|樱桃/.test(i.name))) {
+    result.ingredients = [...result.ingredients, { name: aromatic.name, amount: aromatic.amount, parts: 0 }];
+  }
   return result;
 }
 

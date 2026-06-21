@@ -284,7 +284,7 @@ function drawGlass(
   if (garnishes.length) {
     ctx.save();
     ctx.clip(outline);
-    drawGarnishLayer(ctx, garnishes, "back", rim, geom.cup.top, liquidTop, surfHW);
+    drawGarnishLayer(ctx, garnishes, "back", rim, geom.cup.top, liquidTop, surfHW, body, shadow);
     ctx.restore();
   }
 
@@ -338,7 +338,7 @@ function drawGlass(
 
   // ── on-rim garnishes: salt/sugar crust + sprigs resting on the lip ──
   if (garnishes.length) {
-    drawGarnishLayer(ctx, garnishes, "front", rim, geom.cup.top, liquidTop, surfHW);
+    drawGarnishLayer(ctx, garnishes, "front", rim, geom.cup.top, liquidTop, surfHW, body, shadow);
   }
 
   ctx.restore();
@@ -755,6 +755,8 @@ function drawGarnishLayer(
   cupTop: number,
   liquidTop: number,
   surfHW: number,
+  liquidColor: string,
+  liquidShadow: string,
 ): void {
   const surf = specs.filter((g) => g.placement === "surface");
   const tall = specs.filter((g) => g.placement === "tall");
@@ -777,8 +779,27 @@ function drawGarnishLayer(
       const m = surf.length;
       const gap = Math.min(surfHW * 0.72, sItem * 1.8);
       const x = 100 + (i - (m - 1) / 2) * gap;
-      const y = liquidTop + sItem * 0.1;
-      ctx.save(); ctx.translate(x, y); drawGarnishShape(ctx, g.kind, g.color, sItem); ctx.restore();
+      const y = liquidTop + sItem * 0.16;
+      const wl = liquidTop - y;
+      ctx.save();
+      ctx.translate(x, y);
+      // soft contact shadow cast into the drink
+      ctx.fillStyle = withAlpha(liquidShadow, 0.32);
+      ctx.beginPath(); ctx.ellipse(sItem * 0.16, sItem * 0.62, sItem * 0.96, sItem * 0.34, 0, 0, TAU); ctx.fill();
+      // the garnish
+      drawGarnishShape(ctx, g.kind, g.color, sItem);
+      // the drink colours its submerged lower half
+      const sub = ctx.createLinearGradient(0, -sItem, 0, sItem);
+      sub.addColorStop(0, withAlpha(liquidColor, 0));
+      sub.addColorStop(0.42, withAlpha(liquidColor, 0));
+      sub.addColorStop(0.78, withAlpha(liquidColor, 0.42));
+      sub.addColorStop(1, withAlpha(liquidShadow, 0.55));
+      ctx.fillStyle = sub;
+      ctx.beginPath(); ctx.ellipse(0, 0, sItem * 1.05, sItem * 1.05, 0, 0, TAU); ctx.fill();
+      // bright meniscus where it breaks the surface
+      ctx.strokeStyle = "rgba(255,247,230,0.5)"; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.ellipse(0, wl, sItem * 0.86, Math.max(1, sItem * 0.16), 0, 0, TAU); ctx.stroke();
+      ctx.restore();
     });
     if (dust) {
       ctx.fillStyle = withAlpha(dust.color, 0.55);
@@ -808,6 +829,9 @@ function drawGarnishLayer(
     const ay = rim.cy + 1;
     const sTall = Math.max(7, Math.min(14, surfHW * 0.34));
     const grow = tallH / (sTall * 2.8) > 1.6 ? 1.4 : 1;
+    // shadow where the stalk rests on the lip
+    ctx.fillStyle = withAlpha(liquidShadow, 0.3);
+    ctx.beginPath(); ctx.ellipse(ax + side * 1.5, rim.cy + 2.5, sTall * 0.8, Math.max(1.4, sTall * 0.24), 0, 0, TAU); ctx.fill();
     ctx.save(); ctx.translate(ax, ay); ctx.rotate(deg(side * 12)); ctx.scale(grow, grow); drawGarnishShape(ctx, g.kind, g.color, sTall); ctx.restore();
   });
 }

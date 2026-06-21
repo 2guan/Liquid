@@ -6,6 +6,7 @@
 import type { CocktailResult, GlassType, IceType, Ingredient } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
 import { spiritById, SPIRITS } from "@/lib/data/spirits";
+import { aromaticForFamily } from "@/lib/data/garnish";
 import { VOICE, SIGNATURES, EMOTION_BRIDGES } from "./lexicon";
 import { makeRng, hashString, type Rng } from "./rng";
 
@@ -202,11 +203,13 @@ export function composePour(spiritId: string, glass: GlassType, ice: IceType): C
         : ice === "crushed"
           ? "碎冰带来即时的冰镇与霜雾"
           : "老式方冰沉稳冷却，结构清晰";
+  const aromatic = aromaticForFamily(spirit.family);
   return {
     name,
     nameEn,
     ingredients: [
       { name: spirit.name, nameEn: spirit.nameEn, amount: ice === "none" ? "45ml" : "60ml", parts: 1, family: spirit.family },
+      ...(aromatic ? [{ name: aromatic.name, amount: aromatic.amount, parts: 0 }] : []),
     ],
     ratio: [1],
     glass,

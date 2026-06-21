@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import type { GarnishSpec, GarnishKind } from "@/lib/data/garnish";
 
 /* ── small colour helpers ── */
@@ -295,6 +296,9 @@ interface GarnishLayerProps {
   layer: "back" | "front";
   /** clipPath id of the cup interior — keeps in-drink garnishes inside the glass */
   clipId?: string;
+  /** the drink's body / shadow colours — tint the submerged part of floaters */
+  liquidColor?: string;
+  liquidShadow?: string;
 }
 
 /**
@@ -303,7 +307,8 @@ interface GarnishLayerProps {
  *    drawn before the front glass wall, so you see them through the glass.
  *  - front: salt/sugar rim crust and tall sprigs/sticks resting on the lip.
  */
-export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, clipId }: GarnishLayerProps) {
+export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, clipId, liquidColor = "#9A5826", liquidShadow = "#3A1E0C" }: GarnishLayerProps) {
+  const uid = useId().replace(/:/g, "");
   if (!specs.length) return null;
   const surf = specs.filter((g) => g.placement === "surface");
   const tall = specs.filter((g) => g.placement === "tall");
@@ -319,6 +324,16 @@ export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, 
     // in-drink items, kept inside the glass by the cup clip
     return (
       <g clipPath={clipId ? `url(#${clipId})` : undefined}>
+        <defs>
+          {/* the drink's colour washes UP over the submerged part of a floater */}
+          <linearGradient id={`submerge-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={liquidColor} stopOpacity="0" />
+            <stop offset="42%" stopColor={liquidColor} stopOpacity="0" />
+            <stop offset="78%" stopColor={liquidColor} stopOpacity="0.42" />
+            <stop offset="100%" stopColor={liquidShadow} stopOpacity="0.55" />
+          </linearGradient>
+        </defs>
+
         {/* foam cap on the surface */}
         {foam && (
           <g>
@@ -329,25 +344,34 @@ export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, 
           </g>
         )}
 
-        {/* floating fruit / cherries / coffee beans on the surface */}
+        {/* floating fruit / cherries / coffee beans — sitting *in* the drink */}
         {surf.map((g, i) => {
           const m = surf.length;
           const gap = Math.min(surfaceHW * 0.72, sItem * 1.8);
           const x = 100 + (i - (m - 1) / 2) * gap;
-          const y = liquidTop + sItem * 0.1; // sit on the surface, mostly submerged
+          const y = liquidTop + sItem * 0.16; // centre just below the surface
+          const wl = liquidTop - y; // waterline in the floater's local coords
           return (
-            <g key={`s${i}`} transform={`translate(${x} ${y})`} opacity="0.97">
+            <g key={`s${i}`} transform={`translate(${x} ${y})`}>
+              {/* soft contact shadow cast down into the drink */}
+              <ellipse cx={sItem * 0.16} cy={sItem * 0.62} rx={sItem * 0.96} ry={sItem * 0.34} fill={liquidShadow} opacity="0.32" />
+              {/* the garnish itself */}
               <Shape kind={g.kind} color={g.color} s={sItem} />
+              {/* the drink colours its submerged lower half */}
+              <ellipse cx="0" cy="0" rx={sItem * 1.05} ry={sItem * 1.05} fill={`url(#submerge-${uid})`} />
+              {/* bright meniscus where it breaks the surface */}
+              <ellipse cx="0" cy={wl} rx={sItem * 0.86} ry={Math.max(1, sItem * 0.16)} fill="none" stroke="#fff7e6" strokeOpacity="0.5" strokeWidth="0.8" />
+              <ellipse cx="0" cy={wl} rx={sItem * 0.86} ry={Math.max(1, sItem * 0.16)} fill="#ffffff" opacity="0.08" />
             </g>
           );
         })}
 
-        {/* dusting of powder on the surface */}
+        {/* dusting of powder floating on the surface */}
         {dust &&
           Array.from({ length: 14 }, (_, i) => {
             const x = 100 + (((i * 37) % 100) / 100) * surfaceHW - surfaceHW * 0.5;
             const y = liquidTop - 1 + (((i * 53) % 30) / 30) * surfRy - surfRy * 0.4;
-            return <circle key={`d${i}`} cx={x} cy={y} r={0.6 + (i % 3) * 0.3} fill={dust.color} opacity="0.55" />;
+            return <circle key={`d${i}`} cx={x} cy={y} r={0.6 + (i % 3) * 0.3} fill={dust.color} opacity="0.6" />;
           })}
       </g>
     );
@@ -373,9 +397,13 @@ export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, 
         const sTall = Math.max(7, Math.min(14, surfaceHW * 0.34));
         const grow = tallH / (sTall * 2.8) > 1.6 ? 1.4 : 1;
         return (
-          <g key={`t${i}`} transform={`translate(${ax} ${ay}) rotate(${rot})`}>
-            <g transform={`scale(${grow})`}>
-              <Shape kind={g.kind} color={g.color} s={sTall} />
+          <g key={`t${i}`}>
+            {/* shadow where the stalk rests on the lip */}
+            <ellipse cx={ax + side * 1.5} cy={rim.cy + 2.5} rx={sTall * 0.8} ry={Math.max(1.4, sTall * 0.24)} fill={liquidShadow} opacity="0.3" />
+            <g transform={`translate(${ax} ${ay}) rotate(${rot})`}>
+              <g transform={`scale(${grow})`}>
+                <Shape kind={g.kind} color={g.color} s={sTall} />
+              </g>
             </g>
           </g>
         );

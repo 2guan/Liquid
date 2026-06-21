@@ -14,6 +14,7 @@ import { composeFromMood } from "@/lib/ai/composer";
 import { randomSignature } from "@/lib/ai/lexicon";
 import Glass from "@/components/art/Glass";
 import { isFizzy } from "@/lib/tokens";
+import { garnishesFor } from "@/lib/data/garnish";
 import Button from "@/components/ui/Button";
 import { BilingualTitle, StepDots, Divider } from "@/components/ui/atoms";
 import { Icon } from "@/components/art/icons";
@@ -257,6 +258,7 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
                     glow={fillLevel > 0.1}
                     fill
                     fizzy={isFizzy(recipe.ingredients)}
+                    garnishes={garnishesFor(recipe.ingredients)}
                     state="swirling"
                     className={`h-full w-auto max-w-full ${layout === "portrait" ? "max-h-[320px]" : "max-h-[620px]"}`}
                   />
