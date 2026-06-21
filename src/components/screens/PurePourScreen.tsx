@@ -161,7 +161,7 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
   return (
     <div className="flex h-full flex-col px-4 py-4 md:px-8 md:py-6">
       <div className="flex flex-col items-center gap-3">
-        <BilingualTitle zh="纯饮模式" en="The Pure Pour" align="center" />
+        <BilingualTitle zh="纯饮" en="The Pure Pour" align="center" />
         <StepDots steps={STEPS} current={stepIndex} />
       </div>
 

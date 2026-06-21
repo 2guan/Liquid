@@ -112,7 +112,7 @@ export default function ZenScreen({ layout }: { layout: LayoutMode }) {
         <SceneBackdrop family={dominantFamily} className="h-full w-full" />
       </div>
       <div className="absolute left-4 top-4 z-10">
-        <BilingualTitle zh="禅意模式" en="The Zen Atelier" size="sm" />
+        <BilingualTitle zh="魔法" en="The Alchemy Atelier" size="sm" />
         <p className="mt-1 font-cn text-xs text-paper/50">自由组合，让风味在画布上彼此扩散。</p>
       </div>
 

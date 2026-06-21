@@ -155,7 +155,7 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
   return (
     <div className="flex h-full flex-col px-4 py-4 md:px-8 md:py-6">
       <div className="flex flex-col items-center gap-3">
-        <BilingualTitle zh="调酒模式" en="The Mixology Chronicles" align="center" />
+        <BilingualTitle zh="酒谱" en="The Liquid Codex" align="center" />
         <StepDots steps={STEPS} current={stepIndex} />
       </div>
 

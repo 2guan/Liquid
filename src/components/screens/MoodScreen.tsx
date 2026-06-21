@@ -101,7 +101,7 @@ export default function MoodScreen({ layout }: { layout: LayoutMode }) {
           <span className="text-amber/80">
             <ModeEmblem mode="mood" size={layout === "portrait" ? 48 : 58} />
           </span>
-          <BilingualTitle zh="微醺模式" en="The Mood Pour" align="center" />
+          <BilingualTitle zh="心事" en="Whisper of Mood" align="center" />
           <p className="max-w-md font-cn text-sm leading-relaxed text-paper/55">
             把此刻的心情说给我听——我会为你斟一杯只属于今晚的酒。
           </p>
