@@ -178,6 +178,16 @@ function PaperTag() {
   );
 }
 
+/** A ✦ separator, fixed-width and the height of the medallion icon (48px) so it
+ *  sits vertically on the icon centre and horizontally midway between circles. */
+function NavSep() {
+  return (
+    <span className="flex h-12 w-6 shrink-0 items-center justify-center">
+      <Diamond />
+    </span>
+  );
+}
+
 export default function HomeScreen({ layout }: { layout: LayoutMode }) {
   const go = useNav((s) => s.go);
   const home = useNav((s) => s.home);
@@ -239,15 +249,17 @@ export default function HomeScreen({ layout }: { layout: LayoutMode }) {
           </div>
         </div>
 
-        {/* ── bottom nav ── */}
-        <footer className="mt-3 flex shrink-0 items-center justify-center gap-4 sm:gap-7">
-          <NavMedallion icon="library" zh="酒库" en="Cellar" onClick={() => go("library")} />
-          <Diamond />
-          <NavMedallion icon="journal" zh="日记" en="Journal" onClick={() => go("journal")} />
-          <Diamond />
-          <NavMedallion icon="trophy" zh="成就" en="Achievements" onClick={() => go("achievements")} />
-          <Diamond />
-          <NavMedallion icon="settings" zh="设置" en="Settings" onClick={() => go("achievements")} />
+        {/* ── bottom nav ── equal-width medallions so the icon centres are evenly
+            spaced; each ✦ sits in a fixed-width box aligned to the icon row, so
+            it lands exactly halfway between two circles ── */}
+        <footer className="mx-auto mt-3 flex w-full max-w-[460px] shrink-0 items-start">
+          <NavMedallion className="flex-1" icon="library" zh="酒库" en="Cellar" onClick={() => go("library")} />
+          <NavSep />
+          <NavMedallion className="flex-1" icon="journal" zh="日记" en="Journal" onClick={() => go("journal")} />
+          <NavSep />
+          <NavMedallion className="flex-1" icon="trophy" zh="成就" en="Achievements" onClick={() => go("achievements")} />
+          <NavSep />
+          <NavMedallion className="flex-1" icon="settings" zh="设置" en="Settings" onClick={() => go("achievements")} />
         </footer>
       </div>
     </div>

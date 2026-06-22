@@ -52,6 +52,7 @@ export function NavMedallion({
   en,
   active,
   size = 48,
+  className = "",
   onClick,
 }: {
   icon: IconName;
@@ -59,10 +60,11 @@ export function NavMedallion({
   en?: string;
   active?: boolean;
   size?: number;
+  className?: string;
   onClick: () => void;
 }) {
   return (
-    <button onClick={onClick} className="group flex flex-col items-center gap-1.5" title={zh}>
+    <button onClick={onClick} className={`group flex flex-col items-center gap-1.5 ${className}`} title={zh}>
       <span
         style={{ height: size, width: size }}
         className={`grid place-items-center rounded-full border transition-all duration-300 ${
