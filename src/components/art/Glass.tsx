@@ -156,6 +156,24 @@ export default function Glass({
           <stop offset="60%" stopColor="#ffffff" stopOpacity="0.05" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </radialGradient>
+        {/* liquid column shading — the body darkens toward the glass walls so the
+            drink reads as a real 3D volume, not a flat fill */}
+        <linearGradient id={`liqEdge-${uid}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={shadow} stopOpacity="0.58" />
+          <stop offset="9%" stopColor={shadow} stopOpacity="0.22" />
+          <stop offset="24%" stopColor={shadow} stopOpacity="0" />
+          <stop offset="60%" stopColor={hi} stopOpacity="0.1" />
+          <stop offset="78%" stopColor={shadow} stopOpacity="0" />
+          <stop offset="92%" stopColor={shadow} stopOpacity="0.26" />
+          <stop offset="100%" stopColor={shadow} stopOpacity="0.5" />
+        </linearGradient>
+        {/* inner-wall ambient occlusion → glass thickness / volume at the edges */}
+        <linearGradient id={`wallAO-${uid}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#140d04" stopOpacity="0.5" />
+          <stop offset="13%" stopColor="#140d04" stopOpacity="0" />
+          <stop offset="87%" stopColor="#140d04" stopOpacity="0" />
+          <stop offset="100%" stopColor="#241808" stopOpacity="0.52" />
+        </linearGradient>
         <clipPath id={`cup-${uid}`}>
           <path d={geom.outline} />
         </clipPath>
@@ -195,6 +213,8 @@ export default function Glass({
       {hasLiquid && (
         <g clipPath={`url(#cup-${uid})`}>
           <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liquid-${uid})`} />
+          {/* wall shading — darker against the glass, a faint lit core in the middle */}
+          <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liqEdge-${uid})`} />
           {/* light shaft through the liquid */}
           <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liqlight-${uid})`} opacity="0.6" />
           {/* warm caustic pool gathered at the base */}
@@ -273,6 +293,8 @@ export default function Glass({
 
       {/* ── glass optics: smooth window sheen + specular streaks (clipped) ── */}
       <g clipPath={`url(#cup-${uid})`}>
+        {/* inner-wall ambient occlusion (glass thickness) — sheen paints over it */}
+        <rect x="0" y={geom.cup.top - 6} width="200" height={cupH + 12} fill={`url(#wallAO-${uid})`} />
         {/* broad soft window reflection, upper-left */}
         <ellipse
           cx={100 - interiorHW * 0.34}
@@ -314,6 +336,9 @@ export default function Glass({
       <g filter={inkFilter}>
         {/* base refraction sheen (thick glass catches warm light) */}
         <ellipse cx="100" cy={geom.cup.bottom - 2} rx={Math.max(4, halfWidthAt(geom, geom.cup.bottom) - 5)} ry="4.5" fill="#fff2d6" opacity="0.14" />
+        {/* thick-glass base — a dark refractive ring + a tight bright glint */}
+        <ellipse cx="100" cy={geom.cup.bottom - 0.5} rx={Math.max(4, halfWidthAt(geom, geom.cup.bottom) - 4)} ry="3.4" fill="none" stroke="#231708" strokeOpacity="0.42" strokeWidth="1.5" />
+        <ellipse cx={100 - 2} cy={geom.cup.bottom - 3} rx={Math.max(2, halfWidthAt(geom, geom.cup.bottom) * 0.3)} ry="1.4" fill="#fff7e2" opacity="0.4" />
 
         {/* etched double outline */}
         <path d={geom.outline} fill="none" stroke="#6e5a38" strokeOpacity="0.35" strokeWidth="2.4" strokeLinejoin="round" />

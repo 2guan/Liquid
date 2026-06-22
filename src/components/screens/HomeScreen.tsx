@@ -195,7 +195,22 @@ export default function HomeScreen({ layout }: { layout: LayoutMode }) {
 
   return (
     <div className="relative h-full overflow-hidden">
-      <div className={`mx-auto flex h-full max-w-[1280px] flex-col ${portrait ? "px-3 pb-3 pt-3" : "px-8 pb-4 pt-3"}`}>
+      {/* photographic backdrop (auto-fits via object-cover) + dark scrim so the
+          engraved title, cards and nav stay legible over it */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/art/scene-amber.webp"
+        alt=""
+        aria-hidden
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-bg-primary/65 via-bg-primary/30 to-bg-primary/75" />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(120% 80% at 50% 42%, transparent 42%, rgba(14,11,8,0.45) 100%)" }}
+      />
+
+      <div className={`relative z-10 mx-auto flex h-full max-w-[1280px] flex-col ${portrait ? "px-3 pb-3 pt-3" : "px-8 pb-4 pt-3"}`}>
         {/* ── header ── */}
         <header className="relative flex shrink-0 flex-col items-center pb-3">
           <div className={`absolute left-0 top-0 origin-top-left ${portrait ? "scale-[0.7]" : ""}`}>

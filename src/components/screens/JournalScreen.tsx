@@ -75,24 +75,43 @@ export default function JournalScreen({ layout }: { layout: LayoutMode }) {
               >
                 <button onClick={() => open(e)} className="block w-full text-left">
                   <div className="relative h-32 overflow-hidden">
-                    <SceneBackdrop family={e.family} className="h-full w-full" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-bg-secondary via-bg-secondary/30 to-transparent" />
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                      <Glass glassType={e.glass} family={e.family} ice={e.ice} fillLevel={0.58} fizzy={isFizzy(e.recipe)} size={92} />
+                    <SceneBackdrop family={e.family} className="absolute inset-0 h-full w-full" />
+                    {/* left scrim lifts the title; right black mask makes the glass pop */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
+                    <div className="absolute inset-y-0 right-0 w-3/4 bg-gradient-to-l from-black/95 via-black/65 to-transparent" />
+
+                    {/* glass on the right (nudged in from the edge) */}
+                    <div className="absolute bottom-0 right-6 flex h-full items-end">
+                      <Glass glassType={e.glass} family={e.family} ice={e.ice} fillLevel={0.58} fizzy={isFizzy(e.recipe)} size={108} />
                     </div>
+
+                    {/* title on the banner, left side */}
+                    <div className="absolute inset-y-0 left-0 flex max-w-[62%] flex-col justify-center px-4">
+                      <span
+                        className="line-clamp-2 font-cn text-lg leading-tight text-paper"
+                        style={{ textShadow: "0 2px 8px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.9)" }}
+                      >
+                        {e.title}
+                      </span>
+                      <span
+                        className="mt-0.5 truncate font-serif text-sm italic text-gold-bright/90"
+                        style={{ textShadow: "0 1px 5px rgba(0,0,0,0.95)" }}
+                      >
+                        {e.titleEn}
+                      </span>
+                      <span className="mt-1.5 w-fit rounded-full border border-gold/35 bg-black/40 px-2 py-0.5 font-cn text-[10px] text-gold/85">
+                        {modeById(e.mode).name.replace("模式", "")}
+                      </span>
+                    </div>
+
                     {e.hidden && (
-                      <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-gold/40 bg-bg-primary/70 px-2 py-0.5 font-cn text-[10px] text-gold-bright">
+                      <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-gold/40 bg-black/55 px-2 py-0.5 font-cn text-[10px] text-gold-bright">
                         <Icon name="lock" size={10} /> 隐藏
                       </span>
                     )}
                   </div>
                   <div className="bg-bg-secondary/80 px-4 py-3 backdrop-blur-sm">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate font-cn text-base text-paper">{e.title}</span>
-                      <span className="shrink-0 rounded-full border border-gold/25 px-2 py-0.5 font-cn text-[10px] text-gold/70">{modeById(e.mode).name.replace("模式", "")}</span>
-                    </div>
-                    <p className="truncate font-serif text-xs italic text-gold/70">{e.titleEn}</p>
-                    <p className="mt-1.5 line-clamp-2 font-cn text-[11px] leading-relaxed text-paper/50">
+                    <p className="line-clamp-2 font-cn text-[11px] leading-relaxed text-paper/55">
                       {e.ai_poem.replace(/\n.*$/, "")}
                     </p>
                     <p className="mt-2 font-ui text-[10px] text-paper/35">{fmtDate(e.createdAt)}</p>

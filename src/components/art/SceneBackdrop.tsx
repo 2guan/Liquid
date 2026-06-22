@@ -1,6 +1,7 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState, useEffect } from "react";
+import Image from "next/image";
 import type { SpiritFamily } from "@/lib/tokens";
 
 /**
@@ -47,7 +48,30 @@ export default function SceneBackdrop({
   className?: string;
 }) {
   const uid = useId().replace(/:/g, "");
-  const p = PALETTES[SCENE_BY_FAMILY[family] ?? "amber"];
+  const sceneKey = SCENE_BY_FAMILY[family] ?? "amber";
+  const [imgError, setImgError] = useState(false);
+
+  // Reset imgError state if family changes so we try loading the new scene image
+  useEffect(() => {
+    setImgError(false);
+  }, [family]);
+
+  if (!imgError) {
+    return (
+      <div className={`${className} relative overflow-hidden`}>
+        <Image
+          src={`/art/scene-${sceneKey}.webp`}
+          alt={`${sceneKey} scene`}
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="object-cover"
+          onError={() => setImgError(true)}
+        />
+      </div>
+    );
+  }
+
+  const p = PALETTES[sceneKey];
 
   return (
     <svg
