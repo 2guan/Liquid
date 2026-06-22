@@ -6,6 +6,7 @@ import type { LayoutMode } from "@/hooks/useLayout";
 import { useAtelier } from "@/store/useAtelier";
 import { useNav } from "@/store/useNav";
 import { modeById, glassById, iceById } from "@/lib/data/catalog";
+import { servedFill } from "@/lib/data/glasses";
 import { liquidRamp, isFizzy } from "@/lib/tokens";
 import { garnishesFor } from "@/lib/data/garnish";
 import Glass from "@/components/art/Glass";
@@ -126,7 +127,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
 
       <div className={`relative ${isLand ? "flex items-center gap-8 px-8 py-7" : "flex flex-col items-center px-6 py-8"}`}>
         <motion.div initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="shrink-0">
-          <Glass glassType={result.glass} family={result.family} ice={result.ice} fillLevel={0.6} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} size={isLand ? 200 : 170} />
+          <Glass glassType={result.glass} family={result.family} ice={result.ice} fillLevel={servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} size={isLand ? 200 : 170} />
         </motion.div>
 
         <div className={`flex flex-col gap-1.5 ${isLand ? "items-start" : "items-center"}`}>

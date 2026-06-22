@@ -14,6 +14,11 @@ export type GarnishKind =
   | "fruitSlice"
   | "mintSprig"
   | "herbSprig"
+  | "thymeSprig"
+  | "dillSprig"
+  | "bayLeaf"
+  | "basilLeaf"
+  | "sageLeaf"
   | "leaf"
   | "lavender"
   | "flower"
@@ -51,6 +56,11 @@ const PLACEMENT: Record<GarnishKind, GarnishPlacement> = {
   fruitSlice: "surface",
   mintSprig: "tall",
   herbSprig: "tall",
+  thymeSprig: "tall",
+  dillSprig: "tall",
+  bayLeaf: "surface",
+  basilLeaf: "surface",
+  sageLeaf: "surface",
   leaf: "surface",
   lavender: "tall",
   flower: "surface",
@@ -144,14 +154,17 @@ export function garnishFor(name: string, category?: string): GarnishSpec | null 
   if (/哈密瓜|蜜瓜|甜瓜/.test(n)) return spec("fruitSlice", "#E8B06A");
   if (/番石榴/.test(n)) return spec("fruitSlice", "#E07A6A");
 
-  // ── herbs & botanicals ──
-  if (/薄荷|留兰香|香蜂草|马鞭草/.test(n)) return spec("mintSprig", "#6EA84A");
-  if (/迷迭香|百里香|莳萝|龙蒿|月桂/.test(n)) return spec("herbSprig", "#5A7A4A");
+  // ── herbs & botanicals (each species drawn distinctly) ──
+  if (/薄荷|留兰香|香蜂草|马鞭草/.test(n)) return spec("mintSprig", "#6EA84A"); // paired round leaves
+  if (/迷迭香/.test(n)) return spec("herbSprig", "#5A7A4A"); // needles
+  if (/百里香|龙蒿/.test(n)) return spec("thymeSprig", "#6E8A4A"); // tiny alternating leaves
+  if (/莳萝|茴香叶/.test(n)) return spec("dillSprig", "#7A9A4A"); // feathery fronds
+  if (/月桂/.test(n)) return spec("bayLeaf", "#4A6A3A"); // single long pointed leaf
   if (/薰衣草/.test(n)) return spec("lavender", "#8A6AA8");
-  if (/罗勒|鼠尾草|紫苏|香菜|香茅|苦艾|啤酒花|芦荟/.test(n)) {
-    const c = n.includes("紫苏") ? "#7E5A8A" : "#5A8A3A";
-    return spec("leaf", c);
-  }
+  if (/罗勒/.test(n)) return spec("basilLeaf", "#4E8A36"); // broad glossy leaf
+  if (/鼠尾草/.test(n)) return spec("sageLeaf", "#8FA07C"); // soft grey-green leaf
+  if (/紫苏/.test(n)) return spec("leaf", "#7E5A8A"); // purple generic leaf
+  if (/香菜|香茅|苦艾|啤酒花|芦荟/.test(n)) return spec("leaf", "#5A8A3A");
   if (/玫瑰|茉莉|桂花|紫罗兰|洋甘菊|接骨木花|食用花/.test(n)) {
     const c = n.includes("玫瑰") || n.includes("紫罗兰") ? "#C56A86" : n.includes("洋甘菊") || n.includes("桂花") ? "#E0B85A" : "#E6E2C8";
     return spec("flower", c);

@@ -123,6 +123,103 @@ function Shape({ kind, color, s }: { kind: GarnishKind; color: string; s: number
         </g>
       );
     }
+    case "thymeSprig": {
+      // a wiry stem with many tiny alternating leaves
+      const leaves = Array.from({ length: 11 }, (_, i) => {
+        const y = -s * 0.3 - i * s * 0.2;
+        const side = i % 2 === 0 ? 1 : -1;
+        return (
+          <ellipse
+            key={i}
+            cx={side * s * 0.14}
+            cy={y}
+            rx={s * 0.17}
+            ry={s * 0.09}
+            fill={i % 3 === 0 ? lighten(color, 0.12) : color}
+            transform={`rotate(${side * 34} ${side * s * 0.14} ${y})`}
+          />
+        );
+      });
+      return (
+        <g>
+          <path d={`M0,0 C${s * 0.06},${-s} ${-s * 0.06},${-s * 1.8} ${s * 0.04},${-s * 2.4}`} fill="none" stroke={darken(color, 0.22)} strokeWidth={s * 0.08} strokeLinecap="round" />
+          {leaves}
+        </g>
+      );
+    }
+    case "dillSprig": {
+      // feathery fronds of fine hairs up a thin stem
+      const fronds = Array.from({ length: 7 }, (_, i) => {
+        const y = -s * 0.45 - i * s * 0.28;
+        const side = i % 2 === 0 ? 1 : -1;
+        return (
+          <g key={i}>
+            {Array.from({ length: 4 }, (_, j) => (
+              <line
+                key={j}
+                x1="0"
+                y1={y}
+                x2={side * (s * 0.18 + j * s * 0.12)}
+                y2={y - s * 0.34 - j * s * 0.04}
+                stroke={color}
+                strokeWidth={s * 0.045}
+                strokeLinecap="round"
+              />
+            ))}
+          </g>
+        );
+      });
+      return (
+        <g>
+          <path d={`M0,0 L0,${-s * 2.4}`} stroke={darken(color, 0.2)} strokeWidth={s * 0.07} strokeLinecap="round" />
+          {fronds}
+        </g>
+      );
+    }
+    case "bayLeaf":
+      // a single elongated, pointed leaf with side veins
+      return (
+        <g>
+          <path d={`M0,${-s * 1.5} C${s * 0.52},${-s * 0.9} ${s * 0.5},${s * 0.8} 0,${s * 1.5} C${-s * 0.5},${s * 0.8} ${-s * 0.52},${-s * 0.9} 0,${-s * 1.5} Z`} fill={color} stroke={darken(color, 0.28)} strokeWidth={s * 0.05} strokeLinejoin="round" />
+          <path d={`M0,${-s * 1.4} L0,${s * 1.4}`} stroke={darken(color, 0.32)} strokeWidth={s * 0.05} />
+          {[-0.7, -0.3, 0.1, 0.5].map((t, i) => (
+            <g key={i}>
+              <line x1="0" y1={t * s} x2={s * 0.34} y2={t * s + s * 0.28} stroke={darken(color, 0.25)} strokeOpacity="0.5" strokeWidth={s * 0.035} />
+              <line x1="0" y1={t * s} x2={-s * 0.34} y2={t * s + s * 0.28} stroke={darken(color, 0.25)} strokeOpacity="0.5" strokeWidth={s * 0.035} />
+            </g>
+          ))}
+          <path d={`M${-s * 0.18},${-s * 1.1} C${-s * 0.3},${-s * 0.4} ${-s * 0.28},${s * 0.4} ${-s * 0.12},${s * 0.9}`} fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth={s * 0.08} strokeLinecap="round" />
+        </g>
+      );
+    case "basilLeaf":
+      // a broad, glossy, pointed leaf with curved veins
+      return (
+        <g>
+          <path d={`M0,${-s * 1.35} C${s * 1.02},${-s * 0.8} ${s * 0.92},${s * 0.7} 0,${s * 1.15} C${-s * 0.92},${s * 0.7} ${-s * 1.02},${-s * 0.8} 0,${-s * 1.35} Z`} fill={color} stroke={darken(color, 0.24)} strokeWidth={s * 0.05} strokeLinejoin="round" />
+          <path d={`M0,${-s * 1.2} L0,${s * 1.05}`} stroke={darken(color, 0.3)} strokeWidth={s * 0.055} />
+          {[-0.55, -0.15, 0.25].map((t, i) => (
+            <g key={i}>
+              <path d={`M0,${t * s} Q${s * 0.45},${t * s + s * 0.1} ${s * 0.78},${t * s + s * 0.45}`} fill="none" stroke={darken(color, 0.22)} strokeOpacity="0.5" strokeWidth={s * 0.04} />
+              <path d={`M0,${t * s} Q${-s * 0.45},${t * s + s * 0.1} ${-s * 0.78},${t * s + s * 0.45}`} fill="none" stroke={darken(color, 0.22)} strokeOpacity="0.5" strokeWidth={s * 0.04} />
+            </g>
+          ))}
+          <ellipse cx={-s * 0.34} cy={-s * 0.34} rx={s * 0.3} ry={s * 0.5} fill="#ffffff" opacity="0.16" transform={`rotate(-24 ${-s * 0.34} ${-s * 0.34})`} />
+        </g>
+      );
+    case "sageLeaf": {
+      // a soft, velvety, grey-green elongated leaf with stippled texture
+      const stipple = Array.from({ length: 9 }, (_, i) => {
+        const a = (i / 9) * Math.PI * 2;
+        return <circle key={i} cx={Math.cos(a) * s * 0.26} cy={Math.sin(a) * s * 0.7} r={s * 0.05} fill={darken(color, 0.14)} opacity="0.4" />;
+      });
+      return (
+        <g>
+          <path d={`M0,${-s * 1.45} C${s * 0.46},${-s * 0.9} ${s * 0.5},${s * 0.85} 0,${s * 1.3} C${-s * 0.5},${s * 0.85} ${-s * 0.46},${-s * 0.9} 0,${-s * 1.45} Z`} fill={lighten(color, 0.1)} stroke={darken(color, 0.2)} strokeWidth={s * 0.05} strokeLinejoin="round" />
+          <path d={`M0,${-s * 1.35} L0,${s * 1.2}`} stroke={darken(color, 0.18)} strokeOpacity="0.6" strokeWidth={s * 0.05} />
+          {stipple}
+        </g>
+      );
+    }
     case "lavender":
       return (
         <g>

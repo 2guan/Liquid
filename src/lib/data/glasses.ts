@@ -230,6 +230,48 @@ export const GLASSES: GlassMeta[] = GLASS_SPECS.map((s) => ({
 
 export const GLASS_COUNT = GLASSES.length;
 
+/**
+ * A realistic "as served" fill level (0..1 of the cup region) for a finished
+ * drink. Most cocktails / long drinks are poured close to the brim; tasting &
+ * fortified glasses (snifter, nosing, wine) are intentionally part-poured for
+ * swirl room and aroma. Used wherever a completed drink is displayed so the
+ * glasses don't read as half-empty.
+ */
+export function servedFill(id: GlassType): number {
+  switch (id) {
+    // neat tasting / nosing — a small measure with headroom for the nose
+    case "snifter":
+      return 0.36;
+    case "glencairn":
+    case "copita":
+    case "neat":
+    case "tulip":
+    case "absinthe":
+      return 0.42;
+    // wine — never filled to the brim
+    case "wine-red":
+    case "wine-white":
+    case "bordeaux":
+    case "burgundy":
+      return 0.5;
+    // spirit on the rocks — liquid sits high around the ice
+    case "rocks":
+    case "double-rocks":
+    case "julep":
+    case "bucket":
+      return 0.8;
+    // small straight pours — filled right to the top
+    case "shot":
+    case "cordial":
+    case "sherry":
+    case "port":
+      return 0.94;
+    // everything else (cocktail stems, highballs, long drinks…) — brim-full
+    default:
+      return 0.93;
+  }
+}
+
 export const glassById = (id: GlassType): GlassMeta =>
   GLASSES.find((g) => g.id === id) ?? GLASSES[0];
 

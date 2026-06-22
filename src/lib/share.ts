@@ -2,7 +2,7 @@ import QRCode from "qrcode";
 import type { CocktailResult } from "@/types";
 import { liquidRamp, isFizzy } from "@/lib/tokens";
 import { glassById, iceById } from "@/lib/data/catalog";
-import { geomFor, halfWidthAt } from "@/lib/data/glasses";
+import { geomFor, halfWidthAt, servedFill } from "@/lib/data/glasses";
 import { garnishesFor, type GarnishSpec, type GarnishKind } from "@/lib/data/garnish";
 
 /** The site the card's QR links back to (env-overridable, else the live origin). */
@@ -217,7 +217,7 @@ function drawGlass(
   const geom = geomFor(result.glass);
   const rim = geom.rim;
   const s = targetH / (geom.content.bottom - geom.content.top);
-  const level = 0.6;
+  const level = servedFill(result.glass);
   const liquidTop = geom.cup.bottom - level * (geom.cup.bottom - geom.cup.top);
   const surfHW = Math.max(2, halfWidthAt(geom, liquidTop) - 2);
   const surfRy = surfHW * 0.14 + 1.5;
@@ -270,6 +270,17 @@ function drawGlass(
   liq.addColorStop(1, shadow);
   ctx.fillStyle = liq;
   ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
+  // wall shading — the body darkens toward the glass walls (3D volume)
+  const liqEdge = ctx.createLinearGradient(0, 0, 200, 0);
+  liqEdge.addColorStop(0, withAlpha(shadow, 0.58));
+  liqEdge.addColorStop(0.09, withAlpha(shadow, 0.22));
+  liqEdge.addColorStop(0.24, withAlpha(shadow, 0));
+  liqEdge.addColorStop(0.6, withAlpha(hi, 0.1));
+  liqEdge.addColorStop(0.78, withAlpha(shadow, 0));
+  liqEdge.addColorStop(0.92, withAlpha(shadow, 0.26));
+  liqEdge.addColorStop(1, withAlpha(shadow, 0.5));
+  ctx.fillStyle = liqEdge;
+  ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
   // warm caustic pool at the base
   ctx.globalAlpha = 0.3;
   ctx.fillStyle = hi;
@@ -320,6 +331,14 @@ function drawGlass(
   // ── glass optics: window sheen + specular streaks (clipped) ──
   ctx.save();
   ctx.clip(outline);
+  // inner-wall ambient occlusion (glass thickness) — sheen paints over it
+  const wallAO = ctx.createLinearGradient(0, 0, 200, 0);
+  wallAO.addColorStop(0, "rgba(20,13,4,0.5)");
+  wallAO.addColorStop(0.13, "rgba(20,13,4,0)");
+  wallAO.addColorStop(0.87, "rgba(20,13,4,0)");
+  wallAO.addColorStop(1, "rgba(36,24,8,0.52)");
+  ctx.fillStyle = wallAO;
+  ctx.fillRect(0, geom.cup.top - 6, 200, cupH + 12);
   const scx = 100 - interiorHW * 0.34;
   const scy = geom.cup.top + cupH * 0.3;
   const srx = Math.max(12, interiorHW * 0.52);
@@ -330,6 +349,10 @@ function drawGlass(
   sheen.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = sheen;
   ellipse(ctx, scx, scy, srx, sry);
+  ctx.fill();
+  // tight secondary catch-light, upper-right
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  ellipse(ctx, 100 + interiorHW * 0.46, geom.cup.top + cupH * 0.16, Math.max(2.5, interiorHW * 0.12), cupH * 0.1);
   ctx.fill();
   const leftWide = `M${rim.cx - rim.rx * 0.72},${rim.cy + 6} C${rim.cx - rim.rx * 0.92},${(rim.cy + cb) / 2} ${rim.cx - rim.rx * 0.82},${cb - 18} ${rim.cx - rim.rx * 0.5},${cb - 9}`;
   const leftCore = `M${rim.cx - rim.rx * 0.68},${rim.cy + 9} C${rim.cx - rim.rx * 0.86},${(rim.cy + cb) / 2} ${rim.cx - rim.rx * 0.78},${cb - 20} ${rim.cx - rim.rx * 0.5},${cb - 12}`;
@@ -348,6 +371,14 @@ function drawGlass(
   // ── front linework ──
   ctx.fillStyle = "rgba(255,242,214,0.14)";
   ellipse(ctx, 100, cb - 2, Math.max(4, halfWidthAt(geom, cb) - 5), 4.5);
+  ctx.fill();
+  // thick-glass base — dark refractive ring + a tight bright glint
+  ctx.strokeStyle = "rgba(35,23,8,0.42)";
+  ctx.lineWidth = 1.5;
+  ellipse(ctx, 100, cb - 0.5, Math.max(4, halfWidthAt(geom, cb) - 4), 3.4);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,247,226,0.4)";
+  ellipse(ctx, 98, cb - 3, Math.max(2, halfWidthAt(geom, cb) * 0.3), 1.4);
   ctx.fill();
   ctx.strokeStyle = "rgba(110,90,56,0.35)";
   ctx.lineWidth = 2.4;
@@ -665,6 +696,58 @@ function drawGarnishShape(ctx: CanvasRenderingContext2D, kind: GarnishKind, colo
       ctx.strokeStyle = color; ctx.lineWidth = s * 0.08;
       for (let i = 0; i < 12; i++) { const y = -i * s * 0.22 - s * 0.2; const side = i % 2 === 0 ? 1 : -1; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(side * s * 0.5, y - s * 0.28); ctx.stroke(); }
       break;
+    case "thymeSprig": {
+      strokePath(`M0,0 C${s * 0.06},${-s} ${-s * 0.06},${-s * 1.8} ${s * 0.04},${-s * 2.4}`, darken(color, 0.22), s * 0.08);
+      for (let i = 0; i < 11; i++) {
+        const y = -s * 0.3 - i * s * 0.2;
+        const side = i % 2 === 0 ? 1 : -1;
+        ctx.save(); ctx.translate(side * s * 0.14, y); ctx.rotate(deg(side * 34));
+        ell(0, 0, s * 0.17, s * 0.09, i % 3 === 0 ? lighten(color, 0.12) : color);
+        ctx.restore();
+      }
+      break;
+    }
+    case "dillSprig": {
+      strokePath(`M0,0 L0,${-s * 2.4}`, darken(color, 0.2), s * 0.07);
+      ctx.strokeStyle = color; ctx.lineWidth = s * 0.045;
+      for (let i = 0; i < 7; i++) {
+        const y = -s * 0.45 - i * s * 0.28;
+        const side = i % 2 === 0 ? 1 : -1;
+        for (let j = 0; j < 4; j++) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(side * (s * 0.18 + j * s * 0.12), y - s * 0.34 - j * s * 0.04); ctx.stroke(); }
+      }
+      break;
+    }
+    case "bayLeaf": {
+      const d = `M0,${-s * 1.5} C${s * 0.52},${-s * 0.9} ${s * 0.5},${s * 0.8} 0,${s * 1.5} C${-s * 0.5},${s * 0.8} ${-s * 0.52},${-s * 0.9} 0,${-s * 1.5} Z`;
+      fillPath(d, color); strokePath(d, darken(color, 0.28), s * 0.05);
+      strokePath(`M0,${-s * 1.4} L0,${s * 1.4}`, darken(color, 0.32), s * 0.05);
+      ctx.strokeStyle = withAlpha(darken(color, 0.25), 0.5); ctx.lineWidth = s * 0.035;
+      for (const t of [-0.7, -0.3, 0.1, 0.5]) {
+        ctx.beginPath(); ctx.moveTo(0, t * s); ctx.lineTo(s * 0.34, t * s + s * 0.28); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, t * s); ctx.lineTo(-s * 0.34, t * s + s * 0.28); ctx.stroke();
+      }
+      strokePath(`M${-s * 0.18},${-s * 1.1} C${-s * 0.3},${-s * 0.4} ${-s * 0.28},${s * 0.4} ${-s * 0.12},${s * 0.9}`, "rgba(255,255,255,0.2)", s * 0.08);
+      break;
+    }
+    case "basilLeaf": {
+      const d = `M0,${-s * 1.35} C${s * 1.02},${-s * 0.8} ${s * 0.92},${s * 0.7} 0,${s * 1.15} C${-s * 0.92},${s * 0.7} ${-s * 1.02},${-s * 0.8} 0,${-s * 1.35} Z`;
+      fillPath(d, color); strokePath(d, darken(color, 0.24), s * 0.05);
+      strokePath(`M0,${-s * 1.2} L0,${s * 1.05}`, darken(color, 0.3), s * 0.055);
+      ctx.strokeStyle = withAlpha(darken(color, 0.22), 0.5); ctx.lineWidth = s * 0.04;
+      for (const t of [-0.55, -0.15, 0.25]) {
+        ctx.beginPath(); ctx.moveTo(0, t * s); ctx.quadraticCurveTo(s * 0.45, t * s + s * 0.1, s * 0.78, t * s + s * 0.45); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, t * s); ctx.quadraticCurveTo(-s * 0.45, t * s + s * 0.1, -s * 0.78, t * s + s * 0.45); ctx.stroke();
+      }
+      ctx.save(); ctx.translate(-s * 0.34, -s * 0.34); ctx.rotate(deg(-24)); ell(0, 0, s * 0.3, s * 0.5, "rgba(255,255,255,0.16)"); ctx.restore();
+      break;
+    }
+    case "sageLeaf": {
+      const d = `M0,${-s * 1.45} C${s * 0.46},${-s * 0.9} ${s * 0.5},${s * 0.85} 0,${s * 1.3} C${-s * 0.5},${s * 0.85} ${-s * 0.46},${-s * 0.9} 0,${-s * 1.45} Z`;
+      fillPath(d, lighten(color, 0.1)); strokePath(d, darken(color, 0.2), s * 0.05);
+      strokePath(`M0,${-s * 1.35} L0,${s * 1.2}`, withAlpha(darken(color, 0.18), 0.6), s * 0.05);
+      for (let i = 0; i < 9; i++) { const a = (i / 9) * TAU; dot(Math.cos(a) * s * 0.26, Math.sin(a) * s * 0.7, s * 0.05, withAlpha(darken(color, 0.14), 0.4)); }
+      break;
+    }
     case "lavender":
       strokePath(`M0,0 L0,${-s * 2.2}`, "#6E7A4A", s * 0.1);
       ctx.globalAlpha = 0.9;

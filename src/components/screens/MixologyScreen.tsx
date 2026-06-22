@@ -15,6 +15,7 @@ import LoadingVeil from "@/components/ui/LoadingVeil";
 import Glass from "@/components/art/Glass";
 import { isFizzy } from "@/lib/tokens";
 import { garnishesFor } from "@/lib/data/garnish";
+import { servedFill } from "@/lib/data/glasses";
 import Button from "@/components/ui/Button";
 import { BilingualTitle, StepDots, Divider } from "@/components/ui/atoms";
 import { StepFooter } from "@/components/ui/ornaments";
@@ -205,8 +206,17 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
                       onClick={() => pickRecipe(r)}
                       className="group flex items-center gap-4 rounded-xl border border-gold/20 wood-panel p-5 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50"
                     >
-                      <span className="grid h-[82px] w-[68px] shrink-0 place-items-center">
-                        <Glass glassType={r.glass} family={r.family} ice={r.ice} fillLevel={r.ice === "none" ? 0.62 : 0.5} fizzy={isFizzy(r.ingredients)} size={68} fit />
+                      <span className="grid h-[104px] w-[84px] shrink-0 place-items-center">
+                        <Glass
+                          glassType={r.glass}
+                          family={r.family}
+                          ice={r.ice}
+                          fillLevel={servedFill(r.glass)}
+                          fizzy={isFizzy(r.ingredients)}
+                          garnishes={garnishesFor(r.ingredients)}
+                          size={84}
+                          fit
+                        />
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="truncate font-cn text-lg text-paper group-hover:text-gold-bright">{r.name}</div>

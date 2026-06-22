@@ -36,8 +36,11 @@ const SCENE_BY_FAMILY: Record<SpiritFamily, keyof typeof PALETTES> = {
   campari: "night",
   vermouth: "coast",
   wine: "night",
-  cream: "amber",
-  default: "amber",
+  // "amber" (the candle still-life) is reserved for the Home backdrop, so
+  // creamy / neutral drinks fall back to the warm hearth scene instead — this
+  // keeps the journal & result backdrops distinct from the landing page.
+  cream: "highland",
+  default: "highland",
 };
 
 export default function SceneBackdrop({
@@ -48,7 +51,7 @@ export default function SceneBackdrop({
   className?: string;
 }) {
   const uid = useId().replace(/:/g, "");
-  const sceneKey = SCENE_BY_FAMILY[family] ?? "amber";
+  const sceneKey = SCENE_BY_FAMILY[family] ?? "highland";
   const [imgError, setImgError] = useState(false);
 
   // Reset imgError state if family changes so we try loading the new scene image

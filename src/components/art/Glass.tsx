@@ -76,8 +76,12 @@ export default function Glass({
   // hand-drawn ink + animation only on the larger displays (hero/stage/ratio)
   const detailed = fill || size >= 130;
 
-  const vbTop = fit ? geom.content.top : 0;
-  const vbH = fit ? geom.content.bottom - geom.content.top : 280;
+  // when cropping to content (fit), pad the crop *symmetrically* so the glass
+  // body stays vertically centred, while the top padding doubles as headroom
+  // for tall garnishes (mint / rosemary / sticks) so they aren't clipped.
+  const garnishHead = fit && garnishes && garnishes.length > 0 ? 40 : 0;
+  const vbTop = fit ? geom.content.top - garnishHead : 0;
+  const vbH = fit ? geom.content.bottom - geom.content.top + garnishHead * 2 : 280;
   const svgH = size * (vbH / 200);
 
   const level = Math.max(0, Math.min(1, fillLevel));
@@ -287,7 +291,7 @@ export default function Glass({
       )}
 
       {/* in-drink garnishes (clipped inside the glass, behind the front wall) */}
-      {detailed && hasLiquid && garnishes && garnishes.length > 0 && (
+      {hasLiquid && garnishes && garnishes.length > 0 && (
         <GarnishLayer layer="back" clipId={`cup-${uid}`} specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} liquidColor={body} liquidShadow={shadow} />
       )}
 
@@ -302,6 +306,15 @@ export default function Glass({
           rx={Math.max(12, interiorHW * 0.52)}
           ry={cupH * 0.44}
           fill={`url(#sheen-${uid})`}
+        />
+        {/* tight secondary catch-light, upper-right */}
+        <ellipse
+          cx={100 + interiorHW * 0.46}
+          cy={geom.cup.top + cupH * 0.16}
+          rx={Math.max(2.5, interiorHW * 0.12)}
+          ry={cupH * 0.1}
+          fill="#ffffff"
+          opacity="0.12"
         />
         {/* crisp vertical specular — soft halo + bright core */}
         <path
@@ -368,7 +381,7 @@ export default function Glass({
       </g>
 
       {/* on-rim garnishes: salt/sugar crust + sprigs & sticks resting on the lip */}
-      {detailed && garnishes && garnishes.length > 0 && (
+      {garnishes && garnishes.length > 0 && (
         <GarnishLayer layer="front" specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} liquidColor={body} liquidShadow={shadow} />
       )}
     </svg>

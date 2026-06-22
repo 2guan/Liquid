@@ -6,7 +6,9 @@ import type { CocktailResult, JournalEntry } from "@/types";
 import { useAtelier } from "@/store/useAtelier";
 import { useNav } from "@/store/useNav";
 import { modeById } from "@/lib/data/catalog";
+import { servedFill } from "@/lib/data/glasses";
 import { isFizzy } from "@/lib/tokens";
+import { garnishesFor } from "@/lib/data/garnish";
 import Glass from "@/components/art/Glass";
 import SceneBackdrop from "@/components/art/SceneBackdrop";
 import Button from "@/components/ui/Button";
@@ -47,7 +49,7 @@ export default function JournalScreen({ layout }: { layout: LayoutMode }) {
   return (
     <div className="h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
       <div className="flex items-end justify-between">
-        <BilingualTitle zh="微醺日记" en="Liquid Journal" size="lg" />
+        <BilingualTitle zh="日记" en="Liquid Journal" size="lg" />
         <span className="font-cn text-xs text-paper/45">{journal.length} 段记忆</span>
       </div>
       <Divider className="my-4" />
@@ -80,13 +82,13 @@ export default function JournalScreen({ layout }: { layout: LayoutMode }) {
                     <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
                     <div className="absolute inset-y-0 right-0 w-3/4 bg-gradient-to-l from-black/95 via-black/65 to-transparent" />
 
-                    {/* glass on the right (nudged in from the edge) */}
-                    <div className="absolute bottom-0 right-6 flex h-full items-end">
-                      <Glass glassType={e.glass} family={e.family} ice={e.ice} fillLevel={0.58} fizzy={isFizzy(e.recipe)} size={108} />
+                    {/* glass on the right — vertically centred, pulled in from the edge */}
+                    <div className="absolute inset-y-0 right-10 flex items-center">
+                      <Glass glassType={e.glass} family={e.family} ice={e.ice} fillLevel={servedFill(e.glass)} fizzy={isFizzy(e.recipe)} garnishes={garnishesFor(e.recipe)} size={104} fit />
                     </div>
 
                     {/* title on the banner, left side */}
-                    <div className="absolute inset-y-0 left-0 flex max-w-[62%] flex-col justify-center px-4">
+                    <div className="absolute inset-y-0 left-0 flex max-w-[58%] flex-col justify-center pl-6 pr-3">
                       <span
                         className="line-clamp-2 font-cn text-lg leading-tight text-paper"
                         style={{ textShadow: "0 2px 8px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.9)" }}

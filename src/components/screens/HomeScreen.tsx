@@ -29,17 +29,17 @@ const THEME: Record<ModeId, { wash: [string, string]; glow: string; drinks: Drin
   mixology: {
     wash: ["#3c4a30", "#171f12"],
     glow: "#9DB85F",
-    drinks: [{ glass: "martini", family: "gin", ice: "none", fill: 0.62, size: 178, garnish: ["橄榄"] }],
+    drinks: [{ glass: "martini", family: "gin", ice: "none", fill: 0.9, size: 178, garnish: ["橄榄"] }],
   },
   mood: {
     wash: ["#2c3656", "#11162a"],
     glow: "#8AA0D8",
-    drinks: [{ glass: "highball", family: "cranberry", ice: "cube", fill: 0.72, size: 168, garnish: ["迷迭香", "食用花"] }],
+    drinks: [{ glass: "highball", family: "cranberry", ice: "cube", fill: 0.92, size: 168, garnish: ["迷迭香", "食用花"] }],
   },
   zen: {
     wash: ["#3f3160", "#1a1230"],
     glow: "#B98AD8",
-    drinks: [{ glass: "coupe", family: "green", ice: "none", fill: 0.6, size: 182, garnish: ["薄荷"] }],
+    drinks: [{ glass: "coupe", family: "green", ice: "none", fill: 0.9, size: 182, garnish: ["薄荷"] }],
   },
 };
 
