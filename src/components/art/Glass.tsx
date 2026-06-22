@@ -187,6 +187,14 @@ export default function Glass({
             <feDisplacementMap in="SourceGraphic" in2="n" scale="0.7" xChannelSelector="R" yChannelSelector="G" />
           </filter>
         )}
+        {/* soft-light blur for highlights & the luminous edge */}
+        <filter id={`soft-${uid}`} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="1.3" />
+        </filter>
+        {/* heavier blur for a feathered, naturally-soft contact shadow */}
+        <filter id={`softsh-${uid}`} x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="3.4" />
+        </filter>
       </defs>
 
       {/* amber halo */}
@@ -201,14 +209,19 @@ export default function Glass({
         />
       )}
 
-      {/* layered contact shadow on the bar — three soft falloffs, no hard edge */}
-      <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy + 2} rx={geom.shadow.rx + 13} ry={geom.shadow.ry + 4} fill="#000000" opacity="0.12" />
-      <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy + 1} rx={geom.shadow.rx + 6} ry={geom.shadow.ry + 2} fill="#000000" opacity="0.18" />
-      <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy} rx={geom.shadow.rx} ry={geom.shadow.ry} fill="#000000" opacity="0.32" />
+      {/* contact shadow on the bar — gaussian-blurred for a naturally soft edge */}
+      <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy + 1} rx={geom.shadow.rx + 5} ry={geom.shadow.ry + 2.5} fill="#000000" opacity="0.1" filter={`url(#softsh-${uid})`} />
+      <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy} rx={geom.shadow.rx} ry={geom.shadow.ry} fill="#000000" opacity="0.3" filter={`url(#softsh-${uid})`} />
 
       {/* stem + foot behind the bowl */}
       {geom.stem && (
         <path d={geom.stem} fill={`url(#glass-${uid})`} stroke="#E7D6B1" strokeOpacity="0.32" strokeWidth="1" filter={inkFilter} />
+      )}
+
+      {/* soft luminous edge — a blurred warm rim-glow so the silhouette reads
+          soft against the background instead of a hard-cut line */}
+      {detailed && (
+        <path d={geom.outline} fill="none" stroke="#fff1d6" strokeOpacity="0.16" strokeWidth="2.6" filter={`url(#soft-${uid})`} />
       )}
 
       {/* glass body fill (back) */}
@@ -254,9 +267,20 @@ export default function Glass({
               style={{ transformOrigin: `100px ${liquidTop}px` }}
             />
           )}
-          {/* swirl when chilled / stirred */}
+          {/* swirl when chilled / stirred — a soft caustic that *orbits* the
+              surface centre (offset blob + centre pivot), not a spinning bar */}
           {state === "swirling" && (
-            <ellipse cx="100" cy={liquidTop + 4} rx={surfaceHW * 0.6} ry="3" fill="#ffffff" opacity="0.12" className="animate-swirl-slow" style={{ transformOrigin: `100px ${liquidTop + 4}px` }} />
+            <ellipse
+              cx={100 - surfaceHW * 0.34}
+              cy={liquidTop + 3}
+              rx={surfaceHW * 0.26}
+              ry={surfaceHW * 0.2}
+              fill="#ffffff"
+              opacity="0.1"
+              filter={detailed ? `url(#soft-${uid})` : undefined}
+              className="animate-swirl-slow"
+              style={{ transformOrigin: `100px ${liquidTop + 3}px` }}
+            />
           )}
           {/* carbonation — bubbles rising through the drink */}
           {fizzy &&

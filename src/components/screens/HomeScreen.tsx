@@ -232,16 +232,26 @@ export default function HomeScreen({ layout }: { layout: LayoutMode }) {
           </div>
 
           {/* title block — centred; pushed down in portrait to clear the tag & exit */}
-          <div className={`flex w-full flex-col items-center ${portrait ? "mt-8" : "mt-233"}`}>
+          <div className={`flex w-full flex-col items-center ${portrait ? "mt-8" : "mt-16"}`}>
             <motion.h1
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               className="title-engrave font-cn"
-              style={{ letterSpacing: "0.14em", fontSize: portrait ? "2.2rem" : "3.1rem", lineHeight: 1.1 }}
+              style={{
+                letterSpacing: "0.14em",
+                fontSize: portrait ? "2.2rem" : "3.1rem",
+                lineHeight: 1.1,
+                // drop-shadow (not text-shadow) so the gold gradient text keeps its
+                // colour while gaining a dark halo over the photo backdrop
+                filter: "drop-shadow(0 2px 9px rgba(0,0,0,0.85)) drop-shadow(0 1px 2px rgba(0,0,0,0.75))",
+              }}
             >
               微醺时刻
             </motion.h1>
-            <div className="-mt-0.5 font-serif italic text-gold" style={{ fontSize: portrait ? "1.25rem" : "1.7rem", letterSpacing: "0.04em" }}>
+            <div
+              className="-mt-0.5 font-serif italic text-gold"
+              style={{ fontSize: portrait ? "1.25rem" : "1.7rem", letterSpacing: "0.04em", textShadow: "0 1px 8px rgba(0,0,0,0.85), 0 1px 2px rgba(0,0,0,0.7)" }}
+            >
               The Sip &amp; Sigh
             </div>
             <div className="mt-2 flex items-center gap-1.5 whitespace-nowrap font-cn text-paper/70" style={{ fontSize: portrait ? "11px" : "14px" }}>
