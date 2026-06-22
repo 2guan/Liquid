@@ -43,6 +43,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
   const saveToJournal = useAtelier((s) => s.saveToJournal);
   const addXp = useAtelier((s) => s.addXp);
   const home = useNav((s) => s.home);
+  const fromJournal = useNav((s) => s.origin) === "journal";
   const [saved, setSaved] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const isLand = layout !== "portrait";
@@ -150,9 +151,12 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
             </p>
           )}
           <div className={`mt-4 flex flex-wrap items-center gap-3 ${isLand ? "" : "justify-center"}`}>
-            <Button variant="primary" onClick={handleSave}>
-              <Icon name={saved ? "check" : "save"} size={16} /> {saved ? "已保存" : "保存到日记"}
-            </Button>
+            {/* opened from the journal → it's already saved, hide the save action */}
+            {fromJournal ? null : (
+              <Button variant="primary" onClick={handleSave}>
+                <Icon name={saved ? "check" : "save"} size={16} /> {saved ? "已保存" : "保存到日记"}
+              </Button>
+            )}
             <Button variant="ghost" onClick={handleShare}>
               <Icon name="share" size={16} /> 分享
             </Button>

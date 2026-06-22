@@ -184,7 +184,7 @@ export default function Glass({
         {detailed && (
           <filter id={`ink-${uid}`} x="-6%" y="-4%" width="112%" height="108%">
             <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="1" seed="6" result="n" />
-            <feDisplacementMap in="SourceGraphic" in2="n" scale="1.4" xChannelSelector="R" yChannelSelector="G" />
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="0.7" xChannelSelector="R" yChannelSelector="G" />
           </filter>
         )}
       </defs>
@@ -201,9 +201,10 @@ export default function Glass({
         />
       )}
 
-      {/* layered contact shadow on the bar (soft + tight) */}
-      <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy + 1} rx={geom.shadow.rx + 7} ry={geom.shadow.ry + 2} fill="#000000" opacity="0.22" />
-      <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy} rx={geom.shadow.rx} ry={geom.shadow.ry} fill="#000000" opacity="0.45" />
+      {/* layered contact shadow on the bar — three soft falloffs, no hard edge */}
+      <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy + 2} rx={geom.shadow.rx + 13} ry={geom.shadow.ry + 4} fill="#000000" opacity="0.12" />
+      <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy + 1} rx={geom.shadow.rx + 6} ry={geom.shadow.ry + 2} fill="#000000" opacity="0.18" />
+      <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy} rx={geom.shadow.rx} ry={geom.shadow.ry} fill="#000000" opacity="0.32" />
 
       {/* stem + foot behind the bowl */}
       {geom.stem && (
@@ -321,8 +322,8 @@ export default function Glass({
           d={`M${rim.cx - rim.rx * 0.72},${rim.cy + 6} C${rim.cx - rim.rx * 0.92},${(rim.cy + geom.cup.bottom) / 2} ${rim.cx - rim.rx * 0.82},${geom.cup.bottom - 18} ${rim.cx - rim.rx * 0.5},${geom.cup.bottom - 9}`}
           fill="none"
           stroke="#ffffff"
-          strokeOpacity="0.2"
-          strokeWidth="3.6"
+          strokeOpacity="0.15"
+          strokeWidth="4.2"
           strokeLinecap="round"
           className={detailed ? "specular-breathe" : undefined}
         />
@@ -330,8 +331,8 @@ export default function Glass({
           d={`M${rim.cx - rim.rx * 0.68},${rim.cy + 9} C${rim.cx - rim.rx * 0.86},${(rim.cy + geom.cup.bottom) / 2} ${rim.cx - rim.rx * 0.78},${geom.cup.bottom - 20} ${rim.cx - rim.rx * 0.5},${geom.cup.bottom - 12}`}
           fill="none"
           stroke="#ffffff"
-          strokeOpacity="0.55"
-          strokeWidth="1.1"
+          strokeOpacity="0.4"
+          strokeWidth="1"
           strokeLinecap="round"
         />
         {/* thin right-edge highlight */}
@@ -354,27 +355,30 @@ export default function Glass({
         <ellipse cx={100 - 2} cy={geom.cup.bottom - 3} rx={Math.max(2, halfWidthAt(geom, geom.cup.bottom) * 0.3)} ry="1.4" fill="#fff7e2" opacity="0.4" />
 
         {/* etched double outline */}
-        <path d={geom.outline} fill="none" stroke="#6e5a38" strokeOpacity="0.35" strokeWidth="2.4" strokeLinejoin="round" />
+        <path d={geom.outline} fill="none" stroke="#6e5a38" strokeOpacity="0.32" strokeWidth="2.2" strokeLinejoin="round" />
         <path d={geom.outline} fill="none" stroke="#EFE2BE" strokeOpacity="0.5" strokeWidth="1.2" strokeLinejoin="round" />
+      </g>
 
-        {/* mouth: one clean bright ellipse (front lip + far rim seen through the glass) */}
-        <ellipse cx={rim.cx} cy={rim.cy} rx={rim.rx} ry={rim.ry} fill="none" stroke="#FBEFC9" strokeOpacity="0.7" strokeWidth="1.2" />
-        {/* lit front lip (lower arc, brighter) */}
+      {/* ── the rim, drawn smooth (outside the ink wobble) so the mouth stays soft ── */}
+      <g>
+        {/* mouth: one clean soft ellipse (front lip + far rim seen through the glass) */}
+        <ellipse cx={rim.cx} cy={rim.cy} rx={rim.rx} ry={rim.ry} fill="none" stroke="#FBEFC9" strokeOpacity="0.52" strokeWidth="1.1" />
+        {/* lit front lip (lower arc) — soft, fading at the ends */}
         <path
-          d={`M${rim.cx - rim.rx * 0.82},${rim.cy + rim.ry * 0.42} A${rim.rx} ${rim.ry} 0 0 0 ${rim.cx + rim.rx * 0.82},${rim.cy + rim.ry * 0.42}`}
+          d={`M${rim.cx - rim.rx * 0.7},${rim.cy + rim.ry * 0.5} A${rim.rx} ${rim.ry} 0 0 0 ${rim.cx + rim.rx * 0.7},${rim.cy + rim.ry * 0.5}`}
           fill="none"
           stroke="#fff7e0"
-          strokeOpacity="0.5"
-          strokeWidth="1.5"
+          strokeOpacity="0.4"
+          strokeWidth="1.2"
           strokeLinecap="round"
         />
-        {/* a roving glint on the rim */}
+        {/* a faint roving glint on the back lip */}
         <path
-          d={`M${rim.cx - rim.rx * 0.55},${rim.cy - rim.ry * 0.5} A${rim.rx} ${rim.ry} 0 0 1 ${rim.cx + rim.rx * 0.1},${rim.cy - rim.ry}`}
+          d={`M${rim.cx - rim.rx * 0.42},${rim.cy - rim.ry * 0.62} A${rim.rx} ${rim.ry} 0 0 1 ${rim.cx + rim.rx * 0.06},${rim.cy - rim.ry}`}
           fill="none"
           stroke="#ffffff"
-          strokeOpacity="0.55"
-          strokeWidth="1.3"
+          strokeOpacity="0.3"
+          strokeWidth="0.9"
           strokeLinecap="round"
           className={detailed ? "rim-glint" : undefined}
         />

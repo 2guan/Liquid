@@ -232,7 +232,7 @@ export default function HomeScreen({ layout }: { layout: LayoutMode }) {
           </div>
 
           {/* title block — centred; pushed down in portrait to clear the tag & exit */}
-          <div className={`flex w-full flex-col items-center ${portrait ? "mt-14" : ""}`}>
+          <div className={`flex w-full flex-col items-center ${portrait ? "mt-8" : "mt-233"}`}>
             <motion.h1
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}

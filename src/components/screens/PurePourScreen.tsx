@@ -154,7 +154,7 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
           fillLevel={fill}
           state={pouring ? "pouring" : "still"}
           glow={fill > 0.1}
-          size={layout === "portrait" ? 190 : 240}
+          size={layout === "portrait" ? 190 : 410}
         />
     </div>
   );

@@ -133,11 +133,11 @@ body {
 
 /* Text treatments */
 .title-engrave {
-  background: linear-gradient(180deg, #e3c684 0%, #c8a45d 45%, #8a6a32 100%);
+  background: linear-gradient(180deg, #fbe9b6 0%, #ecc97e 44%, #c89a4e 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 .amber-text {

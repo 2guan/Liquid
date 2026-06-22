@@ -149,9 +149,16 @@ export function IceGroup({
         <g clipPath={`url(#${clip})`}>
           {/* submerged tint */}
           {submerged && <rect x={-s} y={wl!} width={s * 2} height={s * 2} fill={liquidColor} opacity="0.38" />}
-          {/* internal fracture planes catching light */}
-          <path d={`M${-s * 0.5},${-s} L${s * 0.1},${s}`} stroke="#ffffff" strokeOpacity="0.16" strokeWidth={Math.max(0.6, r * 0.04)} />
-          <path d={`M${s * 0.55},${-s} L${-s * 0.15},${s}`} stroke={tint} strokeOpacity="0.3" strokeWidth={Math.max(0.6, r * 0.05)} />
+          {/* a single soft internal sheen (no crossing fracture lines) */}
+          <ellipse
+            cx={-s * 0.26}
+            cy={-s * 0.18}
+            rx={s * 0.46}
+            ry={s * 0.82}
+            fill="#ffffff"
+            opacity="0.06"
+            transform={`rotate(-18 ${-s * 0.26} ${-s * 0.18})`}
+          />
           {/* meniscus across the front face */}
           {wl != null && Math.abs(wl) < s && (
             <>
