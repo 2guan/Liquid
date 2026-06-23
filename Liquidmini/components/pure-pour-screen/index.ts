@@ -151,7 +151,6 @@ Component({
       this.setData({ busy: true });
       sound.play("success");
       store.addXp(40);
-      store.recordPour();
       const result = await cocktailAI.describePour(this.data.spiritId, this.data.glassType, this.data.ice);
       const ml = Math.max(15, Math.round((this.data.fill * 90) / 5) * 5);
       const poured: CocktailResult = {
@@ -159,6 +158,7 @@ Component({
         fillLevel: this.data.fill,
         ingredients: result.ingredients.map((ing, i) => (i === 0 ? { ...ing, amount: `${ml}ml` } : ing)),
       };
+      store.recordDrink(poured, "pure");
       store.setLastResult(poured, "pure");
       this.setData({ busy: false });
       store.showResult();

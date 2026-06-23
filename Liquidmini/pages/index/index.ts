@@ -61,6 +61,37 @@ Page({
     loadServerFont("Maoken Fengyasong", FONT_MAOKEN);
     if (FONT_CINZEL) loadServerFont("Cinzel", FONT_CINZEL);
     if (FONT_CORMORANT) loadServerFont("Cormorant Garamond", FONT_CORMORANT);
+
+    // make the 转发 / 分享到朋友圈 menu entries available from the capsule
+    try {
+      wx.showShareMenu({ withShareTicket: false, menus: ["shareAppMessage", "shareTimeline"] });
+    } catch (e) { /* older base lib */ }
+  },
+
+  /** 分享给朋友. On the result page → 酒名+酒杯 image; elsewhere → the app. */
+  onShareAppMessage() {
+    const s = store.get();
+    if (s.view === "result" && s.lastResult) {
+      store.recordShare();
+      return {
+        title: s.shareTitle || s.lastResult.result.name,
+        path: "/pages/index/index",
+        imageUrl: s.shareImage || undefined,
+      };
+    }
+    return {
+      title: "微醺时刻 · The Sip & Sigh — 把心情酿成一杯酒",
+      path: "/pages/index/index",
+    };
+  },
+
+  /** 分享到朋友圈 (must be synchronous — uses the pre-rendered image if present). */
+  onShareTimeline() {
+    const s = store.get();
+    if (s.view === "result" && s.lastResult) {
+      return { title: s.shareTitle || s.lastResult.result.name, imageUrl: s.shareImage || undefined };
+    }
+    return { title: "微醺时刻 · The Sip & Sigh" };
   },
 
   onUnload() {

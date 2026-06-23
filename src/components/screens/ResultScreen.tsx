@@ -42,6 +42,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
   const last = useAtelier((s) => s.lastResult);
   const saveToJournal = useAtelier((s) => s.saveToJournal);
   const addXp = useAtelier((s) => s.addXp);
+  const recordShare = useAtelier((s) => s.recordShare);
   const home = useNav((s) => s.home);
   const fromJournal = useNav((s) => s.origin) === "journal";
   const [saved, setSaved] = useState(false);
@@ -102,6 +103,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
   }
 
   async function handleShare() {
+    recordShare();
     try {
       if (navigator.share) {
         await navigator.share({ title: result.name, text: shareText(result) });

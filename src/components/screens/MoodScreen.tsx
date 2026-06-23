@@ -24,7 +24,7 @@ export default function MoodScreen({ layout }: { layout: LayoutMode }) {
 
   const setLastResult = useAtelier((s) => s.setLastResult);
   const addXp = useAtelier((s) => s.addXp);
-  const recordPour = useAtelier((s) => s.recordPour);
+  const recordDrink = useAtelier((s) => s.recordDrink);
   const showResult = useNav((s) => s.showResult);
 
   // rotate the placeholder prompt for inspiration
@@ -52,7 +52,7 @@ export default function MoodScreen({ layout }: { layout: LayoutMode }) {
     sound.play("shake");
     const result = await cocktailAI.generateFromMood({ text: text.trim(), tags });
     addXp(50);
-    recordPour();
+    recordDrink(result, "mood");
     setLastResult(result, "mood");
     setBusy(false);
     showResult();

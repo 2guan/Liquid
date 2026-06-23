@@ -1,7 +1,11 @@
-/** Achievements — the workshop ledger. Ported from AchievementsScreen.tsx.
- *  (Sound/settings moved to the dedicated settings-screen.) */
+/** Achievements — the workshop ledger: rank ladder, stats, 62-badge grid. */
 import { RANKS } from "../../lib/data/catalog";
+import { BADGE_GROUPS, BADGE_COUNT, evaluateBadges, statsFrom } from "../../lib/data/achievements";
 import { store } from "../../lib/store";
+
+function kxp(n: number): string {
+  return n >= 1000 ? `${n / 1000}k` : `${n}`;
+}
 
 Component({
   options: { styleIsolation: "apply-shared" },
@@ -13,7 +17,9 @@ Component({
     nextText: "",
     ranks: [] as any[],
     stats: [] as any[],
-    badges: [] as any[],
+    groups: [] as any[],
+    doneCount: 0,
+    total: BADGE_COUNT,
   },
 
   _unsub: null as null | (() => void),
@@ -31,30 +37,63 @@ Component({
     rebuild(s: any) {
       const { meta, progress, next } = store.rank();
       const xp = s.xp;
-      const journalN = s.journal.length;
-      const unlockedN = s.unlocked.length;
-      const pours = s.pours;
+
+      const stats = statsFrom({
+        xp,
+        pours: s.pours,
+        journal: s.journal.length,
+        unlocked: s.unlocked.length,
+        modes: s.modes,
+        glassesUsed: s.glassesUsed,
+        familiesUsed: s.familiesUsed,
+        icesUsed: s.icesUsed,
+        ingredientsUsed: s.ingredientsUsed,
+        shares: s.shares,
+      });
+      const badges = evaluateBadges(stats);
+      const doneCount = badges.filter((b) => b.done).length;
+
+      const groups = BADGE_GROUPS.map((g) => {
+        const items = badges
+          .filter((bb) => bb.group === g.id)
+          .map((bb) => ({
+            id: bb.id,
+            name: bb.name,
+            hint: bb.hint,
+            done: bb.done,
+            xp: bb.xp,
+            cur: bb.cur,
+            goal: bb.goal,
+            pct: Math.round(bb.progress * 100),
+            icon: bb.done ? g.icon : "lock",
+            color: bb.done ? bb.tierColor : "#8a7a5a",
+          }));
+        return {
+          id: g.id,
+          name: g.name,
+          nameEn: g.nameEn,
+          icon: g.icon,
+          got: items.filter((i) => i.done).length,
+          total: items.length,
+          items,
+        };
+      }).filter((g) => g.total > 0);
+
       this.setData({
         rankName: meta.name,
         rankNameEn: meta.nameEn,
         progressPct: Math.round(progress * 100),
         xp,
-        nextText: next ? `距 ${next.name} 还需 ${next.minXp - xp} XP` : "已达最高阶位",
-        ranks: RANKS.map((r) => ({ id: r.id, name: r.name, minXp: r.minXp, reached: xp >= r.minXp })),
+        nextText: next ? `距 ${next.name} 还需 ${next.minXp - xp} XP` : "已达最高阶位 · 液体诗人",
+        ranks: RANKS.map((r) => ({ id: r.id, name: r.name, xp: kxp(r.minXp), reached: xp >= r.minXp, current: r.id === meta.id })),
         stats: [
-          { label: "调制总数", value: pours, icon: "droplet" },
-          { label: "日记封存", value: journalN, icon: "journal" },
-          { label: "隐藏配方", value: unlockedN, icon: "lock" },
+          { label: "调制总数", value: s.pours, icon: "droplet" },
+          { label: "徽章解锁", value: `${doneCount}/${BADGE_COUNT}`, icon: "trophy" },
+          { label: "日记封存", value: s.journal.length, icon: "journal" },
           { label: "经验值", value: xp, icon: "sparkle" },
         ],
-        badges: [
-          { id: "first", name: "初次斟酌", en: "First Pour", got: pours >= 1, hint: "完成第一杯调制" },
-          { id: "five", name: "渐入佳境", en: "Getting Warm", got: pours >= 5, hint: "累计调制 5 杯" },
-          { id: "journal3", name: "情绪收藏家", en: "Collector", got: journalN >= 3, hint: "封存 3 段流体记忆" },
-          { id: "secret", name: "秘方猎人", en: "Secret Hunter", got: unlockedN >= 1, hint: "解锁任意隐藏配方" },
-          { id: "architect", name: "风味架构师", en: "Flavor Architect", got: xp >= 900, hint: "晋升至风味架构师" },
-          { id: "master", name: "首席调酒师", en: "Master", got: xp >= 2000, hint: "登顶首席调酒师" },
-        ],
+        groups,
+        doneCount,
       });
     },
   },

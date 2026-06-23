@@ -75,7 +75,7 @@ Component({
       const result = await cocktailAI.generateFromMood({ text: this.data.text.trim(), tags: this.data.tags });
       if (this._veilTimer) { clearInterval(this._veilTimer); this._veilTimer = null; }
       store.addXp(50);
-      store.recordPour();
+      store.recordDrink(result, "mood");
       store.setLastResult(result, "mood");
       this.setData({ busy: false });
       store.showResult();

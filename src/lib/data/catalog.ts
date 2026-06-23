@@ -101,9 +101,10 @@ export const MODES: ModeMeta[] = [
 export const modeById = (id: ModeId) =>
   MODES.find((m) => m.id === id) ?? MODES[0];
 
-/** Workshop rank ladder (gamification §5.1). */
+/** Workshop rank ladder. A deep 12-tier climb — 首席调酒师 now sits at 30k XP
+ *  (was 2k), with two prestige tiers beyond it, so mastery is a long journey. */
 export interface RankMeta {
-  id: RankId;
+  id: string;
   name: string;
   nameEn: string;
   minXp: number;
@@ -111,12 +112,20 @@ export interface RankMeta {
 
 export const RANKS: RankMeta[] = [
   { id: "barback", name: "见习吧台", nameEn: "Barback", minXp: 0 },
-  { id: "apprentice", name: "调酒学徒", nameEn: "Apprentice Mixologist", minXp: 300 },
-  { id: "architect", name: "风味架构师", nameEn: "Flavor Architect", minXp: 900 },
-  { id: "master", name: "首席调酒师", nameEn: "Master Mixologist", minXp: 2000 },
+  { id: "bar-assistant", name: "吧台助理", nameEn: "Bar Assistant", minXp: 200 },
+  { id: "apprentice", name: "调酒学徒", nameEn: "Apprentice Mixologist", minXp: 600 },
+  { id: "junior", name: "初级调酒师", nameEn: "Junior Bartender", minXp: 1400 },
+  { id: "adept", name: "风味学徒", nameEn: "Flavor Adept", minXp: 2800 },
+  { id: "architect", name: "风味架构师", nameEn: "Flavor Architect", minXp: 5000 },
+  { id: "aromancer", name: "调香师", nameEn: "Aromancer", minXp: 8500 },
+  { id: "senior", name: "资深调酒师", nameEn: "Senior Mixologist", minXp: 13000 },
+  { id: "maestro", name: "鸡尾酒大师", nameEn: "Cocktail Maestro", minXp: 20000 },
+  { id: "master", name: "首席调酒师", nameEn: "Master Mixologist", minXp: 30000 },
+  { id: "grandmaster", name: "调酒宗师", nameEn: "Grandmaster", minXp: 45000 },
+  { id: "poet", name: "液体诗人", nameEn: "Liquid Poet", minXp: 65000 },
 ];
 
-export function rankForXp(xp: number): { meta: RankMeta; next?: RankMeta; progress: number } {
+export function rankForXp(xp: number): { meta: RankMeta; next?: RankMeta; progress: number; index: number } {
   let idx = 0;
   for (let i = 0; i < RANKS.length; i++) if (xp >= RANKS[i].minXp) idx = i;
   const meta = RANKS[idx];
@@ -124,5 +133,5 @@ export function rankForXp(xp: number): { meta: RankMeta; next?: RankMeta; progre
   const progress = next
     ? (xp - meta.minXp) / (next.minXp - meta.minXp)
     : 1;
-  return { meta, next, progress: Math.min(1, Math.max(0, progress)) };
+  return { meta, next, progress: Math.min(1, Math.max(0, progress)), index: idx };
 }

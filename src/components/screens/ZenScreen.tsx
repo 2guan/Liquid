@@ -37,7 +37,7 @@ export default function ZenScreen({ layout }: { layout: LayoutMode }) {
 
   const setLastResult = useAtelier((s) => s.setLastResult);
   const addXp = useAtelier((s) => s.addXp);
-  const recordPour = useAtelier((s) => s.recordPour);
+  const recordDrink = useAtelier((s) => s.recordDrink);
   const recordUnlock = useAtelier((s) => s.recordUnlock);
   const showResult = useNav((s) => s.showResult);
 
@@ -97,7 +97,7 @@ export default function ZenScreen({ layout }: { layout: LayoutMode }) {
     const analysis = await cocktailAI.analyzeFlavorMix(picks);
     sound.play(analysis.hidden ? "unlock" : "success");
     addXp(analysis.hidden ? 120 : 55);
-    recordPour();
+    recordDrink(analysis, "zen");
     if (analysis.hidden) recordUnlock(analysis.name);
     setLastResult(analysis, "zen");
     setBusy(false);

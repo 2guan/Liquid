@@ -33,7 +33,7 @@
           <view wx:if="{{!fromJournal}}" class="btn primary" bindtap="handleSave">
             <icon name="{{saved ? 'check' : 'save'}}" size="15" color="#1A1612"></icon><text>{{saved ? '已保存' : '保存到日记'}}</text>
           </view>
-          <view class="btn ghost" bindtap="handleShare"><icon name="share" size="15"></icon><text>分享</text></view>
+          <button class="btn ghost share-btn" open-type="share"><icon name="share" size="15"></icon><text>分享</text></button>
           <view class="btn ghost {{exporting ? 'disabled' : ''}}" bindtap="exportCard"><icon name="droplet" size="15"></icon><text>{{exporting ? '生成中…' : '导出酒卡'}}</text></view>
         </view>
       </view>
@@ -74,8 +74,9 @@
   <view wx:if="{{toast}}" class="toast">{{toast}}</view>
 </scroll-view>
 
-<!-- offscreen canvas used to render the export image -->
+<!-- offscreen canvases: full export card + the 5:4 share thumbnail -->
 <canvas type="2d" id="cardCanvas" class="card-canvas"></canvas>
+<canvas type="2d" id="shareCanvas" class="share-canvas"></canvas>
 
 <!-- generated-card overlay: long-press the image to save, or tap 保存到相册 -->
 <view wx:if="{{showCard}}" class="card-mask" bindtap="closeCard">

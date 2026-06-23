@@ -117,7 +117,7 @@ Component({
       if (this._veil) { clearInterval(this._veil); this._veil = null; }
       sound.play(analysis.hidden ? "unlock" : "success");
       store.addXp(analysis.hidden ? 120 : 55);
-      store.recordPour();
+      store.recordDrink(analysis, "zen");
       if (analysis.hidden) store.recordUnlock(analysis.name);
       store.setLastResult(analysis, "zen");
       this.setData({ busy: false });

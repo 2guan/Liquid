@@ -70,7 +70,7 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
 
   const setLastResult = useAtelier((s) => s.setLastResult);
   const addXp = useAtelier((s) => s.addXp);
-  const recordPour = useAtelier((s) => s.recordPour);
+  const recordDrink = useAtelier((s) => s.recordDrink);
   const showResult = useNav((s) => s.showResult);
   const pureSeed = useNav((s) => s.pureSeed);
   const consumePureSeed = useNav((s) => s.consumePureSeed);
@@ -107,7 +107,6 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
     setBusy(true);
     sound.play("success");
     addXp(40);
-    recordPour();
     const result = await cocktailAI.describePour(spiritId, glassType, ice);
     // the served glass + recipe should reflect how much was actually poured,
     // not a fixed measure: carry the pour level through and scale the base amount.
@@ -117,6 +116,7 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
       fillLevel: fill,
       ingredients: result.ingredients.map((ing, i) => (i === 0 ? { ...ing, amount: `${ml}ml` } : ing)),
     };
+    recordDrink(poured, "pure");
     setLastResult(poured, "pure");
     setBusy(false);
     showResult();

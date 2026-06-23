@@ -20,9 +20,9 @@
         <text>{{nextText}}</text>
       </view>
       <view class="ladder">
-        <view wx:for="{{ranks}}" wx:key="id" class="ladder-cell {{item.reached ? 'on' : ''}}">
+        <view wx:for="{{ranks}}" wx:key="id" class="ladder-cell {{item.current ? 'cur' : ''}} {{item.reached ? 'on' : ''}}">
           <text class="ladder-name">{{item.name}}</text>
-          <text class="ladder-xp">{{item.minXp}} XP</text>
+          <text class="ladder-xp">{{item.xp}}</text>
         </view>
       </view>
     </view>
@@ -37,14 +37,32 @@
     </view>
 
     <!-- badges -->
-    <text class="section-label">徽章 · Badges</text>
-    <view class="badges">
-      <view wx:for="{{badges}}" wx:key="id" class="badge {{item.got ? 'got' : ''}}">
-        <view class="badge-icn"><icon name="{{item.got ? 'trophy' : 'lock'}}" size="20" color="{{item.got ? '#E3C684' : '#8a7a5a'}}"></icon></view>
-        <view class="badge-text">
-          <text class="badge-name">{{item.name}}</text>
-          <text class="badge-en">{{item.en}}</text>
-          <text class="badge-hint">{{item.hint}}</text>
+    <view class="section-row">
+      <text class="section-label">徽章 · Badges</text>
+      <text class="section-count">{{doneCount}} / {{total}}</text>
+    </view>
+
+    <view wx:for="{{groups}}" wx:key="id" class="group">
+      <view class="group-head">
+        <view class="group-icn"><icon name="{{item.icon}}" size="13" color="#C8A45D"></icon></view>
+        <text class="group-name">{{item.name}}</text>
+        <text class="group-en">{{item.nameEn}}</text>
+        <text class="group-got">{{item.got}}/{{item.total}}</text>
+      </view>
+      <view class="badges">
+        <view wx:for="{{item.items}}" wx:for-item="bdg" wx:key="id" class="badge {{bdg.done ? 'done' : ''}}" style="{{bdg.done ? 'border-color:' + bdg.color + '99;' : ''}}">
+          <view class="badge-icn" style="border-color:{{bdg.done ? bdg.color : 'rgba(200,164,93,0.2)'}}">
+            <icon name="{{bdg.icon}}" size="16" color="{{bdg.color}}"></icon>
+          </view>
+          <text class="badge-name {{bdg.done ? '' : 'dim'}}">{{bdg.name}}</text>
+          <text class="badge-xp">+{{bdg.xp}} XP</text>
+          <block wx:if="{{bdg.done}}">
+            <text class="badge-done">✓ 已解锁</text>
+          </block>
+          <block wx:else>
+            <view class="badge-bar"><view class="badge-fill" style="width:{{bdg.pct}}%"></view></view>
+            <text class="badge-prog">{{bdg.cur}}/{{bdg.goal}}</text>
+          </block>
         </view>
       </view>
     </view>

@@ -6,8 +6,7 @@ import { garnishesFor } from "../../lib/data/garnish";
 import { iceSwatch } from "../../lib/svg/ice";
 import { glassDataUri } from "../../lib/svg/glass";
 import { svgToDataUri } from "../../lib/svg/helpers";
-import { shareText } from "../../lib/share";
-import { drawShareCard } from "../../lib/share-card";
+import { drawShareCard, drawShareThumb } from "../../lib/share-card";
 import { sound } from "../../lib/sound/index";
 import { store } from "../../lib/store";
 import { sceneForFamily } from "../../lib/config";
@@ -56,6 +55,7 @@ Component({
   _unsub: null as null | (() => void),
   _result: null as any,
   _ramp: ["#E8A94E", "#B9742A", "#6E3E12"] as [string, string, string],
+  _shareKey: "",
 
   lifetimes: {
     attached() {
@@ -123,6 +123,51 @@ Component({
         showCard: false,
         cardImage: "",
       });
+
+      // pre-render the 酒名+酒杯 share thumbnail so the page's onShareAppMessage
+      // can hand it to WeChat as imageUrl.
+      this.genShareThumb(result);
+    },
+
+    /** Render the 5:4 share thumbnail to a temp file and stash it in the store. */
+    genShareThumb(result: any) {
+      const key = `${result.name}|${result.nameEn}|${result.glass}|${result.ice}`;
+      if (key === this._shareKey) return;
+      this._shareKey = key;
+      const title = `${result.name} · ${result.nameEn}`;
+      store.setShare("", title); // title ready immediately; image follows
+      let tries = 0;
+      const run = () => {
+        wx.createSelectorQuery()
+          .in(this)
+          .select("#shareCanvas")
+          .fields({ node: true, size: true })
+          .exec((res: any) => {
+            const node = res && res[0] && res[0].node;
+            if (!node) {
+              if (tries++ < 8) setTimeout(run, 120);
+              return;
+            }
+            const ctx = node.getContext("2d");
+            let dpr = 2;
+            try { dpr = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 2; } catch (e) {}
+            const { W, H } = drawShareThumb(node, ctx, dpr, result);
+            const capture = () => wx.canvasToTempFilePath(
+              {
+                canvas: node,
+                x: 0, y: 0, width: W, height: H,
+                destWidth: W * dpr, destHeight: H * dpr,
+                fileType: "jpg",
+                success: (rr: any) => store.setShare(rr.tempFilePath, title),
+                fail: () => {},
+              },
+              this,
+            );
+            if (node.requestAnimationFrame) node.requestAnimationFrame(capture);
+            else capture();
+          });
+      };
+      run();
     },
 
     handleSave() {
@@ -151,15 +196,6 @@ Component({
       this.setData({ saved: true });
       sound.play("save");
       this.flash("已封存进微醺日记 ✦");
-    },
-
-    handleShare() {
-      const txt = shareText(this._result);
-      wx.setClipboardData({
-        data: txt,
-        success: () => this.flash("分享文案已复制"),
-        fail: () => this.flash("已生成分享内容"),
-      });
     },
 
     flash(msg: string) {

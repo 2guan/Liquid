@@ -169,12 +169,12 @@ Component({
       this.setData({ busy: true, veilLine: VEIL_LINES[0] });
       sound.play("success");
       store.addXp(success ? 60 : 30);
-      store.recordPour();
       let l = 0;
       this._veil = setInterval(() => { l = (l + 1) % VEIL_LINES.length; this.setData({ veilLine: VEIL_LINES[l] }); }, 900) as unknown as number;
       const result = await cocktailAI.describeMix(r, success, accuracy);
       if (this._veil) { clearInterval(this._veil); this._veil = null; }
       this.setData({ busy: false });
+      store.recordDrink(result, "mixology");
       store.setLastResult(result, "mixology");
       store.showResult();
     },

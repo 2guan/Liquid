@@ -56,7 +56,7 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
   const stepIndex = STEPS.findIndex((s) => s.key === step);
   const setLastResult = useAtelier((s) => s.setLastResult);
   const addXp = useAtelier((s) => s.addXp);
-  const recordPour = useAtelier((s) => s.recordPour);
+  const recordDrink = useAtelier((s) => s.recordDrink);
   const showResult = useNav((s) => s.showResult);
 
   function pickRecipe(r: Recipe) {
@@ -126,10 +126,10 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
     setVeilLine(0);
     sound.play("success");
     addXp(success ? 60 : 30);
-    recordPour();
     // AI writes the tasting notes & prose; falls back to the offline poet
     const result = await cocktailAI.describeMix(recipe, success, accuracy);
     setBusy(false);
+    recordDrink(result, "mixology");
     setLastResult(result, "mixology");
     showResult();
   }

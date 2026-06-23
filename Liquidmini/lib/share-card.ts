@@ -302,6 +302,61 @@ export function drawShareCard(canvas: any, ctx: any, dpr: number, result: Cockta
   return { W, H };
 }
 
+/**
+ * A compact 5:4 share thumbnail — just the 酒杯 + 酒名 — for onShareAppMessage's
+ * imageUrl (the chat card crops to 5:4). 720×576 so the glass still centres on
+ * the module CX=360 used by drawGlass.
+ */
+export function drawShareThumb(canvas: any, ctx: any, dpr: number, result: CocktailResult): { W: number; H: number } {
+  const TW = 720, TH = 576;
+  const clearFam = ["gin", "vodka", "sparkling", "rumWhite"].indexOf(result.family) > -1;
+  const [hi, body, shadow] = result.liquidColor
+    ? rampFromColor(result.liquidColor)
+    : clearFam
+      ? (["#EEF6F8", "#D6E6EC", "#A2BAC4"] as [string, string, string])
+      : liquidRamp[result.family] || liquidRamp.default;
+
+  canvas.width = TW * dpr;
+  canvas.height = TH * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.textBaseline = "alphabetic";
+
+  // background
+  const bg = ctx.createLinearGradient(0, 0, 0, TH);
+  bg.addColorStop(0, "#1B150F"); bg.addColorStop(0.55, "#120E0A"); bg.addColorStop(1, "#0C0907");
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, TW, TH);
+
+  // halo behind the glass
+  const haloCy = 60 + 300 * 0.44;
+  const halo = ctx.createRadialGradient(360, haloCy, 0, 360, haloCy, 300);
+  halo.addColorStop(0, withAlpha(hi, 0.32));
+  halo.addColorStop(0.6, withAlpha(shadow, 0.07));
+  halo.addColorStop(1, withAlpha(shadow, 0));
+  ctx.fillStyle = halo; ctx.fillRect(0, 0, TW, TH);
+
+  // thin gold frame
+  strokeRoundRect(ctx, 16, 16, TW - 32, TH - 32, 18, "rgba(200,164,93,0.4)", 1);
+
+  // the glass (centred on CX=360)
+  drawGlass(ctx, result, hi, body, shadow, 60, 300, isFizzy(result.ingredients), garnishesFor(result.ingredients));
+
+  // name + english + brand
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#EFE2BE";
+  ctx.font = `46px ${CN}`;
+  ctx.fillText(result.name, 360, 442);
+  ctx.fillStyle = "#C8A45D";
+  ctx.font = `italic 26px ${EN}`;
+  ctx.fillText(result.nameEn, 360, 480);
+  ctx.fillStyle = "rgba(200,164,93,0.72)";
+  ctx.font = `13px ${CN}`;
+  setSpacing(ctx, 3);
+  ctx.fillText("微醺时刻 · THE SIP & SIGH", 360, 526);
+  setSpacing(ctx, 0);
+
+  return { W: TW, H: TH };
+}
+
 /* ── glass (1:1 with web drawGlass) ── */
 function drawGlass(ctx: any, result: CocktailResult, hi: string, body: string, shadow: string, topY: number, targetH: number, fizzy: boolean, garnishes: GarnishSpec[]): void {
   const geom = geomFor(result.glass);
