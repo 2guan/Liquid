@@ -8,7 +8,7 @@
  */
 import type { CocktailResult, FlavorPick, GlassType, IceType, Ingredient, MoodInput, Recipe } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
-import { liquidRamp, inferLiquidFamily } from "@/lib/tokens";
+import { liquidRamp, inferLiquidFamily, blendColors } from "@/lib/tokens";
 import { GLASSES, isGlassId } from "@/lib/data/glasses";
 import { spiritById } from "@/lib/data/spirits";
 import { aromaticForFamily } from "@/lib/data/garnish";
@@ -27,7 +27,7 @@ const FAMILIES: SpiritFamily[] = [
   "whisky", "whiskyPeat", "gin", "rum", "tequila", "vodka", "brandy",
   "absinthe", "campari", "vermouth", "wine", "cream",
 ];
-const ICES: IceType[] = ["none", "sphere", "cube", "crushed"];
+const ICES: IceType[] = ["none", "sphere", "cube", "cubes", "bullets", "crushed"];
 // a curated glass shortlist for the prompt (the model may use any; we coerce)
 const GLASS_HINT = [
   "glencairn", "rocks", "double-rocks", "highball", "collins", "martini",
@@ -194,7 +194,7 @@ ${input.tags.length ? `心绪标签：${input.tags.join("、")}` : ""}
 export async function dsPurePour(spiritId: string, glass: GlassType, ice: IceType): Promise<CocktailResult> {
   const sp = spiritById(spiritId);
   const spiritName = sp ? `${sp.name}（${sp.nameEn}，${sp.origin}，ABV ${sp.abv}%，风味：${sp.flavor.join("、")}）` : spiritId;
-  const iceText = { none: "净饮不加冰", sphere: "一颗手工大冰球", cube: "老式方冰", crushed: "碎冰" }[ice];
+  const iceText = { none: "净饮不加冰", sphere: "一颗手工大冰球", cube: "老式方冰", cubes: "多颗小方冰", bullets: "子弹冰粒", crushed: "碎冰" }[ice];
   const user = `这是一杯纯饮，基酒为：${spiritName}。
 盛具：${glass}；冰：${iceText}。
 请为这次纯饮品鉴命名并撰写品酒笔记与叙事。
@@ -243,9 +243,12 @@ ${list}
   const result = normalizeResult(raw, { glass: "rocks", ice: "cube", family: dominant, ingredients: baseIngredients });
   const harmonyRaw = typeof raw.harmony === "number" ? raw.harmony : Number(raw.harmony);
   const harmony = Number.isFinite(harmonyRaw) ? Math.min(1, Math.max(0, harmonyRaw)) : 0.7;
+  // colour a free mix by blending its ingredients (classics keep their family hue)
+  const blended = blendColors(picks.map((p) => p.color));
   return {
     ...result,
     ingredients: result.ingredients.length ? result.ingredients : baseIngredients,
+    liquidColor: result.hidden ? undefined : blended ?? undefined,
     harmony,
     verdict: str(raw.verdict, harmony > 0.7 ? "结构和谐，风味彼此成全。" : "大胆的实验，自有其风格。"),
   };

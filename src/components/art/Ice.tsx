@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import type { IceType } from "@/types";
 
 /**
@@ -22,6 +22,10 @@ export function IceGroup({
   waterY,
   /** colour of the surrounding drink, used to tint the submerged portion */
   liquidColor,
+  /** fill region (absolute svg coords) for the multi-piece "cubes"/"bullets" ice */
+  fillTop,
+  fillBottom,
+  fillHW,
 }: {
   type: IceType;
   cx: number;
@@ -30,6 +34,9 @@ export function IceGroup({
   tint?: string;
   waterY?: number;
   liquidColor?: string;
+  fillTop?: number;
+  fillBottom?: number;
+  fillHW?: number;
 }) {
   const uid = useId().replace(/:/g, "");
   if (type === "none") return null;
@@ -182,6 +189,57 @@ export function IceGroup({
     );
   }
 
+  /* ── Cubes / bullets — many small pieces packing the drink volume ── */
+  if (type === "cubes" || type === "bullets") {
+    const top = fillTop ?? cy - r;
+    const bot = fillBottom ?? cy + r;
+    const hw = fillHW ?? r;
+    const isBullet = type === "bullets";
+    const piece = Math.max(7, hw * (isBullet ? 0.32 : 0.4));
+    const stepX = piece * 0.92;
+    const stepY = piece * (isBullet ? 0.7 : 0.82);
+    const pieces: ReactNode[] = [];
+    let idx = 0;
+    for (let y = bot - piece * 0.5; y > top - piece * 0.1; y -= stepY) {
+      const rowI = Math.round((bot - y) / stepY);
+      const stagger = rowI % 2 ? stepX * 0.5 : 0;
+      for (let x = cx - hw + piece * 0.5 + stagger; x <= cx + hw - piece * 0.4; x += stepX) {
+        const jx = (((idx * 13) % 7) - 3) * piece * 0.05;
+        const jy = (((idx * 7) % 5) - 2) * piece * 0.05;
+        const rot = (((idx * 11) % 9) - 4) * (isBullet ? 11 : 7);
+        const px = x + jx;
+        const py = y + jy;
+        const sub = waterY != null && py > waterY + piece * 0.12;
+        const half = piece * 0.5;
+        pieces.push(
+          <g key={idx} transform={`translate(${px} ${py}) rotate(${rot})`}>
+            {isBullet ? (
+              <>
+                <rect x={-half} y={-half * 0.6} width={piece} height={piece * 0.6} rx={piece * 0.3} fill={tint} fillOpacity="0.5" stroke="#ffffff" strokeOpacity="0.3" strokeWidth="0.6" />
+                {sub && liquidColor && <rect x={-half} y={-half * 0.6} width={piece} height={piece * 0.6} rx={piece * 0.3} fill={liquidColor} opacity="0.28" />}
+              </>
+            ) : (
+              <>
+                <rect x={-half} y={-half} width={piece} height={piece} rx={piece * 0.22} fill={tint} fillOpacity="0.46" stroke="#ffffff" strokeOpacity="0.3" strokeWidth="0.6" />
+                {sub && liquidColor && <rect x={-half} y={-half} width={piece} height={piece} rx={piece * 0.22} fill={liquidColor} opacity="0.28" />}
+              </>
+            )}
+            {/* top-left edge catch-light */}
+            <line x1={-half * 0.66} y1={-half * (isBullet ? 0.4 : 0.66)} x2={half * 0.5} y2={-half * (isBullet ? 0.4 : 0.66)} stroke="#ffffff" strokeOpacity="0.42" strokeWidth="0.7" strokeLinecap="round" />
+          </g>,
+        );
+        idx++;
+      }
+    }
+    return (
+      <g>
+        {/* faint frosty bed so the gaps read as packed ice */}
+        <rect x={cx - hw} y={top - piece * 0.2} width={hw * 2} height={bot - top + piece * 0.4} fill={tint} opacity="0.06" />
+        {pieces}
+      </g>
+    );
+  }
+
   /* ── Crushed — a frosty mound of angular shards ── */
   const shards: [string, number][] = [
     ["M-30,12 L-12,-6 L0,6 L-16,24 Z", 0.5],
@@ -229,7 +287,7 @@ export function Ice({ type, size = 72 }: { type: IceType; size?: number }) {
   const r = type === "sphere" ? 24 : type === "cube" ? 21 : 30;
   return (
     <svg width={size} height={size} viewBox="0 0 72 72" aria-hidden role="img">
-      <IceGroup type={type} cx={36} cy={type === "cube" ? 40 : 38} r={r} />
+      <IceGroup type={type} cx={36} cy={type === "cube" ? 40 : 38} r={r} fillTop={16} fillBottom={60} fillHW={24} />
     </svg>
   );
 }

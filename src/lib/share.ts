@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 import type { CocktailResult } from "@/types";
-import { liquidRamp, isFizzy } from "@/lib/tokens";
+import { liquidRamp, rampFromColor, isFizzy } from "@/lib/tokens";
 import { glassById, iceById } from "@/lib/data/catalog";
 import { geomFor, halfWidthAt, servedFill } from "@/lib/data/glasses";
 import { garnishesFor, type GarnishSpec, type GarnishKind } from "@/lib/data/garnish";
@@ -132,7 +132,12 @@ export async function renderShareCard(result: CocktailResult): Promise<HTMLCanva
     }
   }
 
-  const [hi, body, shadow] = liquidRamp[result.family] ?? liquidRamp.default;
+  const _clearFam = ["gin", "vodka", "sparkling", "rumWhite"].includes(result.family);
+  const [hi, body, shadow] = result.liquidColor
+    ? rampFromColor(result.liquidColor)
+    : _clearFam
+      ? (["#EEF6F8", "#D6E6EC", "#A2BAC4"] as [string, string, string])
+      : liquidRamp[result.family] ?? liquidRamp.default;
   const { H, ops, haloCy } = layout(result);
 
   const canvas = document.createElement("canvas");
@@ -239,6 +244,9 @@ function drawGlass(
   } else if (ice === "crushed") {
     iceR = Math.max(16, interiorHW * 0.96);
     iceY = cb - Math.min(iceR * 0.5, cupH * 0.42);
+  } else if (ice === "cubes" || ice === "bullets") {
+    iceR = interiorHW;
+    iceY = (liquidTop + cb) / 2;
   }
 
   const outline = new Path2D(geom.outline);
@@ -264,10 +272,28 @@ function drawGlass(
   // ── liquid, clipped to the bowl ──
   ctx.save();
   ctx.clip(outline);
+  // liquid clarity — clear spirits/sodas see-through, creamy drinks opaque
+  const fam = result.family;
+  const clearFam = fam === "gin" || fam === "vodka" || fam === "sparkling" || fam === "rumWhite";
+  const opaqueFam = fam === "cream" || fam === "coffeeMilk" || fam === "pinacolada" || fam === "tomato";
+  let aT = 0.86, aM = 0.85, aB = 0.96;
+  if (result.liquidColor) {
+    const m = result.liquidColor.replace("#", "");
+    const cr = parseInt(m.slice(0, 2), 16) || 0;
+    const cg = parseInt(m.slice(2, 4), 16) || 0;
+    const cbb = parseInt(m.slice(4, 6), 16) || 0;
+    const sat = (Math.max(cr, cg, cbb) - Math.min(cr, cg, cbb)) / 255;
+    const f = Math.max(0.34, Math.min(0.9, 0.36 + sat * 0.72));
+    aT = f; aM = f; aB = Math.min(1, f + 0.16);
+  } else if (clearFam) {
+    aT = 0.56; aM = 0.5; aB = 0.8;
+  } else if (opaqueFam) {
+    aT = 0.97; aM = 0.97; aB = 1;
+  }
   const liq = ctx.createLinearGradient(0, liquidTop, 0, fillBottom);
-  liq.addColorStop(0, hi);
-  liq.addColorStop(0.45, body);
-  liq.addColorStop(1, shadow);
+  liq.addColorStop(0, withAlpha(hi, aT));
+  liq.addColorStop(0.45, withAlpha(body, aM));
+  liq.addColorStop(1, withAlpha(shadow, aB));
   ctx.fillStyle = liq;
   ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
   // wall shading — the body darkens toward the glass walls (3D volume)
@@ -316,7 +342,7 @@ function drawGlass(
   if (ice !== "none") {
     ctx.save();
     ctx.clip(outline);
-    drawIce(ctx, ice, 100, iceY, iceR, liquidTop, body);
+    drawIce(ctx, ice, 100, iceY, iceR, liquidTop, body, liquidTop, geom.cup.bottom, interiorHW);
     ctx.restore();
   }
 
@@ -422,14 +448,21 @@ const SHARDS: [string, number][] = [
  *  waterline, drawn in the glass's local coordinate space (already transformed). */
 function drawIce(
   ctx: CanvasRenderingContext2D,
-  type: "sphere" | "cube" | "crushed",
+  type: "sphere" | "cube" | "cubes" | "bullets" | "crushed",
   cx: number,
   cy: number,
   r: number,
   waterY: number,
   liquidColor: string,
+  fillTop?: number,
+  fillBottom?: number,
+  fillHW?: number,
 ): void {
   const tint = "#e3edf2";
+  if (type === "cubes" || type === "bullets") {
+    drawIceFill(ctx, type, cx, waterY, liquidColor, fillTop ?? cy - r, fillBottom ?? cy + r, fillHW ?? r);
+    return;
+  }
   const wl = waterY - cy;
   ctx.save();
   ctx.translate(cx, cy);
@@ -605,6 +638,67 @@ function drawIce(
       ctx.strokeStyle = `rgba(255,255,255,${op * 0.5})`;
       ctx.lineWidth = 0.8;
       ctx.stroke(edge);
+    }
+  }
+  ctx.restore();
+}
+
+/** Canvas port of the multi-piece "cubes" / "bullets" ice fill (mirrors <IceGroup>). */
+function drawIceFill(
+  ctx: CanvasRenderingContext2D,
+  type: "cubes" | "bullets",
+  cx: number,
+  waterY: number,
+  liquidColor: string,
+  top: number,
+  bot: number,
+  hw: number,
+): void {
+  const tint = "#e3edf2";
+  const isBullet = type === "bullets";
+  const piece = Math.max(7, hw * (isBullet ? 0.32 : 0.4));
+  const stepX = piece * 0.92;
+  const stepY = piece * (isBullet ? 0.7 : 0.82);
+  const half = piece * 0.5;
+  ctx.save();
+  ctx.fillStyle = withAlpha(tint, 0.06);
+  ctx.fillRect(cx - hw, top - piece * 0.2, hw * 2, bot - top + piece * 0.4);
+  let idx = 0;
+  for (let y = bot - piece * 0.5; y > top - piece * 0.1; y -= stepY) {
+    const rowI = Math.round((bot - y) / stepY);
+    const stagger = rowI % 2 ? stepX * 0.5 : 0;
+    for (let x = cx - hw + piece * 0.5 + stagger; x <= cx + hw - piece * 0.4; x += stepX) {
+      const px = x + (((idx * 13) % 7) - 3) * piece * 0.05;
+      const py = y + (((idx * 7) % 5) - 2) * piece * 0.05;
+      const rot = (((idx * 11) % 9) - 4) * (isBullet ? 11 : 7);
+      const sub = py > waterY + piece * 0.12;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate((rot * Math.PI) / 180);
+      const w = piece;
+      const h = isBullet ? piece * 0.6 : piece;
+      const ry = isBullet ? -h / 2 : -half;
+      const rr = isBullet ? piece * 0.3 : piece * 0.22;
+      const path = roundRectPath(-half, ry, w, h, rr);
+      ctx.fillStyle = withAlpha(tint, isBullet ? 0.5 : 0.46);
+      ctx.fill(path);
+      ctx.strokeStyle = "rgba(255,255,255,0.3)";
+      ctx.lineWidth = 0.6;
+      ctx.stroke(path);
+      if (sub) {
+        ctx.fillStyle = withAlpha(liquidColor, 0.28);
+        ctx.fill(path);
+      }
+      ctx.strokeStyle = "rgba(255,255,255,0.42)";
+      ctx.lineWidth = 0.7;
+      ctx.lineCap = "round";
+      const ey = -half * (isBullet ? 0.4 : 0.66);
+      ctx.beginPath();
+      ctx.moveTo(-half * 0.66, ey);
+      ctx.lineTo(half * 0.5, ey);
+      ctx.stroke();
+      ctx.restore();
+      idx++;
     }
   }
   ctx.restore();

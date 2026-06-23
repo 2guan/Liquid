@@ -36,6 +36,18 @@ export const ICES: IceMeta[] = [
     note: "经典冷却，沉稳厚重",
   },
   {
+    id: "cubes",
+    name: "小方冰",
+    nameEn: "Cubes",
+    note: "多颗小方冰填满杯身，冰镇迅速",
+  },
+  {
+    id: "bullets",
+    name: "子弹冰",
+    nameEn: "Bullet Ice",
+    note: "圆柱冰粒堆叠满杯，入口清脆",
+  },
+  {
     id: "crushed",
     name: "碎冰",
     nameEn: "Crushed",

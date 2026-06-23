@@ -9,7 +9,7 @@ import type { SpiritFamily } from "@/lib/tokens";
 /** A glass id from the glassware cabinet (src/lib/data/glasses.ts). */
 export type GlassType = string;
 
-export type IceType = "none" | "sphere" | "cube" | "crushed";
+export type IceType = "none" | "sphere" | "cube" | "cubes" | "bullets" | "crushed";
 
 export type LiquidState = "still" | "pouring" | "swirling" | "chilled";
 
@@ -70,6 +70,9 @@ export interface CocktailResult {
   taste_profile: string;
   story: string;
   emotion_mapping: string;
+  /** optional explicit liquid colour (any hex) — overrides the family palette,
+   *  e.g. a Zen free-mix coloured by blending its ingredients */
+  liquidColor?: string;
   /** true when a hidden / signature recipe was unlocked */
   hidden?: boolean;
 }
@@ -87,6 +90,7 @@ export interface JournalEntry {
   tasting_notes: string;
   ai_poem: string;
   createdAt: number;
+  liquidColor?: string;
   hidden?: boolean;
 }
 

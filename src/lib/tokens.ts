@@ -79,6 +79,46 @@ export const grid = {
 
 export type SpiritFamily = keyof typeof liquidRamp;
 
+/** Mix a hex colour toward a target channel value (0=black, 255=white) by amt. */
+function mixChannel(hex: string, target: number, amt: number): string {
+  const m = hex.replace("#", "");
+  const r = parseInt(m.slice(0, 2), 16);
+  const g = parseInt(m.slice(2, 4), 16);
+  const b = parseInt(m.slice(4, 6), 16);
+  const f = (c: number) => Math.max(0, Math.min(255, Math.round(c + (target - c) * amt))).toString(16).padStart(2, "0");
+  return `#${f(r)}${f(g)}${f(b)}`;
+}
+
+/** Build a [highlight, body, shadow] liquid ramp from ANY single base colour, so
+ *  the drink's colour is no longer limited to the fixed family palette. */
+export function rampFromColor(hex: string): [string, string, string] {
+  return [mixChannel(hex, 255, 0.34), hex, mixChannel(hex, 0, 0.45)];
+}
+
+/** Blend a set of hex colours into one (used to colour a free mix by its
+ *  ingredients). Weighted toward saturation so a pile of bright picks doesn't
+ *  average into grey mud. Returns null if nothing usable. */
+export function blendColors(colors: (string | undefined)[]): string | null {
+  const valid = colors.filter((c): c is string => !!c && /^#?[0-9a-fA-F]{6}$/.test(c));
+  if (!valid.length) return null;
+  let r = 0, g = 0, b = 0, wsum = 0;
+  for (const c of valid) {
+    const m = c.replace("#", "");
+    const cr = parseInt(m.slice(0, 2), 16);
+    const cg = parseInt(m.slice(2, 4), 16);
+    const cb = parseInt(m.slice(4, 6), 16);
+    const max = Math.max(cr, cg, cb);
+    const min = Math.min(cr, cg, cb);
+    const w = 0.5 + (max - min) / 255; // more saturated ingredients pull harder
+    r += cr * w;
+    g += cg * w;
+    b += cb * w;
+    wsum += w;
+  }
+  const h = (v: number) => Math.max(0, Math.min(255, Math.round(v / wsum))).toString(16).padStart(2, "0");
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
 /**
  * Infer the colour a finished drink actually takes from its ingredients.
  *
@@ -125,6 +165,10 @@ export function inferLiquidFamily(
 
   if (has("番茄", "西红柿", "tomato")) return "tomato";
   if (has("可乐", "cola", "coke", "百事", "pepsi")) return "cola";
+  if (has("抹茶", "matcha")) return "green";
+  if (has("西瓜", "watermelon")) return "grenadine"; // pink-red
+  if (has("玫瑰", "rose water", "玫瑰露", "玫瑰糖浆")) return "rose";
+  if (has("百香果", "passion fruit", "passionfruit")) return "orange";
   if (coffee && cream) return "coffeeMilk";
   if (coffee) return "coffee";
   if (blue) return "blue";

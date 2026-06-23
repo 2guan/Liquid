@@ -3,7 +3,7 @@
 import { useId, type CSSProperties } from "react";
 import type { GlassType, IceType, LiquidState } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
-import { liquidRamp } from "@/lib/tokens";
+import { liquidRamp, rampFromColor } from "@/lib/tokens";
 import { geomFor, halfWidthAt } from "@/lib/data/glasses";
 import type { GarnishSpec } from "@/lib/data/garnish";
 import { IceGroup } from "./Ice";
@@ -14,6 +14,8 @@ export interface GlassProps {
   /** 0 (empty) … 1 (full to the brim of the cup region) */
   fillLevel?: number;
   family?: SpiritFamily;
+  /** explicit liquid colour (any hex) — overrides `family` when set */
+  liquidColor?: string;
   ice?: IceType;
   state?: LiquidState;
   /** amber halo behind the glass for hero placements */
@@ -58,6 +60,7 @@ export default function Glass({
   glassType,
   fillLevel = 0,
   family = "whisky",
+  liquidColor,
   ice = "none",
   state = "still",
   glow = false,
@@ -71,7 +74,35 @@ export default function Glass({
 }: GlassProps) {
   const uid = useId().replace(/:/g, "");
   const geom = geomFor(glassType);
-  const [hi, body, shadow] = liquidRamp[family] ?? liquidRamp.default;
+  const clearFam = family === "gin" || family === "vodka" || family === "sparkling" || family === "rumWhite";
+  const opaqueFam = family === "cream" || family === "coffeeMilk" || family === "pinacolada" || family === "tomato";
+  // Colour: an explicit mix colour wins; clear drinks use a cool "icy clear"
+  // palette (NOT amber) so they read as colourless water/soda; else the family.
+  const [hi, body, shadow] = liquidColor
+    ? rampFromColor(liquidColor)
+    : clearFam
+      ? (["#EEF6F8", "#D6E6EC", "#A2BAC4"] as [string, string, string])
+      : liquidRamp[family] ?? liquidRamp.default;
+
+  // ── liquid clarity → translucency. Clear drinks are see-through but still need
+  // enough body that the warm UI behind them doesn't tint them yellow; creamy
+  // drinks stay solid; an explicit mix colour scales by its own saturation. ──
+  let aTop = 0.86, aMid = 0.78, aBody = 0.82, aBody2 = 0.88, aBot = 0.95;
+  if (liquidColor) {
+    const m = liquidColor.replace("#", "");
+    const r = parseInt(m.slice(0, 2), 16) || 0;
+    const g = parseInt(m.slice(2, 4), 16) || 0;
+    const b = parseInt(m.slice(4, 6), 16) || 0;
+    const sat = (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
+    const f = Math.max(0.34, Math.min(0.9, 0.36 + sat * 0.72)); // desaturated → clearer
+    aTop = f; aMid = f * 0.9; aBody = f; aBody2 = f * 1.06; aBot = Math.min(1, f + 0.16);
+  } else if (clearFam) {
+    aTop = 0.58; aMid = 0.48; aBody = 0.52; aBody2 = 0.64; aBot = 0.8;
+  } else if (opaqueFam) {
+    aTop = 0.97; aMid = 0.95; aBody = 0.97; aBody2 = 0.98; aBot = 1;
+  }
+  // lighten the wall-shading for clear drinks so they don't pick up grey edges
+  const edgeK = clearFam && !liquidColor ? 0.5 : 1;
 
   // hand-drawn ink + animation only on the larger displays (hero/stage/ratio)
   const detailed = fill || size >= 130;
@@ -107,10 +138,15 @@ export default function Glass({
   } else if (ice === "cube") {
     iceR = Math.max(9, Math.min(interiorHW * 0.74, cupH * 0.44));
     iceY = Math.min(liquidTop + iceR * 0.8, geom.cup.bottom - iceR - 2);
-  } else {
+  } else if (ice === "crushed") {
     // crushed — a mound packing the lower cup
     iceR = Math.max(16, interiorHW * 0.96);
     iceY = geom.cup.bottom - Math.min(iceR * 0.5, cupH * 0.42);
+  } else {
+    // cubes / bullets — many small pieces filling the drink volume (the
+    // IceGroup uses the fill region below, clipped to the cup)
+    iceR = interiorHW;
+    iceY = (liquidTop + geom.cup.bottom) / 2;
   }
 
   const rim = geom.rim;
@@ -127,13 +163,15 @@ export default function Glass({
       aria-label={title ?? `${glassType} glass`}
     >
       <defs>
-        {/* refractive liquid: bright meniscus → body → deep shadow */}
+        {/* refractive liquid: bright meniscus → body → deep shadow. Slightly
+            translucent so it reads as real liquid (light passes through), and
+            denser toward the bottom for depth. */}
         <linearGradient id={`liquid-${uid}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={hi} />
-          <stop offset="16%" stopColor={hi} stopOpacity="0.9" />
-          <stop offset="42%" stopColor={body} />
-          <stop offset="78%" stopColor={body} />
-          <stop offset="100%" stopColor={shadow} />
+          <stop offset="0%" stopColor={hi} stopOpacity={aTop} />
+          <stop offset="16%" stopColor={hi} stopOpacity={aMid} />
+          <stop offset="42%" stopColor={body} stopOpacity={aBody} />
+          <stop offset="78%" stopColor={body} stopOpacity={aBody2} />
+          <stop offset="100%" stopColor={shadow} stopOpacity={aBot} />
         </linearGradient>
         {/* a soft light shaft passing through the liquid */}
         <linearGradient id={`liqlight-${uid}`} x1="0" y1="0" x2="1" y2="0">
@@ -163,13 +201,13 @@ export default function Glass({
         {/* liquid column shading — the body darkens toward the glass walls so the
             drink reads as a real 3D volume, not a flat fill */}
         <linearGradient id={`liqEdge-${uid}`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={shadow} stopOpacity="0.58" />
-          <stop offset="9%" stopColor={shadow} stopOpacity="0.22" />
+          <stop offset="0%" stopColor={shadow} stopOpacity={0.58 * edgeK} />
+          <stop offset="9%" stopColor={shadow} stopOpacity={0.22 * edgeK} />
           <stop offset="24%" stopColor={shadow} stopOpacity="0" />
-          <stop offset="60%" stopColor={hi} stopOpacity="0.1" />
+          <stop offset="60%" stopColor={hi} stopOpacity={0.1 * edgeK} />
           <stop offset="78%" stopColor={shadow} stopOpacity="0" />
-          <stop offset="92%" stopColor={shadow} stopOpacity="0.26" />
-          <stop offset="100%" stopColor={shadow} stopOpacity="0.5" />
+          <stop offset="92%" stopColor={shadow} stopOpacity={0.26 * edgeK} />
+          <stop offset="100%" stopColor={shadow} stopOpacity={0.5 * edgeK} />
         </linearGradient>
         {/* inner-wall ambient occlusion → glass thickness / volume at the edges */}
         <linearGradient id={`wallAO-${uid}`} x1="0" y1="0" x2="1" y2="0">
@@ -311,7 +349,7 @@ export default function Glass({
       {/* ice, clipped so it never spills past the rim */}
       {ice !== "none" && hasLiquid && (
         <g clipPath={`url(#cup-${uid})`}>
-          <IceGroup type={ice} cx={100} cy={iceY} r={iceR} waterY={liquidTop} liquidColor={body} />
+          <IceGroup type={ice} cx={100} cy={iceY} r={iceR} waterY={liquidTop} liquidColor={body} fillTop={liquidTop} fillBottom={geom.cup.bottom} fillHW={interiorHW} />
         </g>
       )}
 

@@ -9,7 +9,7 @@
  */
 import type { CocktailResult, FlavorPick, GlassType, IceType, MoodInput, Recipe } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
-import { inferLiquidFamily } from "@/lib/tokens";
+import { inferLiquidFamily, blendColors } from "@/lib/tokens";
 import { MOOD_SEEDS } from "@/lib/data/moods";
 import { composeFromMood, composePour, assembleMixResult } from "./composer";
 import { randomSignature, withSignature } from "./lexicon";
@@ -232,12 +232,15 @@ export class MockCocktailAI implements CocktailAI {
         : harmony > 0.5
           ? "略有张力，但张力本身也是一种风格。"
           : "组合大胆——勇敢者的实验，未必失败。";
+    // colour the free mix by blending the picked ingredients' own colours
+    const blended = blendColors(picks.map((p) => p.color));
     return this.think({
       ...base,
       ingredients,
       ratio: ingredients.map(() => 1),
       glass: hasMixer ? "highball" : base.glass,
       family: inferLiquidFamily(ingredients, family),
+      liquidColor: blended ?? undefined,
       harmony,
       verdict,
     });
