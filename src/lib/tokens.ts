@@ -154,7 +154,7 @@ export function inferLiquidFamily(
   const pineapple = has("菠萝", "凤梨", "鳳梨", "pineapple");
   const grenadine = has("红石榴", "石榴糖浆", "grenadine");
   const cranberry = has("蔓越莓", "蔓越橘", "cranberry");
-  const berry = has("覆盆子", "树莓", "黑莓", "草莓", "蓝莓", "黑刺李", "raspberry", "blackberry", "strawberry", "blueberry", "sloe");
+  const berry = has("覆盆子", "树莓", "黑莓", "草莓", "蓝莓", "黑刺李", "黑加仑", "黑醋栗", "raspberry", "blackberry", "strawberry", "blueberry", "sloe", "cassis", "crème de cassis");
   // peach/grapefruit — strip 樱桃/核桃/猕猴桃 first so maraschino & kiwi don't read as peach
   const peach = text.replace(/樱桃|核桃|胡桃|猕猴桃/g, "").includes("桃") ||
     has("peach", "bellini", "西柚", "葡萄柚", "grapefruit");
@@ -166,6 +166,7 @@ export function inferLiquidFamily(
   if (has("番茄", "西红柿", "tomato")) return "tomato";
   if (has("可乐", "cola", "coke", "百事", "pepsi")) return "cola";
   if (has("抹茶", "matcha")) return "green";
+  if (has("青苹果", "sour apple", "green apple")) return "green";
   if (has("西瓜", "watermelon")) return "grenadine"; // pink-red
   if (has("玫瑰", "rose water", "玫瑰露", "玫瑰糖浆")) return "rose";
   if (has("百香果", "passion fruit", "passionfruit")) return "orange";

@@ -53,14 +53,14 @@ const ICE_BY_FAMILY: Record<SpiritFamily, IceType> = {
   brandy: "none",
   gin: "none",
   vodka: "none",
-  rum: "cube",
+  rum: "cubes",
   tequila: "none",
   absinthe: "crushed",
-  campari: "cube",
-  vermouth: "cube",
+  campari: "cubes",
+  vermouth: "cubes",
   wine: "none",
   cream: "cube",
-  default: "cube",
+  default: "cubes",
 };
 
 function baseSpiritFor(family: SpiritFamily, rng: Rng): Ingredient {
@@ -207,14 +207,16 @@ export function composePour(spiritId: string, glass: GlassType, ice: IceType): C
   const rng = makeRng(seed || 1);
   const { name, nameEn } = composeName(spirit.family, rng);
   const iceNote =
-    ice === "none"
-      ? "净饮以呈现最完整的香气层次"
-      : ice === "sphere"
-        ? "一颗手工大冰球缓释稀释，香气随温度层层舒展"
-        : ice === "crushed"
-          ? "碎冰带来即时的冰镇与霜雾"
-          : "老式方冰沉稳冷却，结构清晰";
-  const aromatic = aromaticForFamily(spirit.family);
+    {
+      none: "净饮以呈现最完整的香气层次",
+      sphere: "一颗手工大冰球缓释稀释，香气随温度层层舒展",
+      crushed: "碎冰带来即时的冰镇与霜雾",
+      cubes: "多颗小方冰填满杯身，迅速冰镇",
+      bullets: "子弹冰粒堆叠满杯，入口清脆",
+      cube: "老式方冰沉稳冷却，结构清晰",
+    }[ice] ?? "老式方冰沉稳冷却，结构清晰";
+  // a classic aromatic twist only finishes ~30% of pours, not every time
+  const aromatic = rng.chance(0.3) ? aromaticForFamily(spirit.family) : null;
   return {
     name,
     nameEn,

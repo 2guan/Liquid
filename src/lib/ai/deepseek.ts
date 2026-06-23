@@ -168,10 +168,10 @@ const SYSTEM = `你是「微醺时刻 The Sip & Sigh」的 AI 调酒师，同时
   "nameEn": "对应的英文名（与中文意象一致）",
   "ingredients": [{"name":"中文原料名","nameEn":"英文名","amount":"如 60ml / 2 dash / 1 片"}],
   "glass": "杯型id，从给定列表中选最合适的",
-  "ice": "none | sphere | cube | crushed",
+  "ice": "none | sphere(大冰球) | cube(老式大方冰) | cubes(多颗小方冰填满杯) | bullets(子弹冰粒填满杯) | crushed(碎冰)，长饮/气泡类多用 cubes，休闲清爽可用 bullets",
   "family": "酒液主色，从给定列表中选：${FAMILIES.join(" | ")}",
   "taste_profile": "中文品酒笔记，3-4句、约90-130字，依次描写香气、入口、中段口感与尾韵，细腻具体、富有画面感",
-  "story": "中文散文式叙事，4-6句、约100-150字，铺陈意象与情绪的起承转合，画面层层展开、有呼吸感与留白（不要在结尾署名）",
+  "story": "中文散文式叙事，4-6句、约90-140字，铺陈意象与情绪的起承转合，画面层层展开、有呼吸感与留白（不要在结尾署名）",
   "emotion_mapping": "中文一句，把用户的心情/选择映射到这杯酒",
   "signature": "一个风趣俏皮的酒评人化名/落款，自带人设与梗，6-14字，最好与这杯酒或用户心情呼应。风格参考（请勿照抄）：千杯不醉的白领酒评师 / 深夜便利店哲学家 / 把周一调成周五的魔法师。每次都要原创、新鲜、有反差萌"
 }
@@ -213,9 +213,9 @@ export async function dsPurePour(spiritId: string, glass: GlassType, ice: IceTyp
   result.glass = glass;
   result.ice = ice;
   if (sp) result.family = sp.family;
-  // finish the neat pour with a classic aromatic garnish (twist / wedge) so the
-  // glass + card show a pairing, unless the model already added one
-  const aromatic = aromaticForFamily(sp?.family);
+  // finish ~30% of pours with a classic aromatic garnish (twist / wedge), not
+  // every time, and only if the model hasn't already added one
+  const aromatic = Math.random() < 0.3 ? aromaticForFamily(sp?.family) : null;
   if (aromatic && !result.ingredients.some((i) => /皮|柠檬|青柠|橙|肉豆蔻|薄荷|樱桃/.test(i.name))) {
     result.ingredients = [...result.ingredients, { name: aromatic.name, amount: aromatic.amount, parts: 0 }];
   }
@@ -265,7 +265,7 @@ export async function dsMixology(recipe: Recipe, success: boolean, accuracy: num
 盛具：${recipe.glass}；冰：${recipe.ice}。
 请为这杯酒撰写品鉴文字，只输出 JSON：{"taste_profile":"…","story":"…","signature":"…"}
 - taste_profile：中文品酒笔记，3-4句、约90-140字，依次描写香气、入口、中段口感与尾韵，细腻具体；
-- story：中文散文式叙事，4-6句、约90-130字，富有画面与情绪，不要署名、不要提及百分比或“复刻/精准”等字眼；
+- story：中文散文式叙事，4-6句、约90-140字，富有画面与情绪，不要署名、不要提及百分比或“复刻/精准”等字眼；
 - signature：风趣俏皮的酒评人化名/落款，6-14字，自带人设与反差萌。`;
   const raw = await callDeepSeek([
     { role: "system", content: MIX_SYSTEM },

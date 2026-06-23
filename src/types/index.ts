@@ -38,7 +38,15 @@ export interface Ingredient {
   family?: SpiritFamily;
 }
 
-export type RecipeCategory = "golden" | "prohibition" | "tiki" | "modern" | "zero";
+export type RecipeCategory =
+  | "whisky"
+  | "gin"
+  | "rum"
+  | "agave"
+  | "vodka"
+  | "brandy"
+  | "aperitif"
+  | "zero";
 
 export interface Recipe {
   id: string;
@@ -73,6 +81,9 @@ export interface CocktailResult {
   /** optional explicit liquid colour (any hex) — overrides the family palette,
    *  e.g. a Zen free-mix coloured by blending its ingredients */
   liquidColor?: string;
+  /** explicit liquid level 0..1 — e.g. Pure Pour records how much was poured.
+   *  Falls back to servedFill(glass) when absent. */
+  fillLevel?: number;
   /** true when a hidden / signature recipe was unlocked */
   hidden?: boolean;
 }
@@ -91,6 +102,7 @@ export interface JournalEntry {
   ai_poem: string;
   createdAt: number;
   liquidColor?: string;
+  fillLevel?: number;
   hidden?: boolean;
 }
 

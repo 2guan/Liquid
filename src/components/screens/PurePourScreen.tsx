@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { LayoutMode } from "@/hooks/useLayout";
-import type { GlassType, IceType } from "@/types";
+import type { CocktailResult, GlassType, IceType } from "@/types";
 import { ICES } from "@/lib/data/catalog";
 import {
   GLASS_CATEGORIES,
@@ -44,13 +44,13 @@ const POUR_TARGET = 0.58; // the sweet spot
 
 export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
   const [step, setStep] = useState<Step>("glass");
-  const [glassType, setGlassType] = useState<GlassType>("glencairn");
+  const [glassType, setGlassType] = useState<GlassType>("rocks");
   const [spiritId, setSpiritId] = useState<string>("");
   const [fill, setFill] = useState(0);
   const [pouring, setPouring] = useState(false);
   const [ice, setIce] = useState<IceType>("none");
   const [busy, setBusy] = useState(false);
-  const [glassCat, setGlassCat] = useState<GlassCategory>("nosing");
+  const [glassCat, setGlassCat] = useState<GlassCategory>("tumbler");
   const [glassQuery, setGlassQuery] = useState("");
   const [spiritCat, setSpiritCat] = useState<SpiritCategory>("whisky");
   const [spiritQuery, setSpiritQuery] = useState("");
@@ -109,7 +109,15 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
     addXp(40);
     recordPour();
     const result = await cocktailAI.describePour(spiritId, glassType, ice);
-    setLastResult(result, "pure");
+    // the served glass + recipe should reflect how much was actually poured,
+    // not a fixed measure: carry the pour level through and scale the base amount.
+    const ml = Math.max(15, Math.round((fill * 90) / 5) * 5);
+    const poured: CocktailResult = {
+      ...result,
+      fillLevel: fill,
+      ingredients: result.ingredients.map((ing, i) => (i === 0 ? { ...ing, amount: `${ml}ml` } : ing)),
+    };
+    setLastResult(poured, "pure");
     setBusy(false);
     showResult();
   }
@@ -239,8 +247,12 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
                       </p>
                       <button
                         className="select-none touch-none rounded-full bg-gradient-to-b from-amber to-amber-deep px-8 py-4 font-cn text-ink shadow-amber-glow transition-colors"
-                        style={{ touchAction: "none" }}
+                        style={{ touchAction: "none", WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
+                        onContextMenu={(e) => e.preventDefault()}
                         onPointerDown={(e) => {
+                          // stop the touch turning into text-selection / the iOS
+                          // copy callout, which would abort the hold mid-pour.
+                          e.preventDefault();
                           setPouring(true);
                           sound.play("pour");
                           // capture so the hold keeps ramping even if the pointer
@@ -256,11 +268,16 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
                       >
                         {pouring ? "正在倒酒…" : "长按倒酒"}
                       </button>
-                      {fill > 0.05 && (
-                        <button onClick={() => setFill(0)} className="font-ui text-xs text-paper/40 underline-offset-2 hover:text-paper/70 hover:underline">
-                          倒掉重来
-                        </button>
-                      )}
+                      {/* reserve the slot so showing/hiding never shifts the layout
+                          (which moved the pour button under the finger → mis-taps) */}
+                      <button
+                        onClick={() => setFill(0)}
+                        aria-hidden={fill <= 0.05}
+                        tabIndex={fill <= 0.05 ? -1 : 0}
+                        className={`font-ui text-xs text-paper/40 underline-offset-2 transition-opacity hover:text-paper/70 hover:underline ${fill > 0.05 ? "opacity-100" : "pointer-events-none opacity-0"}`}
+                      >
+                        倒掉重来
+                      </button>
                     </div>
                   </Selector>
                 )}

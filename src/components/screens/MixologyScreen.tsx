@@ -36,7 +36,7 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [pours, setPours] = useState<number[]>([]);
   const [showHint, setShowHint] = useState(true);
-  const [category, setCategory] = useState<RecipeCategory>("golden");
+  const [category, setCategory] = useState<RecipeCategory>("whisky");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [veilLine, setVeilLine] = useState(0);
@@ -174,21 +174,21 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
 
                 {/* era tabs */}
                 {!query && (
-                  <div className="mb-3 flex flex-wrap gap-2">
+                  <div className="mb-3 flex flex-wrap gap-1.5">
                     {RECIPE_CATEGORIES.map((c) => {
                       const active = category === c.id;
                       return (
                         <button
                           key={c.id}
                           onClick={() => setCategory(c.id)}
-                          className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-left transition-all ${
+                          className={`flex items-center gap-1.5 rounded-full border px-2 py-1 text-left transition-all ${
                             active ? "border-gold/60 bg-gold/12" : "border-gold/15 hover:border-gold/35"
                           }`}
                         >
-                          <span className="h-2 w-2 rounded-full" style={{ background: c.accent }} />
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: c.accent }} />
                           <span className="leading-tight">
                             <span className={`block font-cn text-[13px] ${active ? "text-gold-bright" : "text-paper/75"}`}>{c.name}</span>
-                            <span className="block font-title text-[7px] uppercase tracking-wide text-gold/45">{c.era}</span>
+                            <span className="block font-title text-[8px] uppercase tracking-wide text-gold/45">{c.nameEn}</span>
                           </span>
                         </button>
                       );

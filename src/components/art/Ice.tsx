@@ -195,7 +195,8 @@ export function IceGroup({
     const bot = fillBottom ?? cy + r;
     const hw = fillHW ?? r;
     const isBullet = type === "bullets";
-    const piece = Math.max(7, hw * (isBullet ? 0.32 : 0.4));
+    // fixed piece size (svg units) — a wider/taller cup simply fits more pieces
+    const piece = isBullet ? 18 : 24;
     const stepX = piece * 0.92;
     const stepY = piece * (isBullet ? 0.7 : 0.82);
     const pieces: ReactNode[] = [];

@@ -92,6 +92,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
       tasting_notes: result.taste_profile,
       ai_poem: result.story,
       liquidColor: result.liquidColor,
+      fillLevel: result.fillLevel,
       hidden: result.hidden,
     });
     addXp(20);
@@ -129,7 +130,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
 
       <div className={`relative ${isLand ? "flex items-center gap-8 px-8 py-7" : "flex flex-col items-center px-6 py-8"}`}>
         <motion.div initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="shrink-0">
-          <Glass glassType={result.glass} family={result.family} liquidColor={result.liquidColor} ice={result.ice} fillLevel={servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} size={isLand ? 200 : 170} />
+          <Glass glassType={result.glass} family={result.family} liquidColor={result.liquidColor} ice={result.ice} fillLevel={result.fillLevel ?? servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} size={isLand ? 200 : 170} />
         </motion.div>
 
         <div className={`flex flex-col gap-1.5 ${isLand ? "items-start" : "items-center"}`}>
@@ -191,7 +192,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
                   {ing.name}
                   {ing.nameEn && <span className="ml-1.5 font-serif text-xs italic text-ink/45">{ing.nameEn}</span>}
                 </span>
-                <span className="shrink-0 whitespace-nowrap font-ui text-sm font-medium text-copper">{ing.amount}</span>
+                <span className="shrink-0 whitespace-nowrap font-cn text-[15px] text-copper">{ing.amount}</span>
               </li>
             ))}
           </ul>

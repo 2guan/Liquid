@@ -72,7 +72,7 @@ function layout(result: CocktailResult): Layout {
   y += 40;
   for (const ing of result.ingredients) {
     ops.push({ t: "text", x: PAD, y, size: 21, color: "#E7D6B1", stack: CN, align: "left", text: ing.name });
-    ops.push({ t: "text", x: W - PAD, y, size: 19, color: "#C8A45D", stack: EN, align: "right", text: ing.amount });
+    ops.push({ t: "text", x: W - PAD, y, size: 19, color: "#C8A45D", stack: CN, align: "right", text: ing.amount });
     y += 37;
   }
   y += 6;
@@ -222,7 +222,7 @@ function drawGlass(
   const geom = geomFor(result.glass);
   const rim = geom.rim;
   const s = targetH / (geom.content.bottom - geom.content.top);
-  const level = servedFill(result.glass);
+  const level = result.fillLevel ?? servedFill(result.glass);
   const liquidTop = geom.cup.bottom - level * (geom.cup.bottom - geom.cup.top);
   const surfHW = Math.max(2, halfWidthAt(geom, liquidTop) - 2);
   const surfRy = surfHW * 0.14 + 1.5;
@@ -656,7 +656,8 @@ function drawIceFill(
 ): void {
   const tint = "#e3edf2";
   const isBullet = type === "bullets";
-  const piece = Math.max(7, hw * (isBullet ? 0.32 : 0.4));
+  // fixed piece size (svg units) — a wider/taller cup simply fits more pieces
+  const piece = isBullet ? 18 : 24;
   const stepX = piece * 0.92;
   const stepY = piece * (isBullet ? 0.7 : 0.82);
   const half = piece * 0.5;
