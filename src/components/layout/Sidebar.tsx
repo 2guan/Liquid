@@ -78,7 +78,7 @@ export default function Sidebar() {
       {/* library + journal shortcuts */}
       <div className="flex flex-col gap-1.5">
         <SideLink active={view === "library"} icon="library" zh="酒库" en="Library" onClick={() => go("library")} />
-        <SideLink active={view === "journal"} icon="journal" zh="微醺日记" en="Liquid Journal" onClick={() => go("journal")} />
+        <SideLink active={view === "journal"} icon="journal" zh="日记" en="Journal" onClick={() => go("journal")} />
       </div>
     </aside>
   );

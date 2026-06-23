@@ -1,7 +1,10 @@
 <scroll-view scroll-y class="lb-scroll">
   <view class="lb">
     <view class="lb-head">
-      <text class="lb-zh title-engrave">酒库</text>
+      <view class="lb-title">
+        <text class="lb-zh title-engrave">酒库</text>
+        <text class="lb-en">The Cellar</text>
+      </view>
       <text class="lb-count">{{count}} 款珍藏</text>
     </view>
 

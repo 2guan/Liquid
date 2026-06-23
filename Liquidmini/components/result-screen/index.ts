@@ -195,7 +195,7 @@ Component({
       store.addXp(20);
       this.setData({ saved: true });
       sound.play("save");
-      this.flash("已封存进微醺日记 ✦");
+      this.flash("已封存进日记 ✦");
     },
 
     flash(msg: string) {

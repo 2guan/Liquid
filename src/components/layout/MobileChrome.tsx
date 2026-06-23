@@ -25,7 +25,7 @@ export function MobileHeader() {
       </div>
 
       <div className="flex items-center gap-1.5">
-        <IconButton icon="journal" label="微醺日记" size={18} onClick={() => go("journal")} />
+        <IconButton icon="journal" label="日记" size={18} onClick={() => go("journal")} />
         <IconButton icon="trophy" label="成就" size={18} onClick={() => go("achievements")} />
       </div>
     </header>

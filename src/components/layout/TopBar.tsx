@@ -12,8 +12,8 @@ const SECTION: Record<string, { zh: string; en: string }> = {
   mood: { zh: "心事", en: "Whisper of Mood" },
   zen: { zh: "魔法", en: "The Alchemy Atelier" },
   library: { zh: "酒库", en: "The Cellar" },
-  journal: { zh: "微醺日记", en: "Liquid Journal" },
-  achievements: { zh: "工坊档案", en: "The Ledger" },
+  journal: { zh: "日记", en: "Journal" },
+  achievements: { zh: "成就", en: "The Ledger" },
   settings: { zh: "设置", en: "Settings" },
   result: { zh: "酒卡", en: "The Tasting Card" },
 };
@@ -52,7 +52,7 @@ export default function TopBar() {
         <RankBadge />
         <div className="flex items-center gap-1.5">
           <IconButton icon="trophy" label="成就" active={view === "achievements"} onClick={() => go("achievements")} />
-          <IconButton icon="journal" label="微醺日记" active={view === "journal"} onClick={() => go("journal")} />
+          <IconButton icon="journal" label="日记" active={view === "journal"} onClick={() => go("journal")} />
           <IconButton icon={soundOn ? "sound-on" : "sound-off"} label={soundOn ? "静音" : "开启音效"} onClick={toggleSound} />
           <IconButton icon="settings" label="设置" active={view === "settings"} onClick={() => go("settings")} />
         </div>

@@ -1,7 +1,10 @@
 <scroll-view scroll-y class="jn-scroll">
   <view class="jn">
     <view class="jn-head">
-      <text class="jn-zh title-engrave">微醺日记</text>
+      <view class="jn-title">
+        <text class="jn-zh title-engrave">日记</text>
+        <text class="jn-en">Journal</text>
+      </view>
       <text class="jn-count">{{count}} 段记忆</text>
     </view>
     <view class="jn-divider"></view>

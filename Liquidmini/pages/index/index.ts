@@ -17,8 +17,8 @@ const SECTION: Record<string, { zh: string; en: string }> = {
   mood: { zh: "心事", en: "Whisper of Mood" },
   zen: { zh: "魔法", en: "The Alchemy Atelier" },
   library: { zh: "酒库", en: "The Cellar" },
-  journal: { zh: "微醺日记", en: "Liquid Journal" },
-  achievements: { zh: "工坊档案", en: "The Ledger" },
+  journal: { zh: "日记", en: "Journal" },
+  achievements: { zh: "成就", en: "The Ledger" },
   settings: { zh: "设置", en: "Settings" },
   result: { zh: "酒卡", en: "The Tasting Card" },
 };

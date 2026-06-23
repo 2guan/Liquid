@@ -51,7 +51,7 @@ export default function AchievementsScreen({ layout }: { layout: LayoutMode }) {
 
   return (
     <div className="h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
-      <BilingualTitle zh="成就 · 工坊档案" en="Achievements" size="lg" />
+      <BilingualTitle zh="成就" en="Achievements" size="lg" />
       <Divider className="my-4" />
 
       {/* rank progress */}

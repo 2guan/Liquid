@@ -99,7 +99,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
     addXp(20);
     setSaved(true);
     sound.play("save");
-    flash("已封存进微醺日记 ✦");
+    flash("已封存进日记 ✦");
   }
 
   async function handleShare() {

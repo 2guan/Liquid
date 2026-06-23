@@ -51,7 +51,7 @@ export default function JournalScreen({ layout }: { layout: LayoutMode }) {
   return (
     <div className="h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
       <div className="flex items-end justify-between">
-        <BilingualTitle zh="日记" en="Liquid Journal" size="lg" />
+        <BilingualTitle zh="日记" en="Journal" size="lg" />
         <span className="font-cn text-xs text-paper/45">{journal.length} 段记忆</span>
       </div>
       <Divider className="my-4" />
