@@ -657,7 +657,7 @@ function drawIceFill(
   const tint = "#e3edf2";
   const isBullet = type === "bullets";
   // fixed piece size (svg units) — a wider/taller cup simply fits more pieces
-  const piece = isBullet ? 18 : 24;
+  const piece = isBullet ? 26 : 34;
   const stepX = piece * 0.92;
   const stepY = piece * (isBullet ? 0.7 : 0.82);
   const half = piece * 0.5;
