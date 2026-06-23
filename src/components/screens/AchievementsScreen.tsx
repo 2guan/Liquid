@@ -3,7 +3,7 @@
 import type { LayoutMode } from "@/hooks/useLayout";
 import { RANKS } from "@/lib/data/catalog";
 import { useAtelier } from "@/store/useAtelier";
-import { BilingualTitle, Divider, IconButton } from "@/components/ui/atoms";
+import { BilingualTitle, Divider } from "@/components/ui/atoms";
 import { Icon } from "@/components/art/icons";
 
 export default function AchievementsScreen({ layout }: { layout: LayoutMode }) {
@@ -11,8 +11,6 @@ export default function AchievementsScreen({ layout }: { layout: LayoutMode }) {
   const pours = useAtelier((s) => s.pours);
   const unlocked = useAtelier((s) => s.unlocked);
   const journal = useAtelier((s) => s.journal);
-  const soundOn = useAtelier((s) => s.soundOn);
-  const toggleSound = useAtelier((s) => s.toggleSound);
   const { meta, progress, next } = useAtelier((s) => s.rank)();
 
   const stats = [
@@ -33,7 +31,7 @@ export default function AchievementsScreen({ layout }: { layout: LayoutMode }) {
 
   return (
     <div className="h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
-      <BilingualTitle zh="成就 · 工坊档案" en="Achievements & Settings" size="lg" />
+      <BilingualTitle zh="成就 · 工坊档案" en="Achievements" size="lg" />
       <Divider className="my-4" />
 
       {/* rank progress */}
@@ -94,18 +92,6 @@ export default function AchievementsScreen({ layout }: { layout: LayoutMode }) {
         ))}
       </div>
 
-      {/* settings */}
-      <p className="mb-3 mt-6 font-title text-[11px] uppercase tracking-title text-gold/55">设置 · Settings</p>
-      <div className="flex items-center justify-between rounded-xl border border-gold/15 bg-bg-secondary/50 p-4">
-        <div className="flex items-center gap-3">
-          <Icon name={soundOn ? "sound-on" : "sound-off"} size={20} className="text-gold/70" />
-          <div>
-            <p className="font-cn text-sm text-paper">环境音效</p>
-            <p className="font-cn text-[11px] text-paper/45">吧台白噪音与交互音效</p>
-          </div>
-        </div>
-        <IconButton icon={soundOn ? "sound-on" : "sound-off"} label="切换音效" active={soundOn} onClick={toggleSound} />
-      </div>
     </div>
   );
 }

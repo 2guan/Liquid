@@ -60,7 +60,7 @@
       <view class="nav-medallion"><icon name="trophy" size="22"></icon></view>
       <text class="nav-zh">成就</text>
     </view>
-    <view class="nav-item" data-v="achievements" bindtap="go">
+    <view class="nav-item" data-v="settings" bindtap="go">
       <view class="nav-medallion"><icon name="settings" size="22"></icon></view>
       <text class="nav-zh">设置</text>
     </view>

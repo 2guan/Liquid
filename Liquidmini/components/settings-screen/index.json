@@ -1,0 +1,7 @@
+{
+  "component": true,
+  "options": { "styleIsolation": "apply-shared" },
+  "usingComponents": {
+    "icon": "/components/icon/index"
+  }
+}

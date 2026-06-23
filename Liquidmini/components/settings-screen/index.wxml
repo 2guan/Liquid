@@ -1,0 +1,30 @@
+<scroll-view scroll-y class="set-scroll">
+  <view class="set">
+    <view class="set-head">
+      <text class="set-zh title-engrave">设置</text>
+      <text class="set-en">Settings</text>
+    </view>
+
+    <!-- 音效 -->
+    <text class="section-label">音效 · Sound</text>
+    <view class="setting" bindtap="toggleSound">
+      <view class="setting-left">
+        <icon name="{{soundOn ? 'sound-on' : 'sound-off'}}" size="20" color="#C8A45D"></icon>
+        <view>
+          <text class="setting-name">环境音效</text>
+          <text class="setting-sub">吧台白噪音与交互音效</text>
+        </view>
+      </view>
+      <view class="toggle {{soundOn ? 'on' : ''}}"><view class="knob"></view></view>
+    </view>
+
+    <!-- 关于 -->
+    <text class="section-label">关于 · About</text>
+    <view class="about">
+      <text class="about-zh title-engrave">微醺时刻</text>
+      <text class="about-en">The Sip &amp; Sigh</text>
+      <text class="about-body">一杯酒，一段心情，一场灵感。以代码实时合成的酒馆音景与离线 AI 调酒师，为你斟出此刻独属的风味。</text>
+      <text class="about-ver">v1.0 · EST 2024</text>
+    </view>
+  </view>
+</scroll-view>

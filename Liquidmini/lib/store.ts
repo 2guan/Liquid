@@ -14,6 +14,7 @@ export type View =
   | "journal"
   | "result"
   | "achievements"
+  | "settings"
   | ModeId;
 
 export interface AtelierState {

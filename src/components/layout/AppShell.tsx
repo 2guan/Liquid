@@ -19,6 +19,7 @@ import ResultScreen from "@/components/screens/ResultScreen";
 import LibraryScreen from "@/components/screens/LibraryScreen";
 import JournalScreen from "@/components/screens/JournalScreen";
 import AchievementsScreen from "@/components/screens/AchievementsScreen";
+import SettingsScreen from "@/components/screens/SettingsScreen";
 
 function ViewRouter({ layout }: { layout: "landscape" | "portrait" }) {
   const view = useNav((s) => s.view);
@@ -44,6 +45,8 @@ function ViewRouter({ layout }: { layout: "landscape" | "portrait" }) {
         return <JournalScreen layout={layout} />;
       case "achievements":
         return <AchievementsScreen layout={layout} />;
+      case "settings":
+        return <SettingsScreen layout={layout} />;
       default:
         return <HomeScreen layout={layout} />;
     }

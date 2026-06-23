@@ -15,6 +15,7 @@ const SECTION: Record<string, { zh: string; en: string }> = {
   library: { zh: "酒库", en: "The Cellar" },
   journal: { zh: "微醺日记", en: "Liquid Journal" },
   achievements: { zh: "工坊档案", en: "The Ledger" },
+  settings: { zh: "设置", en: "Settings" },
   result: { zh: "酒卡", en: "The Tasting Card" },
 };
 

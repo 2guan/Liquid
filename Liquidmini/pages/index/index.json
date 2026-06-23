@@ -11,6 +11,7 @@
     "result-screen": "/components/result-screen/index",
     "library-screen": "/components/library-screen/index",
     "journal-screen": "/components/journal-screen/index",
-    "achievements-screen": "/components/achievements-screen/index"
+    "achievements-screen": "/components/achievements-screen/index",
+    "settings-screen": "/components/settings-screen/index"
   }
 }

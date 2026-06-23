@@ -1,6 +1,6 @@
-/** Achievements & Settings — the workshop ledger. Ported from AchievementsScreen.tsx. */
+/** Achievements — the workshop ledger. Ported from AchievementsScreen.tsx.
+ *  (Sound/settings moved to the dedicated settings-screen.) */
 import { RANKS } from "../../lib/data/catalog";
-import { sound } from "../../lib/sound/index";
 import { store } from "../../lib/store";
 
 Component({
@@ -14,7 +14,6 @@ Component({
     ranks: [] as any[],
     stats: [] as any[],
     badges: [] as any[],
-    soundOn: false,
   },
 
   _unsub: null as null | (() => void),
@@ -56,12 +55,7 @@ Component({
           { id: "architect", name: "风味架构师", en: "Flavor Architect", got: xp >= 900, hint: "晋升至风味架构师" },
           { id: "master", name: "首席调酒师", en: "Master", got: xp >= 2000, hint: "登顶首席调酒师" },
         ],
-        soundOn: s.soundOn,
       });
-    },
-    toggleSound() {
-      store.toggleSound();
-      sound.setEnabled(store.get().soundOn);
     },
   },
 });

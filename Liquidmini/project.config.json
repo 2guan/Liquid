@@ -54,8 +54,8 @@
     }
   },
   "compileType": "miniprogram",
-  "libVersion": "3.5.0",
-  "appid": "wxb5977173b6e2fcd2",
+  "libVersion": "3.16.2",
+  "appid": "wx9b5e27bf82e36d50",
   "projectname": "Liquidmini",
   "condition": {},
   "editorSetting": {

@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import type { ModeId } from "@/types";
 
-export type View = "home" | "library" | "journal" | "result" | "achievements" | ModeId;
+export type View = "home" | "library" | "journal" | "result" | "achievements" | "settings" | ModeId;
 
 interface NavState {
   view: View;

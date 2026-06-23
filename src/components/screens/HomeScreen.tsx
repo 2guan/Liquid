@@ -284,7 +284,7 @@ export default function HomeScreen({ layout }: { layout: LayoutMode }) {
           <NavSep />
           <NavMedallion className="flex-1" icon="trophy" zh="成就" en="Achievements" onClick={() => go("achievements")} />
           <NavSep />
-          <NavMedallion className="flex-1" icon="settings" zh="设置" en="Settings" onClick={() => go("achievements")} />
+          <NavMedallion className="flex-1" icon="settings" zh="设置" en="Settings" onClick={() => go("settings")} />
         </footer>
       </div>
     </div>

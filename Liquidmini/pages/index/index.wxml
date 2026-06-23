@@ -21,5 +21,6 @@
     <library-screen wx:elif="{{view === 'library'}}"></library-screen>
     <journal-screen wx:elif="{{view === 'journal'}}"></journal-screen>
     <achievements-screen wx:elif="{{view === 'achievements'}}"></achievements-screen>
+    <settings-screen wx:elif="{{view === 'settings'}}"></settings-screen>
   </view>
 </view>
