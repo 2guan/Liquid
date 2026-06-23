@@ -1,0 +1,39 @@
+.lb-scroll { height: 100%; }
+.lb { padding: 16px 16px 32px; box-sizing: border-box; }
+
+.lb-head { display: flex; align-items: flex-end; justify-content: space-between; }
+.lb-zh { font-family: var(--font-cinzel); font-size: 26px; letter-spacing: 0.06em; }
+.lb-count { font-size: 12px; color: rgba(231,214,177,0.45); }
+
+.lb-search { position: relative; display: flex; align-items: center; gap: 8px; margin-top: 14px; border-radius: 10px; border: 1px solid rgba(200,164,93,0.2); background: rgba(26,22,18,0.4); padding: 0 12px; }
+.lb-input { flex: 1; padding: 10px 0; font-size: 14px; color: #E7D6B1; }
+.lb-clear { padding: 4px; }
+
+.lb-cats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.lb-cat { border-radius: 999px; border: 1px solid rgba(200,164,93,0.15); color: rgba(231,214,177,0.65); font-size: 12px; padding: 5px 14px; }
+.lb-cat.on { border-color: rgba(200,164,93,0.6); background: rgba(200,164,93,0.12); color: #E3C684; }
+
+.lb-divider { height: 1px; background: rgba(200,164,93,0.2); margin: 14px 0; }
+
+.lb-shelf { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 8px; }
+.lb-bottle { display: flex; flex-direction: column; align-items: center; padding: 6px 2px 4px; border-radius: 10px; }
+.lb-bottle.on { background: rgba(200,164,93,0.1); }
+.lb-shelf-bar { width: 100%; height: 4px; border-radius: 999px; background: linear-gradient(180deg, #4E3826, #281C14); margin-top: 2px; }
+.lb-bottle-name { max-width: 100%; font-size: 11px; color: rgba(231,214,177,0.65); margin-top: 5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.lb-bottle.on .lb-bottle-name { color: #E3C684; }
+.lb-empty { grid-column: 1 / -1; text-align: center; padding: 32px 0; font-size: 14px; color: rgba(231,214,177,0.4); }
+
+.lb-detail { margin-top: 20px; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+.lb-detail-bottle { display: flex; justify-content: center; }
+.lb-detail-zh { font-family: var(--font-cinzel); font-size: 22px; letter-spacing: 0.05em; margin-top: 4px; }
+.lb-detail-en { font-family: var(--font-cormorant); font-style: italic; font-size: 14px; color: rgba(200,164,93,0.8); }
+.lb-detail-meta { display: flex; align-items: center; gap: 16px; margin-top: 10px; font-size: 12px; color: rgba(231,214,177,0.55); }
+.lb-meta-item { display: flex; align-items: center; gap: 4px; }
+.lb-detail-divider { width: 100%; height: 1px; background: rgba(200,164,93,0.2); margin: 16px 0; }
+.lb-note { text-align: center; font-size: 14px; line-height: 1.7; color: rgba(231,214,177,0.75); }
+.lb-flavor-label { align-self: flex-start; font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(200,164,93,0.55); margin: 16px 0 8px; }
+.lb-flavors { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+.lb-flavor { border-radius: 999px; border: 1px solid rgba(200,164,93,0.25); color: rgba(231,214,177,0.8); font-size: 12px; padding: 5px 12px; }
+
+.btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; border-radius: 999px; background: linear-gradient(180deg, #D89C3A, #A9701F); color: #1A1612; font-size: 15px; }
+.lb-pour { margin-top: 22px; width: 100%; box-sizing: border-box; }

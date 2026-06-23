@@ -1,0 +1,68 @@
+<view class="home" style="padding-top:{{statusBarHeight}}px">
+  <image class="home-bg" src="{{bgUrl}}" mode="aspectFill"></image>
+  <view class="home-scrim"></view>
+  <view class="home-glow"></view>
+
+  <!-- header -->
+  <view class="home-header">
+    <text class="home-title title-engrave">微醺时刻</text>
+    <text class="home-sub">The Sip & Sigh</text>
+    <view class="home-flourish">
+      <view class="rule"></view>
+      <text class="home-tag">一杯酒，一段心情，一场灵感</text>
+      <view class="rule"></view>
+    </view>
+  </view>
+
+  <!-- four mode cards (2×2) -->
+  <view class="cards">
+    <view
+      wx:for="{{cards}}"
+      wx:key="id"
+      class="card"
+      data-id="{{item.id}}"
+      bindtap="onCard"
+      style="background:linear-gradient(180deg,{{item.wash0}},{{item.wash1}})"
+    >
+      <view class="card-frame"></view>
+      <view class="card-top">
+        <text class="card-name">{{item.name}}</text>
+        <text class="card-en">{{item.nameEn}}</text>
+      </view>
+      <view class="card-drink" style="background:radial-gradient(54% 42% at 50% 80%, {{item.glow}}3a, transparent 72%)">
+        <glass
+          glass-type="{{item.glassType}}"
+          family="{{item.family}}"
+          ice="{{item.ice}}"
+          fill-level="{{item.fill}}"
+          fizzy="{{item.fizzy}}"
+          garnishes="{{item.garnishes}}"
+          size="{{220}}"
+          fit="{{true}}"
+          css-height="100%"
+        ></glass>
+      </view>
+      <text class="card-tagline">{{item.tagline}}</text>
+    </view>
+  </view>
+
+  <!-- bottom nav -->
+  <view class="home-nav">
+    <view class="nav-item" data-v="library" bindtap="go">
+      <view class="nav-medallion"><icon name="library" size="22"></icon></view>
+      <text class="nav-zh">酒库</text>
+    </view>
+    <view class="nav-item" data-v="journal" bindtap="go">
+      <view class="nav-medallion"><icon name="journal" size="22"></icon></view>
+      <text class="nav-zh">日记</text>
+    </view>
+    <view class="nav-item" data-v="achievements" bindtap="go">
+      <view class="nav-medallion"><icon name="trophy" size="22"></icon></view>
+      <text class="nav-zh">成就</text>
+    </view>
+    <view class="nav-item" data-v="achievements" bindtap="go">
+      <view class="nav-medallion"><icon name="settings" size="22"></icon></view>
+      <text class="nav-zh">设置</text>
+    </view>
+  </view>
+</view>

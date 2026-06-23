@@ -1,0 +1,6 @@
+<image
+  class="glass-img"
+  src="{{src}}"
+  mode="aspectFit"
+  style="{{cssWidth ? 'width:' + cssWidth + ';' : ''}}{{cssHeight ? 'height:' + cssHeight + ';' : ''}}"
+/>

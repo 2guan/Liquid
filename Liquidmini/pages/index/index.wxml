@@ -1,0 +1,25 @@
+<view class="atelier-ambient"></view>
+
+<view class="app-root">
+  <!-- contextual top bar (hidden on home, which has its own header) — back only -->
+  <view wx:if="{{view !== 'home'}}" class="topbar" style="padding-top:{{statusBarHeight}}px">
+    <view class="topbar-row">
+      <view class="icon-btn" bindtap="goHome">
+        <icon name="back" size="20"></icon>
+      </view>
+    </view>
+  </view>
+
+  <!-- the active view -->
+  <view class="screen-host">
+    <home-screen wx:if="{{view === 'home'}}" status-bar-height="{{statusBarHeight}}"></home-screen>
+    <pure-pour-screen wx:elif="{{view === 'pure'}}"></pure-pour-screen>
+    <mixology-screen wx:elif="{{view === 'mixology'}}"></mixology-screen>
+    <mood-screen wx:elif="{{view === 'mood'}}"></mood-screen>
+    <zen-screen wx:elif="{{view === 'zen'}}"></zen-screen>
+    <result-screen wx:elif="{{view === 'result'}}"></result-screen>
+    <library-screen wx:elif="{{view === 'library'}}"></library-screen>
+    <journal-screen wx:elif="{{view === 'journal'}}"></journal-screen>
+    <achievements-screen wx:elif="{{view === 'achievements'}}"></achievements-screen>
+  </view>
+</view>

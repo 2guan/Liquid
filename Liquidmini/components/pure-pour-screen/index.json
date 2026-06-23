@@ -1,0 +1,8 @@
+{
+  "component": true,
+  "usingComponents": {
+    "glass": "/components/glass/index",
+    "bottle": "/components/bottle/index",
+    "icon": "/components/icon/index"
+  }
+}

@@ -1,0 +1,129 @@
+/**
+ * 微醺时刻 — global atmosphere (ported from src/app/globals.css).
+ * Warm-dark base, amber light, paper & wood texture.
+ * Webfonts (Cinzel / Cormorant Garamond / Maoken Fengyasong) load at runtime
+ * via wx.loadFontFace in app.ts — @font-face isn't reliable in WXSS.
+ */
+
+page {
+  /* Custom display fonts (loaded via wx.loadFontFace in app.ts). WeChat won't
+     per-glyph fall back FROM a loaded font, so Chinese-bearing elements must list
+     the CJK custom face (Maoken Fengyasong) FIRST — putting a Latin-only face
+     (Cinzel) first would blank the CJK glyphs. Latin elements lead with Cormorant.
+     --font-cinzel is only ever used on Chinese titles, so it leads with Maoken. */
+  --font-cinzel: "Maoken Fengyasong", "Songti SC", "STSong", serif;
+  --font-cormorant: "Cormorant Garamond", "Maoken Fengyasong", "Songti SC", serif;
+  /* Body/labels: lead with the custom Maoken Fengyasong so ALL Chinese text
+     renders in it; PingFang/system only catch glyphs Maoken lacks. */
+  --font-inter: "Maoken Fengyasong", "PingFang SC", system-ui, sans-serif;
+  --gold: #C8A45D;
+  --gold-bright: #E3C684;
+  --amber: #D89C3A;
+  --amber-glow: #F0B14B;
+  --paper: #E7D6B1;
+  --bg: #0E0B08;
+  height: 100%;
+  background: #0E0B08;
+  color: #E7D6B1;
+  font-family: var(--font-inter);
+  -webkit-font-smoothing: antialiased;
+}
+
+view, text, scroll-view, image, button {
+  box-sizing: border-box;
+}
+
+/* ── Layered ambient backdrop: candle glow + wood grain + film grain ── */
+.atelier-ambient {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(240, 177, 75, 0.10) 0%, transparent 55%),
+    radial-gradient(90% 60% at 50% 120%, rgba(60, 38, 20, 0.55) 0%, transparent 60%),
+    linear-gradient(180deg, #15110d 0%, #0e0b08 60%, #080603 100%);
+}
+
+.atelier-ambient::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Texture utilities ── */
+.paper-texture {
+  background-color: #e7d6b1;
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(120, 90, 50, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 82% 78%, rgba(120, 90, 50, 0.12) 0%, transparent 45%);
+  color: #2a231b;
+}
+
+.wood-panel {
+  background-color: #2a1d14;
+  background-image:
+    linear-gradient(180deg, rgba(78, 56, 38, 0.55), rgba(40, 28, 20, 0.85)),
+    repeating-linear-gradient(94deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0.22) 2px, rgba(0,0,0,0) 6px, rgba(231,214,177,0.03) 9px);
+}
+
+.glass-panel {
+  background: rgba(231, 214, 177, 0.045);
+  border: 1px solid rgba(231, 214, 177, 0.10);
+  box-shadow:
+    inset 0 1px 0 0 rgba(231, 214, 177, 0.08),
+    0 18px 40px -22px rgba(0, 0, 0, 0.9);
+}
+
+.gold-frame {
+  position: relative;
+  border: 1px solid rgba(200, 164, 93, 0.28);
+}
+.gold-frame::before {
+  content: "";
+  position: absolute;
+  left: 3px; top: 3px; right: 3px; bottom: 3px;
+  border: 1px solid rgba(200, 164, 93, 0.12);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Text treatments. WeChat doesn't support `background-clip:text`, so the web
+   build's gradient-clipped-transparent text renders invisible here — use a solid
+   engraved-gold colour instead. */
+.title-engrave {
+  color: #ecc97e;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.amber-text {
+  color: #f0b14b;
+  text-shadow: 0 0 18px rgba(240, 177, 75, 0.35);
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Pour stream used by the Pure Pour overlay */
+.pour-stream {
+  background: linear-gradient(180deg, rgba(232,169,78,0.0) 0%, rgba(232,169,78,0.85) 12%, rgba(185,116,42,0.9) 100%);
+}

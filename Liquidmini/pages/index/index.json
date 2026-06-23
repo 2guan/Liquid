@@ -1,0 +1,16 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "icon": "/components/icon/index",
+    "glass": "/components/glass/index",
+    "home-screen": "/components/home-screen/index",
+    "pure-pour-screen": "/components/pure-pour-screen/index",
+    "mixology-screen": "/components/mixology-screen/index",
+    "mood-screen": "/components/mood-screen/index",
+    "zen-screen": "/components/zen-screen/index",
+    "result-screen": "/components/result-screen/index",
+    "library-screen": "/components/library-screen/index",
+    "journal-screen": "/components/journal-screen/index",
+    "achievements-screen": "/components/achievements-screen/index"
+  }
+}

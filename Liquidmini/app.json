@@ -1,0 +1,18 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "微醺时刻",
+    "navigationBarBackgroundColor": "#0E0B08",
+    "backgroundColor": "#0E0B08",
+    "backgroundTextStyle": "dark",
+    "enablePullDownRefresh": false
+  },
+  "renderer": "webview",
+  "lazyCodeLoading": "requiredComponents",
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

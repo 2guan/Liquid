@@ -1,0 +1,90 @@
+<scroll-view scroll-y class="result-scroll">
+  <view wx:if="{{!has}}" class="empty">
+    <text class="empty-tip">还没有作品。先去调一杯吧。</text>
+    <view class="btn" bindtap="goHome">返回首页</view>
+  </view>
+
+  <view wx:else class="result">
+    <!-- hero -->
+    <view class="hero" style="background:{{heroBg}}">
+      <image class="hero-bg" src="{{heroScene}}" mode="aspectFill"></image>
+      <view class="hero-scrim"></view>
+      <view class="hero-glass">
+        <glass
+          glass-type="{{glassType}}"
+          family="{{family}}"
+          liquid-color="{{liquidColor}}"
+          ice="{{ice}}"
+          fill-level="{{fillLevel}}"
+          fizzy="{{fizzy}}"
+          garnishes="{{garnishes}}"
+          glow="{{true}}"
+          size="{{180}}"
+          css-height="210px"
+        ></glass>
+      </view>
+      <view class="hero-info">
+        <view wx:if="{{hidden}}" class="hidden-badge"><icon name="lock" size="13" color="#E3C684"></icon><text>隐藏配方解锁</text></view>
+        <text class="mode-en">{{modeEn}}</text>
+        <text class="hero-name">{{name}}</text>
+        <text class="hero-nameen">{{nameEn}}</text>
+        <text wx:if="{{emotion}}" class="hero-emotion">{{emotion}}</text>
+        <view class="hero-actions">
+          <view wx:if="{{!fromJournal}}" class="btn primary" bindtap="handleSave">
+            <icon name="{{saved ? 'check' : 'save'}}" size="15" color="#1A1612"></icon><text>{{saved ? '已保存' : '保存到日记'}}</text>
+          </view>
+          <view class="btn ghost" bindtap="handleShare"><icon name="share" size="15"></icon><text>分享</text></view>
+          <view class="btn ghost {{exporting ? 'disabled' : ''}}" bindtap="exportCard"><icon name="droplet" size="15"></icon><text>{{exporting ? '生成中…' : '导出酒卡'}}</text></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- recipe book -->
+    <view class="book paper-texture">
+      <view class="page">
+        <view class="page-head"><icon name="droplet" size="17" color="#9C5A33"></icon><text class="page-zh">专属配方</text><text class="page-en">The Recipe</text></view>
+        <view class="ing-list">
+          <view wx:for="{{ingredients}}" wx:key="name" class="ing">
+            <view class="ing-dot" style="background:{{item.dot}}"></view>
+            <view class="ing-name">{{item.name}}<text wx:if="{{item.nameEn}}" class="ing-en"> {{item.nameEn}}</text></view>
+            <text class="ing-amt">{{item.amount}}</text>
+          </view>
+        </view>
+        <view class="page-divider"></view>
+        <view class="chips">
+          <view class="chip"><image class="chip-art" src="{{glassChip}}" mode="aspectFit"></image><view class="chip-text"><text class="chip-label">{{glassName}}</text><text class="chip-sub">Glassware</text></view></view>
+          <view class="chip"><image class="chip-art" src="{{iceChip}}" mode="aspectFit"></image><view class="chip-text"><text class="chip-label">{{iceName}}</text><text class="chip-sub">Ice</text></view></view>
+        </view>
+      </view>
+
+      <view class="page page-right">
+        <view class="page-head"><icon name="sparkle" size="17" color="#9C5A33"></icon><text class="page-zh">品酒指南</text><text class="page-en">Tasting Notes</text></view>
+        <text class="taste">{{taste}}</text>
+        <view class="page-divider"></view>
+        <text class="story">{{storyBody}}</text>
+        <text wx:if="{{storySig}}" class="story-sig">—— {{storySig}}</text>
+      </view>
+    </view>
+
+    <view class="home-row">
+      <view class="btn ghost" bindtap="goHome"><icon name="home" size="15"></icon><text>返回工坊</text></view>
+    </view>
+  </view>
+
+  <view wx:if="{{toast}}" class="toast">{{toast}}</view>
+</scroll-view>
+
+<!-- offscreen canvas used to render the export image -->
+<canvas type="2d" id="cardCanvas" class="card-canvas"></canvas>
+
+<!-- generated-card overlay: long-press the image to save, or tap 保存到相册 -->
+<view wx:if="{{showCard}}" class="card-mask" bindtap="closeCard">
+  <view class="card-sheet" catchtap="stop">
+    <text class="card-tip">长按图片可保存 · 或点下方按钮</text>
+    <image class="card-img" src="{{cardImage}}" mode="widthFix" show-menu-by-longpress></image>
+    <view class="card-actions">
+      <view class="btn" bindtap="saveToAlbum"><icon name="save" size="15" color="#1A1612"></icon><text>保存到相册</text></view>
+      <view class="btn ghost" bindtap="closeCard"><text>关闭</text></view>
+    </view>
+  </view>
+</view>

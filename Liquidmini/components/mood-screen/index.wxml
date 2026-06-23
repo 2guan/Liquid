@@ -1,0 +1,50 @@
+<scroll-view scroll-y class="mood-scroll">
+  <view class="mood">
+    <view class="m-head">
+      <image class="m-emblem" src="{{emblem}}" mode="aspectFit"></image>
+      <text class="m-zh title-engrave">心事</text>
+      <text class="m-en">Whisper of Mood</text>
+      <text class="m-lead">把此刻的心情说给我听——我会为你斟一杯只属于今晚的酒。</text>
+    </view>
+
+    <view class="m-divider"><view class="rule"></view><text class="m-divider-label">说出你的心情 · Tell Me How You Feel</text><view class="rule"></view></view>
+
+    <view class="m-input paper-texture">
+      <textarea
+        class="m-textarea"
+        value="{{text}}"
+        placeholder="{{placeholder}}"
+        bindinput="onInput"
+        maxlength="-1"
+        auto-height
+      ></textarea>
+      <view class="m-input-foot">
+        <view class="m-voice" bindtap="inspire"><icon name="mic" size="14" color="#5a4326"></icon><text>来点灵感</text></view>
+        <text class="m-count">{{charCount}} 字</text>
+      </view>
+    </view>
+
+    <text class="m-seed-hint">或者，点选一种心绪：</text>
+    <view class="m-seeds">
+      <view
+        wx:for="{{seeds}}"
+        wx:key="tag"
+        class="m-chip {{tags.indexOf(item.tag) > -1 ? 'on' : ''}}"
+        data-tag="{{item.tag}}"
+        bindtap="toggleTag"
+      >{{item.label}}</view>
+    </view>
+
+    <view class="m-action">
+      <view class="btn {{busy || (!text && tags.length === 0) ? 'disabled' : ''}}" bindtap="generate">
+        <icon name="sparkle" size="18" color="#1A1612"></icon><text>为我调一杯</text>
+      </view>
+    </view>
+  </view>
+</scroll-view>
+
+<view wx:if="{{busy}}" class="veil">
+  <view class="veil-mark"></view>
+  <view class="veil-dots"><view class="d"></view><view class="d"></view><view class="d"></view></view>
+  <text class="veil-line">{{veilLine}}</text>
+</view>

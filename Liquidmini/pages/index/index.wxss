@@ -1,0 +1,48 @@
+.app-root {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+}
+
+/* ── top bar ── */
+.topbar {
+  position: relative;
+  flex-shrink: 0;
+  background: rgba(14, 11, 8, 0.7);
+  border-bottom: 1px solid rgba(200, 164, 93, 0.18);
+}
+.topbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 52px;
+  padding: 0 16px;
+}
+.tb-left { display: flex; align-items: center; gap: 10px; }
+.tb-title { display: flex; align-items: baseline; gap: 8px; }
+.tb-zh { font-size: 18px; letter-spacing: 0.08em; }
+.tb-en { font-size: 12px; font-style: italic; color: rgba(200, 164, 93, 0.65); }
+.tb-right { display: flex; align-items: center; gap: 8px; }
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(200, 164, 93, 0.35);
+  background: rgba(21, 17, 13, 0.5);
+}
+.icon-btn:active { border-color: #C8A45D; }
+
+.rank-badge { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 96px; }
+.rank-name { font-size: 11px; color: rgba(231, 214, 177, 0.85); }
+.rank-bar { width: 90px; height: 4px; border-radius: 4px; background: rgba(200, 164, 93, 0.2); overflow: hidden; }
+.rank-fill { height: 100%; background: linear-gradient(90deg, #D89C3A, #E3C684); border-radius: 4px; }
+
+.screen-host { position: relative; flex: 1; min-height: 0; }

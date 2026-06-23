@@ -1,0 +1,112 @@
+<view class="mx">
+  <view class="steps">
+    <block wx:for="{{steps}}" wx:key="key">
+      <view class="step-dot {{index === stepIndex ? 'on' : ''}} {{index < stepIndex ? 'done' : ''}}">
+        <text class="step-num">{{index + 1}}</text>
+        <text class="step-label">{{item.label}}</text>
+      </view>
+    </block>
+  </view>
+
+  <scroll-view scroll-y class="mx-body">
+    <!-- STEP 1: recipe -->
+    <block wx:if="{{step === 'recipe'}}">
+      <view class="mx-search">
+        <icon name="search" size="15" color="#9a7b3a"></icon>
+        <input class="mx-input" placeholder="搜索 {{count}} 款配方…" value="{{query}}" bindinput="onQuery" />
+        <view wx:if="{{query}}" class="mx-clear" bindtap="clearQuery"><icon name="close" size="14" color="#b89b6a"></icon></view>
+      </view>
+      <view wx:if="{{!query}}" class="mx-cats">
+        <view wx:for="{{cats}}" wx:key="id" class="mx-cat {{category === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickCat">
+          <view class="mx-cat-dot" style="background:{{item.accent}}"></view>
+          <view class="mx-cat-text"><text class="mx-cat-zh">{{item.name}}</text><text class="mx-cat-en">{{item.nameEn}}</text></view>
+        </view>
+      </view>
+      <view class="mx-divider"></view>
+      <view class="mx-recipes">
+        <view wx:for="{{recipeList}}" wx:key="id" class="mx-card wood-panel" data-id="{{item.id}}" bindtap="pickRecipe">
+          <view class="mx-card-glass">
+            <glass glass-type="{{item.glass}}" family="{{item.family}}" ice="{{item.ice}}" fill-level="{{item.fill}}" fizzy="{{item.fizzy}}" garnishes="{{item.garnishes}}" size="{{84}}" fit="{{true}}" css-height="104px"></glass>
+          </view>
+          <view class="mx-card-info">
+            <text class="mx-card-name">{{item.name}}</text>
+            <text class="mx-card-en">{{item.nameEn}}</text>
+            <view class="mx-diff">
+              <view class="dot {{item.diff[0] ? 'on' : ''}}"></view>
+              <view class="dot {{item.diff[1] ? 'on' : ''}}"></view>
+              <view class="dot {{item.diff[2] ? 'on' : ''}}"></view>
+              <text wx:if="{{item.alcoholFree}}" class="mx-zero">无酒精</text>
+            </view>
+            <text class="mx-card-taste line-clamp-2">{{item.tasting}}</text>
+          </view>
+          <icon name="forward" size="18" color="#9a7b3a"></icon>
+        </view>
+        <view wx:if="{{recipeList.length === 0}}" class="mx-empty">没有找到匹配的配方</view>
+      </view>
+    </block>
+
+    <!-- STEP 2: ratio -->
+    <block wx:elif="{{step === 'ratio'}}">
+      <view class="mx-stage">
+        <glass glass-type="{{rGlass}}" family="{{rFamily}}" ice="{{rIce}}" fill-level="{{fillLevel}}" glow="{{fillLevel > 0.1}}" fizzy="{{fizzy}}" garnishes="{{garnishes}}" state="swirling" size="{{220}}" css-height="240px"></glass>
+      </view>
+      <view class="mx-panel glass-panel">
+        <view class="mx-panel-head">
+          <text class="sel-zh">配比层叠 · Layering</text>
+          <text class="mx-hint-toggle" bindtap="toggleHint">{{showHint ? '隐藏配方' : '对照配方'}}</text>
+        </view>
+        <text class="sel-hint">拖动滑块，让每种材料逼近经典的黄金比例。</text>
+        <view class="mx-divider"></view>
+        <view class="mx-ings">
+          <view wx:for="{{ratioItems}}" wx:key="name" class="mx-ing">
+            <view class="mx-ing-row">
+              <text class="mx-ing-name">{{item.name}}</text>
+              <text class="mx-ing-amt">
+                <block wx:if="{{item.editable}}">{{item.value}} 份<text wx:if="{{showHint}}" class="mx-target"> · 目标 {{item.target}}</text></block>
+                <block wx:else>{{item.amount}}</block>
+              </text>
+            </view>
+            <slider wx:if="{{item.editable}}" class="mx-slider" min="0" max="{{item.max}}" step="1" value="{{item.value}}" data-idx="{{index}}" bindchanging="onSlider" bindchange="onSlider" activeColor="#D89C3A" backgroundColor="#3a3026" block-size="18" block-color="#E3C684" />
+          </view>
+        </view>
+        <view class="mx-acc">
+          <view class="mx-acc-row"><text>配比精准度</text><text class="mx-acc-pct">{{ratioAccuracyPct}}%</text></view>
+          <view class="mx-acc-bar"><view class="mx-acc-fill" style="width:{{ratioAccuracyPct}}%"></view></view>
+        </view>
+      </view>
+    </block>
+
+    <!-- STEP 3: timing -->
+    <block wx:elif="{{step === 'timing'}}">
+      <view class="mx-timing">
+        <text class="sel-zh tcenter">{{rIce === 'none' ? '摇匀' : '搅拌'}} · Timing Action</text>
+        <text class="mx-timing-lead">当指针扫过中央的金色区域时按下——精准的手法决定了霜化与稀释的程度。</text>
+        <view class="mx-track">
+          <view class="mx-track-zone"></view>
+          <view class="mx-track-center"></view>
+          <view class="mx-track-marker" style="left:calc({{markerPct}}% - 3px)"></view>
+        </view>
+        <block wx:if="{{timingQuality < 0}}">
+          <view class="btn mx-lock" bindtap="lockTiming"><icon name="stir" size="18" color="#1A1612"></icon><text>{{actionLabel}}</text></view>
+        </block>
+        <block wx:else>
+          <text class="mx-timing-msg">{{timingMsg}}</text>
+          <text class="mx-timing-score">手法评分 {{timingScorePct}}%</text>
+          <view class="btn mx-finish {{busy ? 'disabled' : ''}}" bindtap="finish"><text>{{busy ? '调制中…' : '完成这一杯'}}</text><icon name="sparkle" size="16" color="#1A1612"></icon></view>
+        </block>
+      </view>
+    </block>
+  </scroll-view>
+
+  <!-- footer (recipe step has none) -->
+  <view wx:if="{{step !== 'recipe'}}" class="footer">
+    <view class="btn ghost" bindtap="prevStep"><icon name="back" size="15"></icon><text>上一步</text></view>
+    <view wx:if="{{step === 'ratio'}}" class="btn" bindtap="goTiming"><text>下一步 · 手法</text><icon name="forward" size="15" color="#1A1612"></icon></view>
+  </view>
+</view>
+
+<view wx:if="{{busy}}" class="veil">
+  <view class="veil-mark"></view>
+  <view class="veil-dots"><view class="d"></view><view class="d"></view><view class="d"></view></view>
+  <text class="veil-line">{{veilLine}}</text>
+</view>

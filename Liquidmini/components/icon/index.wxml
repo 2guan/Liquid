@@ -1,0 +1,1 @@
+<image class="icon-img" src="{{src}}" mode="aspectFit" style="width:{{size}}px;height:{{size}}px" />

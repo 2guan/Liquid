@@ -1,0 +1,114 @@
+<view class="pure">
+  <!-- step dots -->
+  <view class="steps">
+    <block wx:for="{{steps}}" wx:key="key">
+      <view class="step-dot {{index === stepIndex ? 'on' : ''}} {{index < stepIndex ? 'done' : ''}}">
+        <text class="step-num">{{index + 1}}</text>
+        <text class="step-label">{{item.label}}</text>
+      </view>
+    </block>
+  </view>
+
+  <!-- stage -->
+  <view class="stage">
+    <view wx:if="{{step === 'pour' && pouring}}" class="pour-fx">
+      <view class="pour-stream stream"></view>
+      <view class="pour-bottle">
+        <bottle family="{{family}}" size="{{78}}" tilt="{{128}}" css-height="150px"></bottle>
+      </view>
+    </view>
+    <glass
+      glass-type="{{glassType}}"
+      family="{{family}}"
+      ice="{{step === 'ice' ? ice : 'none'}}"
+      fill-level="{{fill}}"
+      state="{{pouring ? 'pouring' : 'still'}}"
+      glow="{{fill > 0.1}}"
+      size="{{200}}"
+      css-height="240px"
+    ></glass>
+  </view>
+
+  <!-- control panel -->
+  <view class="panel glass-panel">
+    <!-- glass step -->
+    <block wx:if="{{step === 'glass'}}">
+      <view class="sel-head"><text class="sel-zh">选择杯型</text><text class="sel-en">Select Glass</text></view>
+      <text class="sel-hint">{{glassCount}} 种杯型，塑造不同的香气路径。</text>
+      <input class="search" placeholder="搜索 {{glassCount}} 种杯型…" value="{{glassQuery}}" bindinput="onGlassQuery" />
+      <view wx:if="{{!glassQuery}}" class="pills">
+        <view wx:for="{{glassCats}}" wx:key="id" class="pill {{glassCat === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickGlassCat">{{item.name}}</view>
+      </view>
+      <scroll-view scroll-y class="grid-scroll">
+        <view class="grid grid-3">
+          <view wx:for="{{glassList}}" wx:key="id" class="tile {{glassType === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickGlass">
+            <view class="tile-art h64"><glass glass-type="{{item.id}}" family="{{family}}" fill-level="{{0}}" size="{{58}}" fit="{{true}}" css-height="64px"></glass></view>
+            <text class="tile-label">{{item.name}}</text>
+          </view>
+        </view>
+      </scroll-view>
+    </block>
+
+    <!-- spirit step -->
+    <block wx:elif="{{step === 'spirit'}}">
+      <view class="sel-head"><text class="sel-zh">倒入基酒</text><text class="sel-en">Select Spirit</text></view>
+      <text class="sel-hint">从 {{spiritCount}} 支酒中选一支灵魂。</text>
+      <input class="search" placeholder="搜索 {{spiritCount}} 支基酒…" value="{{spiritQuery}}" bindinput="onSpiritQuery" />
+      <view wx:if="{{!spiritQuery}}" class="pills">
+        <view wx:for="{{spiritCats}}" wx:key="id" class="pill {{spiritCat === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickSpiritCat">{{item.name}}</view>
+      </view>
+      <scroll-view scroll-y class="grid-scroll">
+        <view class="grid grid-2">
+          <view wx:for="{{spiritList}}" wx:key="id" class="tile {{spiritId === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickSpirit">
+            <view class="tile-art h84"><bottle family="{{item.family}}" label="{{item.nameEn}}" size="{{34}}" css-height="80px"></bottle></view>
+            <text class="tile-label">{{item.name}}</text>
+            <text class="tile-sub">{{item.nameEn}}</text>
+          </view>
+        </view>
+      </scroll-view>
+    </block>
+
+    <!-- pour step -->
+    <block wx:elif="{{step === 'pour'}}">
+      <view class="sel-head"><text class="sel-zh">斟酒</text><text class="sel-en">Pour</text></view>
+      <text class="sel-hint">长按下方按钮倒酒，松开停止。注满约六分，是品鉴的黄金线。</text>
+      <view class="pour-body">
+        <view class="gauge">
+          <view class="gauge-band" style="left:{{targetLeft}}%;width:24%"></view>
+          <view class="gauge-fill" style="width:{{pourPct}}%"></view>
+        </view>
+        <text class="pour-msg">{{pourMsg}}</text>
+        <view class="pour-btn" bindtouchstart="startPour" bindtouchend="stopPour" bindtouchcancel="stopPour">
+          {{pouring ? '正在倒酒…' : '长按倒酒'}}
+        </view>
+        <text class="pour-reset {{fill > 0.05 ? '' : 'hidden'}}" bindtap="resetFill">倒掉重来</text>
+      </view>
+    </block>
+
+    <!-- ice step -->
+    <block wx:elif="{{step === 'ice'}}">
+      <view class="sel-head"><text class="sel-zh">选择冰型</text><text class="sel-en">Select Ice</text></view>
+      <text class="sel-hint">冰，决定了风味随时间舒展的节奏。</text>
+      <view class="grid grid-2 static">
+        <view wx:for="{{ices}}" wx:key="id" class="tile {{ice === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickIce">
+          <view class="tile-art h56"><image class="ice-sw" src="{{item.swatch}}" mode="aspectFit"></image></view>
+          <text class="tile-label">{{item.name}}</text>
+          <text class="tile-sub">{{item.nameEn}}</text>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- footer -->
+  <view class="footer">
+    <view class="btn ghost {{stepIndex === 0 ? 'disabled' : ''}}" bindtap="prevStep">
+      <icon name="back" size="15"></icon><text>上一步</text>
+    </view>
+    <view wx:if="{{step !== 'ice'}}" class="btn {{(step === 'spirit' && !spiritId) || (step === 'pour' && fill < 0.08) ? 'disabled' : ''}}" bindtap="nextStep">
+      <text>下一步</text><icon name="forward" size="15" color="#1A1612"></icon>
+    </view>
+    <view wx:else class="btn {{busy ? 'disabled' : ''}}" bindtap="finish">
+      <text>{{busy ? '调制中…' : '完成调制'}}</text><icon name="sparkle" size="15" color="#1A1612"></icon>
+    </view>
+  </view>
+</view>

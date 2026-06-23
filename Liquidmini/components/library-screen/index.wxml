@@ -1,0 +1,47 @@
+<scroll-view scroll-y class="lb-scroll">
+  <view class="lb">
+    <view class="lb-head">
+      <text class="lb-zh title-engrave">酒库</text>
+      <text class="lb-count">{{count}} 款珍藏</text>
+    </view>
+
+    <view class="lb-search">
+      <icon name="search" size="15" color="#9a7b3a"></icon>
+      <input class="lb-input" placeholder="搜索基酒（名称 / 产地 / 风味）…" value="{{query}}" bindinput="onQuery" />
+      <view wx:if="{{query}}" class="lb-clear" bindtap="clearQuery"><icon name="close" size="14" color="#b89b6a"></icon></view>
+    </view>
+
+    <view wx:if="{{!query}}" class="lb-cats">
+      <view wx:for="{{cats}}" wx:key="id" class="lb-cat {{category === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickCat">{{item.name}}</view>
+    </view>
+
+    <view class="lb-divider"></view>
+
+    <view class="lb-shelf">
+      <view wx:for="{{list}}" wx:key="id" class="lb-bottle {{selectedId === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickSpirit">
+        <bottle family="{{item.family}}" label="{{item.label}}" size="{{52}}" glow="{{selectedId === item.id}}" css-height="84px"></bottle>
+        <view class="lb-shelf-bar"></view>
+        <text class="lb-bottle-name">{{item.name}}</text>
+      </view>
+      <view wx:if="{{list.length === 0}}" class="lb-empty">没有找到匹配的基酒</view>
+    </view>
+
+    <!-- detail -->
+    <view class="lb-detail glass-panel">
+      <view class="lb-detail-bottle"><bottle family="{{selected.family}}" label="{{selected.label}}" size="{{110}}" glow="{{true}}" css-height="160px"></bottle></view>
+      <text class="lb-detail-zh title-engrave">{{selected.name}}</text>
+      <text class="lb-detail-en">{{selected.nameEn}}</text>
+      <view class="lb-detail-meta">
+        <view class="lb-meta-item"><icon name="info" size="13" color="#C8A45D"></icon><text>{{selected.origin}}</text></view>
+        <text>ABV {{selected.abv}}%</text>
+      </view>
+      <view class="lb-detail-divider"></view>
+      <text class="lb-note">{{selected.note}}</text>
+      <text class="lb-flavor-label">Flavour · 风味</text>
+      <view class="lb-flavors">
+        <view wx:for="{{selected.flavor}}" wx:key="*this" class="lb-flavor">{{item}}</view>
+      </view>
+      <view class="btn lb-pour" bindtap="pour"><icon name="droplet" size="16" color="#1A1612"></icon><text>以此酒纯饮</text></view>
+    </view>
+  </view>
+</scroll-view>

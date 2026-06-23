@@ -1,0 +1,87 @@
+<view class="zen">
+  <!-- flavour graph canvas -->
+  <view class="zen-canvas">
+    <image class="zen-scene" src="{{scene}}" mode="aspectFill"></image>
+    <image wx:if="{{nodes.length}}" class="zen-edges" src="{{edges}}" mode="scaleToFill"></image>
+
+    <view class="zen-cap">
+      <text class="sel-zh">魔法 · The Alchemy Atelier</text>
+      <text class="zen-cap-sub">自由组合，让风味在画布上彼此扩散。</text>
+    </view>
+
+    <!-- cauldron -->
+    <view class="zen-cauldron">
+      <view class="zen-pot"><icon name="droplet" size="30" color="#D89C3A"></icon></view>
+      <text class="zen-pot-label">调和</text>
+    </view>
+
+    <!-- orbs -->
+    <view
+      wx:for="{{nodes}}"
+      wx:key="id"
+      class="zen-orb"
+      style="left:{{item.leftPct}}%;top:{{item.topPct}}%"
+    >
+      <view class="zen-orb-ring" style="border-color:{{item.color}}"></view>
+      <view class="zen-orb-body" style="background:radial-gradient(circle at 35% 30%, {{item.color}}, {{item.color}}99 60%, {{item.color}}40)">
+        <text class="zen-orb-short">{{item.short}}</text>
+      </view>
+      <text class="zen-orb-name">{{item.name}}</text>
+      <view class="zen-orb-x" data-id="{{item.id}}" catchtap="removeNode"><icon name="close" size="12" color="#E7D6B1"></icon></view>
+    </view>
+
+    <view wx:if="{{nodes.length === 0}}" class="zen-empty">从下方 {{count}} 种风味中挑选，开始你的实验</view>
+  </view>
+
+  <!-- ingredient library panel -->
+  <view class="zen-panel glass-panel">
+    <view class="zen-panel-head">
+      <text class="sel-zh">风味原料 · Ingredients</text>
+      <text class="zen-counter">已选 {{nodes.length}}/{{max}}</text>
+    </view>
+
+    <view class="zen-search">
+      <icon name="search" size="15" color="#9a7b3a"></icon>
+      <input class="zen-input" placeholder="搜索 {{count}} 种风味…" value="{{query}}" bindinput="onQuery" />
+      <view wx:if="{{query}}" class="zen-clear" bindtap="clearQuery"><icon name="close" size="14" color="#b89b6a"></icon></view>
+    </view>
+
+    <scroll-view wx:if="{{!query}}" scroll-x class="zen-cats">
+      <view wx:for="{{cats}}" wx:key="id" class="zen-cat {{category === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickCat">
+        <view class="zen-cat-dot" style="background:{{item.color}}"></view><text>{{item.name}}</text>
+      </view>
+    </scroll-view>
+
+    <view class="zen-divider"></view>
+
+    <scroll-view scroll-y class="zen-list">
+      <view
+        wx:for="{{list}}"
+        wx:key="id"
+        class="zen-item {{item.picked ? 'on' : ''}} {{item.disabled ? 'disabled' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="toggleFlavor"
+      >
+        <view class="zen-item-dot" style="background:radial-gradient(circle at 35% 30%, {{item.color}}, {{item.color}}88)"></view>
+        <view class="zen-item-text">
+          <text class="zen-item-name">{{item.name}}</text>
+          <text class="zen-item-sub">{{item.sub}}</text>
+        </view>
+        <icon wx:if="{{item.picked}}" name="check" size="15" color="#E3C684"></icon>
+        <icon wx:else name="plus" size="14" color="#8a7a5a"></icon>
+      </view>
+      <view wx:if="{{list.length === 0}}" class="zen-empty-list">没有找到匹配的风味</view>
+    </scroll-view>
+
+    <view class="btn zen-analyze {{busy || nodes.length === 0 ? 'disabled' : ''}}" bindtap="analyze">
+      <icon name="sparkle" size="16" color="#1A1612"></icon><text>分析风味</text>
+    </view>
+    <text wx:if="{{hintComplex}}" class="zen-hint">组合越复杂，越可能触发隐藏配方…</text>
+  </view>
+</view>
+
+<view wx:if="{{busy}}" class="veil">
+  <view class="veil-mark"></view>
+  <view class="veil-dots"><view class="d"></view><view class="d"></view><view class="d"></view></view>
+  <text class="veil-line">{{veilLine}}</text>
+</view>

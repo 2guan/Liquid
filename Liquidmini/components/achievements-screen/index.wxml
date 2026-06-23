@@ -1,0 +1,65 @@
+<scroll-view scroll-y class="ach-scroll">
+  <view class="ach">
+    <view class="ach-head">
+      <text class="ach-zh title-engrave">成就 · 工坊档案</text>
+      <text class="ach-en">Achievements &amp; Settings</text>
+    </view>
+
+    <!-- rank progress -->
+    <view class="glass-panel rank-card">
+      <view class="rank-top">
+        <view>
+          <text class="rank-name">{{rankName}}</text>
+          <text class="rank-nameen">{{rankNameEn}}</text>
+        </view>
+        <icon name="trophy" size="30" color="#C8A45D"></icon>
+      </view>
+      <view class="rank-bar"><view class="rank-fill" style="width:{{progressPct}}%"></view></view>
+      <view class="rank-meta">
+        <text>{{xp}} XP</text>
+        <text>{{nextText}}</text>
+      </view>
+      <view class="ladder">
+        <view wx:for="{{ranks}}" wx:key="id" class="ladder-cell {{item.reached ? 'on' : ''}}">
+          <text class="ladder-name">{{item.name}}</text>
+          <text class="ladder-xp">{{item.minXp}} XP</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- stats -->
+    <view class="stats">
+      <view wx:for="{{stats}}" wx:key="label" class="stat">
+        <icon name="{{item.icon}}" size="22" color="#C8A45D"></icon>
+        <text class="stat-val">{{item.value}}</text>
+        <text class="stat-label">{{item.label}}</text>
+      </view>
+    </view>
+
+    <!-- badges -->
+    <text class="section-label">徽章 · Badges</text>
+    <view class="badges">
+      <view wx:for="{{badges}}" wx:key="id" class="badge {{item.got ? 'got' : ''}}">
+        <view class="badge-icn"><icon name="{{item.got ? 'trophy' : 'lock'}}" size="20" color="{{item.got ? '#E3C684' : '#8a7a5a'}}"></icon></view>
+        <view class="badge-text">
+          <text class="badge-name">{{item.name}}</text>
+          <text class="badge-en">{{item.en}}</text>
+          <text class="badge-hint">{{item.hint}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- settings -->
+    <text class="section-label">设置 · Settings</text>
+    <view class="setting" bindtap="toggleSound">
+      <view class="setting-left">
+        <icon name="{{soundOn ? 'sound-on' : 'sound-off'}}" size="20" color="#C8A45D"></icon>
+        <view>
+          <text class="setting-name">环境音效</text>
+          <text class="setting-sub">吧台白噪音与交互音效</text>
+        </view>
+      </view>
+      <view class="toggle {{soundOn ? 'on' : ''}}"><view class="knob"></view></view>
+    </view>
+  </view>
+</scroll-view>

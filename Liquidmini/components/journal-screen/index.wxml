@@ -1,0 +1,40 @@
+<scroll-view scroll-y class="jn-scroll">
+  <view class="jn">
+    <view class="jn-head">
+      <text class="jn-zh title-engrave">微醺日记</text>
+      <text class="jn-count">{{count}} 段记忆</text>
+    </view>
+    <view class="jn-divider"></view>
+
+    <view wx:if="{{count === 0}}" class="jn-empty">
+      <icon name="journal" size="48" color="#5a4a2e"></icon>
+      <text class="jn-empty-1">日记还是空的。</text>
+      <text class="jn-empty-2">每一杯酒，都可以在这里被封存为一段心情。</text>
+      <view class="btn" bindtap="goHome">去调一杯</view>
+    </view>
+
+    <view wx:else class="jn-list">
+      <view wx:for="{{cards}}" wx:key="id" class="jn-card">
+        <view class="jn-banner" data-id="{{item.id}}" bindtap="open">
+          <image class="jn-scene" src="{{item.scene}}" mode="aspectFill"></image>
+          <view class="jn-scrim-l"></view>
+          <view class="jn-scrim-r"></view>
+          <view class="jn-glass">
+            <glass glass-type="{{item.glass}}" family="{{item.family}}" liquid-color="{{item.liquidColor}}" ice="{{item.ice}}" fill-level="{{item.fill}}" fizzy="{{item.fizzy}}" garnishes="{{item.garnishes}}" size="{{110}}" fit="{{true}}" css-height="128px"></glass>
+          </view>
+          <view class="jn-title-wrap">
+            <text class="jn-title line-clamp-2">{{item.title}}</text>
+            <text class="jn-titleen">{{item.titleEn}}</text>
+            <view class="jn-mode">{{item.modeName}}</view>
+          </view>
+          <view wx:if="{{item.hidden}}" class="jn-hidden"><icon name="lock" size="10" color="#E3C684"></icon><text>隐藏</text></view>
+        </view>
+        <view class="jn-foot" data-id="{{item.id}}" bindtap="open">
+          <text class="jn-poem line-clamp-2">{{item.poem}}</text>
+          <text class="jn-date">{{item.date}}</text>
+        </view>
+        <view class="jn-del" data-id="{{item.id}}" catchtap="remove"><icon name="trash" size="14" color="#b89b6a"></icon></view>
+      </view>
+    </view>
+  </view>
+</scroll-view>
