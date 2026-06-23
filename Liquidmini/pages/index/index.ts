@@ -6,6 +6,10 @@
  */
 import { store, type View } from "../../lib/store";
 import { sound } from "../../lib/sound/index";
+import { loadServerFont } from "../../lib/fonts";
+import { FONT_MAOKEN, FONT_CINZEL, FONT_CORMORANT } from "../../lib/config";
+
+let fontsLoaded = false;
 
 const SECTION: Record<string, { zh: string; en: string }> = {
   pure: { zh: "纯饮", en: "The Pure Pour" },
@@ -47,6 +51,16 @@ Page({
         rankProgress: Math.round(rank.progress * 100),
       });
     });
+  },
+
+  onReady() {
+    // Load display fonts AFTER the first render — a global wx.loadFontFace called
+    // earlier (app.onLaunch) fails on-device with "A network error occurred."
+    if (fontsLoaded) return;
+    fontsLoaded = true;
+    loadServerFont("Maoken Fengyasong", FONT_MAOKEN);
+    if (FONT_CINZEL) loadServerFont("Cinzel", FONT_CINZEL);
+    if (FONT_CORMORANT) loadServerFont("Cormorant Garamond", FONT_CORMORANT);
   },
 
   onUnload() {
