@@ -14,9 +14,12 @@ export const API_BASE = `${SERVER}/api`;
  *  404 in the mini-program, so leave them "" to fall back to Maoken/system serif,
  *  or self-host the woff2 on the deployment and point these at them, e.g.
  *  `${SERVER}/fonts/cinzel.woff2`. */
-export const FONT_MAOKEN = `${SERVER}/fonts/maoken-fengyasong.woff2`;
-export const FONT_CINZEL = `${SERVER}/fonts/cinzel.woff2`;
-export const FONT_CORMORANT = `${SERVER}/fonts/cormorant-garamond.woff2`;
+// TTF (not woff2): WeChat's on-device loadFontFace is unreliable with woff2,
+// especially on Android — TTF works everywhere. Maoken is subset to GB2312 + all
+// in-app text (7.2MB woff2 → 2.5MB ttf) so it downloads fast on mobile too.
+export const FONT_MAOKEN = `${SERVER}/fonts/maoken-fengyasong.ttf`;
+export const FONT_CINZEL = `${SERVER}/fonts/cinzel.ttf`;
+export const FONT_CORMORANT = `${SERVER}/fonts/cormorant-garamond.ttf`;
 
 /** Scene backdrops, keyed the same way as the web build's SceneBackdrop. */
 export const SCENE_BASE = `${SERVER}/art`;

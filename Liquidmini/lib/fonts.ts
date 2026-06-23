@@ -14,17 +14,27 @@ function loadFromPath(family: string, path: string, onOk?: () => void, onFail?: 
       family,
       source: `url("${path}")`,
       scopes: ["webview", "native"],
-      success: () => { if (onOk) onOk(); },
-      fail: () => { if (onFail) onFail(); },
+      success: () => { console.log(`[font] loaded ${family} from ${path}`); if (onOk) onOk(); },
+      fail: (err: any) => { console.warn(`[font] loadFontFace failed ${family} from ${path}`, err); if (onFail) onFail(); },
     });
   } catch (e) {
+    console.warn(`[font] loadFontFace threw ${family}`, e);
     if (onFail) onFail();
   }
 }
 
+/** djb2 — short stable hash so the cache invalidates when the font URL changes. */
+function hash(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
 export function loadServerFont(family: string, url: string) {
-  const key = `fontfile_${family}`;
-  // 1) already cached locally?
+  // key includes the URL hash so changing the file (e.g. woff2 → ttf) forces a
+  // fresh download instead of re-loading a stale cached file.
+  const key = `fontfile_${family}_${hash(url)}`;
+  // 1) already cached locally for THIS url?
   try {
     const cached = wx.getStorageSync(key);
     if (cached) {
@@ -47,6 +57,7 @@ function downloadAndLoad(family: string, url: string, key: string) {
       url,
       success: (res: any) => {
         if (res.statusCode !== 200 || !res.tempFilePath) {
+          console.warn(`[font] download ${family} bad status`, res && res.statusCode);
           loadFromPath(family, url); // last resort: direct URL
           return;
         }
@@ -67,9 +78,15 @@ function downloadAndLoad(family: string, url: string, key: string) {
           loadFromPath(family, res.tempFilePath);
         }
       },
-      fail: () => loadFromPath(family, url),
+      fail: (err: any) => {
+        // downloadFile blocked on a real device almost always means the domain
+        // isn't in the downloadFile 合法域名 allowlist (mp.weixin.qq.com → 开发设置).
+        console.warn(`[font] downloadFile failed ${family} — check downloadFile 合法域名 for the host`, err);
+        loadFromPath(family, url);
+      },
     });
   } catch (e) {
+    console.warn(`[font] downloadFile threw ${family}`, e);
     loadFromPath(family, url);
   }
 }
