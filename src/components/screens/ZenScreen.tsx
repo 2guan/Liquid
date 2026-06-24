@@ -13,6 +13,7 @@ import {
   type FlavorCategory,
 } from "@/lib/data/flavors";
 import { cocktailAI } from "@/lib/ai/cocktailAI";
+import { maybeGradientPour } from "@/lib/tokens";
 import { sound } from "@/lib/sound";
 import { useAtelier } from "@/store/useAtelier";
 import { useNav } from "@/store/useNav";
@@ -95,6 +96,7 @@ export default function ZenScreen({ layout }: { layout: LayoutMode }) {
         family: f!.family,
       }));
     const analysis = await cocktailAI.analyzeFlavorMix(picks);
+    if (!analysis.hidden) maybeGradientPour(analysis); // ~20% get a gradient body (keep unlocked recipes as-authored)
     sound.play(analysis.hidden ? "unlock" : "success");
     addXp(analysis.hidden ? 120 : 55);
     recordDrink(analysis, "zen");

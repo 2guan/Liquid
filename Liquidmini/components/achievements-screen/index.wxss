@@ -12,13 +12,18 @@
 .rank-bar { height: 10px; border-radius: 999px; background: #2A231B; overflow: hidden; margin-top: 14px; }
 .rank-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #A9701F, #D89C3A, #E3C684); }
 .rank-meta { display: flex; justify-content: space-between; font-size: 11px; color: rgba(231,214,177,0.45); margin-top: 8px; }
-.ladder { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 16px; }
-.ladder-cell { border-radius: 9px; border: 1px solid rgba(200,164,93,0.12); padding: 7px 4px; text-align: center; }
-.ladder-cell.on { border-color: rgba(200,164,93,0.4); background: rgba(200,164,93,0.08); }
-.ladder-cell.cur { border-color: rgba(200,164,93,0.7); background: rgba(200,164,93,0.16); }
-.ladder-name { display: block; font-size: 11px; color: rgba(231,214,177,0.4); }
-.ladder-cell.on .ladder-name { color: #E3C684; }
-.ladder-xp { display: block; font-size: 9px; color: rgba(231,214,177,0.35); }
+/* rank timeline: current + next two milestones */
+.timeline { display: flex; align-items: flex-start; margin-top: 18px; }
+.tl-node { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 84px; flex-shrink: 0; }
+.tl-dot { width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(200,164,93,0.4); background: #15110d; }
+.tl-node.done .tl-dot { background: rgba(200,164,93,0.55); border-color: rgba(200,164,93,0.55); }
+.tl-node.cur .tl-dot { background: #E3C684; border-color: #E3C684; box-shadow: 0 0 10px -2px #E3C684; }
+.tl-name { font-size: 12px; line-height: 1.2; text-align: center; color: rgba(231,214,177,0.45); }
+.tl-node.done .tl-name { color: rgba(231,214,177,0.7); }
+.tl-node.cur .tl-name { color: #E3C684; }
+.tl-xp { font-size: 9px; color: rgba(231,214,177,0.35); }
+.tl-conn { flex: 1; height: 3px; border-radius: 999px; background: rgba(200,164,93,0.15); margin-top: 7px; position: relative; overflow: hidden; }
+.tl-conn-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: linear-gradient(90deg, #D89C3A, #E3C684); }
 
 .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 18px; }
 .stat { display: flex; flex-direction: column; align-items: center; gap: 6px; border-radius: 14px; border: 1px solid rgba(200,164,93,0.15); background: rgba(21,17,13,0.5); padding: 16px 8px; }

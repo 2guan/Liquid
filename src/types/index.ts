@@ -4,7 +4,9 @@
  * between the state machines, the AI layer and the pure render components.
  */
 
-import type { SpiritFamily } from "@/lib/tokens";
+import type { SpiritFamily, LiquidLayer } from "@/lib/tokens";
+
+export type { LiquidLayer };
 
 /** A glass id from the glassware cabinet (src/lib/data/glasses.ts). */
 export type GlassType = string;
@@ -64,6 +66,8 @@ export interface Recipe {
   steps?: string[];
   /** true for the zero-proof category */
   alcoholFree?: boolean;
+  /** colour-layered drinks (B-52, Black Velvet…): bands bottom → top */
+  layers?: LiquidLayer[];
 }
 
 /** The canonical AI output structure (product_spec §4.2). */
@@ -86,6 +90,8 @@ export interface CocktailResult {
   fillLevel?: number;
   /** true when a hidden / signature recipe was unlocked */
   hidden?: boolean;
+  /** colour-layered drinks: bands bottom → top (overrides the single fill) */
+  layers?: LiquidLayer[];
 }
 
 export interface JournalEntry {
@@ -104,6 +110,7 @@ export interface JournalEntry {
   liquidColor?: string;
   fillLevel?: number;
   hidden?: boolean;
+  layers?: LiquidLayer[];
 }
 
 export interface MoodInput {

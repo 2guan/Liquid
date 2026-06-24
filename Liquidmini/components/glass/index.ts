@@ -4,7 +4,7 @@
  * plain properties (mirrors the web build's <Glass> component).
  */
 import type { GlassType, IceType, LiquidState } from "../../lib/types";
-import type { SpiritFamily } from "../../lib/tokens";
+import type { SpiritFamily, LiquidLayer } from "../../lib/tokens";
 import type { GarnishSpec } from "../../lib/data/garnish";
 import { glassDataUri } from "../../lib/svg/glass";
 
@@ -21,6 +21,7 @@ Component({
     fit: { type: Boolean, value: false },
     fizzy: { type: Boolean, value: false },
     garnishes: { type: Array, value: [] as GarnishSpec[] },
+    layers: { type: Array, value: [] as LiquidLayer[] },
     title: { type: String, value: "" },
     /** CSS width/height for the wrapping image (e.g. "100%", "240rpx") */
     cssWidth: { type: String, value: "" },
@@ -35,7 +36,7 @@ Component({
     },
   },
   observers: {
-    "glassType, fillLevel, family, liquidColor, ice, state, glow, size, fit, fizzy, garnishes": function () {
+    "glassType, fillLevel, family, liquidColor, ice, state, glow, size, fit, fizzy, garnishes, layers": function () {
       this.rebuild();
     },
   },
@@ -54,6 +55,7 @@ Component({
         fit: p.fit,
         fizzy: p.fizzy,
         garnishes: (p.garnishes && p.garnishes.length ? p.garnishes : undefined) as GarnishSpec[] | undefined,
+        layers: (p.layers && p.layers.length ? p.layers : undefined) as LiquidLayer[] | undefined,
         title: p.title || undefined,
       });
       this.setData({ src });

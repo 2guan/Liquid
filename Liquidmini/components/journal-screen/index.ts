@@ -22,6 +22,7 @@ function entryToResult(e: JournalEntry): CocktailResult {
     liquidColor: e.liquidColor,
     fillLevel: e.fillLevel,
     hidden: e.hidden,
+    layers: e.layers,
   };
 }
 
@@ -67,6 +68,7 @@ Component({
         fill: e.fillLevel != null ? e.fillLevel : servedFill(e.glass),
         fizzy: isFizzy(e.recipe),
         garnishes: garnishesFor(e.recipe),
+        layers: e.layers || [],
       }));
       this.setData({ cards, count: journal.length });
     },

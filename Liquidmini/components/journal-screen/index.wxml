@@ -23,7 +23,7 @@
           <view class="jn-scrim-l"></view>
           <view class="jn-scrim-r"></view>
           <view class="jn-glass">
-            <glass glass-type="{{item.glass}}" family="{{item.family}}" liquid-color="{{item.liquidColor}}" ice="{{item.ice}}" fill-level="{{item.fill}}" fizzy="{{item.fizzy}}" garnishes="{{item.garnishes}}" size="{{110}}" fit="{{true}}" css-height="128px"></glass>
+            <glass glass-type="{{item.glass}}" family="{{item.family}}" liquid-color="{{item.liquidColor}}" layers="{{item.layers}}" ice="{{item.ice}}" fill-level="{{item.fill}}" fizzy="{{item.fizzy}}" garnishes="{{item.garnishes}}" size="{{110}}" fit="{{true}}" css-height="128px"></glass>
           </view>
           <view class="jn-title-wrap">
             <text class="jn-title line-clamp-2">{{item.title}}</text>

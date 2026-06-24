@@ -95,6 +95,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
       liquidColor: result.liquidColor,
       fillLevel: result.fillLevel,
       hidden: result.hidden,
+      layers: result.layers,
     });
     addXp(20);
     setSaved(true);
@@ -132,7 +133,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
 
       <div className={`relative ${isLand ? "flex items-center gap-8 px-8 py-7" : "flex flex-col items-center px-6 py-8"}`}>
         <motion.div initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="shrink-0">
-          <Glass glassType={result.glass} family={result.family} liquidColor={result.liquidColor} ice={result.ice} fillLevel={result.fillLevel ?? servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} size={isLand ? 200 : 170} />
+          <Glass glassType={result.glass} family={result.family} liquidColor={result.liquidColor} layers={result.layers} ice={result.ice} fillLevel={result.fillLevel ?? servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} size={isLand ? 200 : 170} />
         </motion.div>
 
         <div className={`flex flex-col gap-1.5 ${isLand ? "items-start" : "items-center"}`}>
@@ -158,14 +159,14 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
             {/* opened from the journal → it's already saved, hide the save action */}
             {fromJournal ? null : (
               <Button variant="primary" onClick={handleSave}>
-                <Icon name={saved ? "check" : "save"} size={16} /> {saved ? "已保存" : "保存到日记"}
+                <Icon name={saved ? "check" : "save"} size={16} /> {saved ? "已加入" : "加入日记"}
               </Button>
             )}
             <Button variant="ghost" onClick={handleShare}>
-              <Icon name="share" size={16} /> 分享
+              <Icon name="share" size={16} /> 文字分享
             </Button>
             <Button variant="ghost" onClick={() => downloadShareCard(result)}>
-              <Icon name="droplet" size={16} /> 导出酒卡
+              <Icon name="droplet" size={16} /> 保存酒卡
             </Button>
           </div>
         </div>

@@ -2,8 +2,8 @@
 
 import { useId, type CSSProperties } from "react";
 import type { GlassType, IceType, LiquidState } from "@/types";
-import type { SpiritFamily } from "@/lib/tokens";
-import { liquidRamp, rampFromColor } from "@/lib/tokens";
+import type { SpiritFamily, LiquidLayer } from "@/lib/tokens";
+import { liquidRamp, rampFromColor, layerBands, layerGradientStops } from "@/lib/tokens";
 import { geomFor, halfWidthAt } from "@/lib/data/glasses";
 import type { GarnishSpec } from "@/lib/data/garnish";
 import { IceGroup } from "./Ice";
@@ -16,6 +16,8 @@ export interface GlassProps {
   family?: SpiritFamily;
   /** explicit liquid colour (any hex) — overrides `family` when set */
   liquidColor?: string;
+  /** colour-layered drink (B-52…): bands bottom → top, overrides the single fill */
+  layers?: LiquidLayer[];
   ice?: IceType;
   state?: LiquidState;
   /** amber halo behind the glass for hero placements */
@@ -61,6 +63,7 @@ export default function Glass({
   fillLevel = 0,
   family = "whisky",
   liquidColor,
+  layers,
   ice = "none",
   state = "still",
   glow = false,
@@ -120,6 +123,12 @@ export default function Glass({
   const surfaceHW = Math.max(2, halfWidthAt(geom, liquidTop) - 2);
   const hasLiquid = level > 0.005;
   const surfaceRy = surfaceHW * 0.14 + 1.5;
+
+  // colour-layered drinks (B-52, Black Velvet…): slice the liquid into bands.
+  const bands = layers && layers.length > 1 && hasLiquid ? layerBands(layers, liquidTop, geom.cup.bottom + 30) : null;
+  const surfHi = bands ? bands[bands.length - 1].hi : hi;
+  const surfShadow = bands ? bands[bands.length - 1].shadow : shadow;
+  const baseHi = bands ? bands[0].hi : hi;
 
   // ── ice sizing & buoyancy, matched to the cup and the liquid level ──
   // interior half-width (leave a little gap to the glass wall)
@@ -268,18 +277,34 @@ export default function Glass({
       {/* liquid, clipped to the bowl interior */}
       {hasLiquid && (
         <g clipPath={`url(#cup-${uid})`}>
-          <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liquid-${uid})`} />
+          {bands ? (
+            <>
+              {/* the whole layered liquid as ONE rect + one continuous gradient
+                  (adjacent layers meet at a blended colour) — drawing separate
+                  band rects left antialiased seam lines on Android. Translucent. */}
+              <defs>
+                <linearGradient id={`lay-${uid}`} x1="0" y1="0" x2="0" y2="1">
+                  {layerGradientStops(bands, liquidTop, geom.cup.bottom + 30).map((s, i) => (
+                    <stop key={i} offset={`${s.offset * 100}%`} stopColor={s.color} />
+                  ))}
+                </linearGradient>
+              </defs>
+              <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#lay-${uid})`} opacity="0.7" />
+            </>
+          ) : (
+            <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liquid-${uid})`} />
+          )}
           {/* wall shading — darker against the glass, a faint lit core in the middle */}
-          <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liqEdge-${uid})`} />
+          {!bands && <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liqEdge-${uid})`} />}
           {/* light shaft through the liquid */}
           <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liqlight-${uid})`} opacity="0.6" />
           {/* warm caustic pool gathered at the base */}
-          <ellipse cx="100" cy={geom.cup.bottom - 5} rx={surfaceHW * 0.74} ry="7" fill={hi} opacity="0.3" />
+          <ellipse cx="100" cy={geom.cup.bottom - 5} rx={surfaceHW * 0.74} ry="7" fill={baseHi} opacity="0.3" />
           <ellipse cx="100" cy={geom.cup.bottom - 4} rx={surfaceHW * 0.4} ry="3.5" fill="#ffffff" opacity="0.16" />
           {/* surface-tension shadow just beneath the meniscus */}
-          <ellipse cx="100" cy={liquidTop + surfaceRy + 2} rx={surfaceHW} ry={surfaceRy} fill={shadow} opacity="0.28" />
+          <ellipse cx="100" cy={liquidTop + surfaceRy + 2} rx={surfaceHW} ry={surfaceRy} fill={surfShadow} opacity="0.28" />
           {/* meniscus disc */}
-          <ellipse cx="100" cy={liquidTop} rx={surfaceHW} ry={surfaceRy} fill={hi} opacity="0.6" />
+          <ellipse cx="100" cy={liquidTop} rx={surfaceHW} ry={surfaceRy} fill={surfHi} opacity="0.6" />
           {/* bright skin line on the surface */}
           <ellipse
             cx="100"

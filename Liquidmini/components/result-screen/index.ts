@@ -46,6 +46,7 @@ Component({
     fillLevel: 0.5,
     fizzy: false,
     garnishes: [] as any[],
+    layers: [] as any[],
     // export-card overlay
     exporting: false,
     showCard: false,
@@ -120,6 +121,7 @@ Component({
         fillLevel: fill,
         fizzy,
         garnishes,
+        layers: result.layers || [],
         showCard: false,
         cardImage: "",
       });
@@ -191,6 +193,7 @@ Component({
         liquidColor: r.liquidColor,
         fillLevel: r.fillLevel,
         hidden: r.hidden,
+        layers: r.layers,
       });
       store.addXp(20);
       this.setData({ saved: true });
@@ -219,20 +222,28 @@ Component({
           const ctx = node.getContext("2d");
           let dpr = 2;
           try { dpr = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 2; } catch (e) {}
-          const { W, H } = drawShareCard(node, ctx, dpr, r);
-          const capture = () => wx.canvasToTempFilePath(
-            {
-              canvas: node,
-              x: 0, y: 0, width: W, height: H,
-              destWidth: W * dpr, destHeight: H * dpr,
-              fileType: "png",
-              success: (rr: any) => this.setData({ exporting: false, showCard: true, cardImage: rr.tempFilePath }),
-              fail: () => { this.setData({ exporting: false }); this.flash("生成失败"); },
-            },
-            this,
-          );
-          if (node.requestAnimationFrame) node.requestAnimationFrame(capture);
-          else capture();
+          const render = (qrImg: any) => {
+            const { W, H } = drawShareCard(node, ctx, dpr, r, qrImg);
+            const capture = () => wx.canvasToTempFilePath(
+              {
+                canvas: node,
+                x: 0, y: 0, width: W, height: H,
+                destWidth: W * dpr, destHeight: H * dpr,
+                fileType: "png",
+                success: (rr: any) => this.setData({ exporting: false, showCard: true, cardImage: rr.tempFilePath }),
+                fail: () => { this.setData({ exporting: false }); this.flash("生成失败"); },
+              },
+              this,
+            );
+            if (node.requestAnimationFrame) node.requestAnimationFrame(capture);
+            else capture();
+          };
+          // load the mini-program code, but never let a missing/failed asset
+          // block the export — fall back to the baked matrix.
+          const qr = node.createImage();
+          qr.onload = () => render(qr);
+          qr.onerror = () => render(null);
+          qr.src = "/assets/minicode.png";
         });
     },
 

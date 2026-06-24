@@ -47,7 +47,8 @@ function tone(freq: number, at: number, dur: number, type: string, gain: number)
   g.gain.setValueAtTime(0.0001, at);
   g.gain.exponentialRampToValueAtTime(gain, at + 0.012);
   g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  o.connect(g).connect(master);
+  o.connect(g);
+  g.connect(master);
   o.start(at);
   o.stop(at + dur + 0.02);
 }
@@ -74,7 +75,9 @@ function noiseBurst(at: number, dur: number, filter: string, freq: number, gain:
   g.gain.setValueAtTime(0.0001, at);
   g.gain.exponentialRampToValueAtTime(gain, at + 0.03);
   g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  src.connect(bp).connect(g).connect(master);
+  src.connect(bp);
+  bp.connect(g);
+  g.connect(master);
   src.start(at);
   src.stop(at + dur + 0.02);
 }
@@ -96,7 +99,8 @@ function startAmbient() {
   drone.frequency.value = 65.41; // C2
   const droneG = audio.createGain();
   droneG.gain.value = 0.012;
-  drone.connect(droneG).connect(bus);
+  drone.connect(droneG);
+  droneG.connect(bus);
   drone.start(now);
 
   // ── quiet smoky room tone (brown noise through a lowpass) ──
@@ -116,7 +120,9 @@ function startAmbient() {
   lp.frequency.value = 300;
   const roomG = audio.createGain();
   roomG.gain.value = 0.009;
-  room.connect(lp).connect(roomG).connect(bus);
+  room.connect(lp);
+  lp.connect(roomG);
+  roomG.connect(bus);
   room.start(now);
 
   // ── a mellow Rhodes-ish pad voice (sine + soft octave partial, lowpassed) ──
@@ -137,8 +143,10 @@ function startAmbient() {
     warm.type = "lowpass";
     warm.frequency.value = 1500;
     o.connect(g);
-    harm.connect(hg).connect(g);
-    g.connect(warm).connect(bus);
+    harm.connect(hg);
+    hg.connect(g);
+    g.connect(warm);
+    warm.connect(bus);
     o.start(at);
     harm.start(at);
     o.stop(at + dur + 0.1);
@@ -154,7 +162,8 @@ function startAmbient() {
     g.gain.setValueAtTime(0.0001, at);
     g.gain.exponentialRampToValueAtTime(gain, at + 0.05);
     g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-    o.connect(g).connect(bus);
+    o.connect(g);
+    g.connect(bus);
     o.start(at);
     o.stop(at + dur + 0.05);
   };
@@ -247,6 +256,7 @@ export const sound = {
     }
     if (!c) return;
     const t = c.currentTime;
+    try {
     switch (name) {
       case "click":
         tone(880, t, 0.05, "sine", 0.05);
@@ -278,6 +288,9 @@ export const sound = {
         tone(440, t, 0.25, "sine", 0.05);
         tone(660, t + 0.05, 0.35, "sine", 0.04);
         break;
+    }
+    } catch (e) {
+      /* audio synthesis quirk (e.g. WeChat Android) — never break a user flow */
     }
   },
 };

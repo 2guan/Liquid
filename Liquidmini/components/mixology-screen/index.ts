@@ -172,6 +172,7 @@ Component({
       let l = 0;
       this._veil = setInterval(() => { l = (l + 1) % VEIL_LINES.length; this.setData({ veilLine: VEIL_LINES[l] }); }, 900) as unknown as number;
       const result = await cocktailAI.describeMix(r, success, accuracy);
+      if (r.layers) result.layers = r.layers; // ensure layered drinks layer regardless of AI path
       if (this._veil) { clearInterval(this._veil); this._veil = null; }
       this.setData({ busy: false });
       store.recordDrink(result, "mixology");

@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 import type { CocktailResult } from "@/types";
-import { liquidRamp, rampFromColor, isFizzy } from "@/lib/tokens";
+import { liquidRamp, rampFromColor, isFizzy, layerBands, layerGradientStops } from "@/lib/tokens";
 import { glassById, iceById } from "@/lib/data/catalog";
 import { geomFor, halfWidthAt, servedFill } from "@/lib/data/glasses";
 import { garnishesFor, type GarnishSpec, type GarnishKind } from "@/lib/data/garnish";
@@ -81,21 +81,27 @@ function layout(result: CocktailResult): Layout {
 
   // story
   const storyBody = result.story.replace(/\n[\s\S]*$/, "").trim();
-  const lines = wrapCJK(storyBody, 21).slice(0, 6);
-  // a small, semi-transparent gold QR floated to the right of the STORY divider
+  // story body is left-aligned across the left 3/4; the QR occupies the right
+  // quarter, vertically centred against the text block.
   const matrix = QRCode.create(siteUrl(), { errorCorrectionLevel: "M" }).modules;
-  const QSIZE = 58; // edge length (card units) — small & unobtrusive
-  const qrX = W - PAD - QSIZE; // right side, kept off the frame edge
   const QR_GOLD = "rgba(200,164,93,0.5)";
+  const QSIZE = 132;                 // ≈ right quarter of the card
+  const qrX = W - PAD - QSIZE;       // left edge of the code column
+  const textRight = qrX - 24;        // story wraps before the code gutter
+  const lines = wrapCJK(storyBody, 23).slice(0, 6);
   if (lines.length) {
-    divider(ops, y, "微醺絮语 · THE STORY", qrX - 16); // cap the right rule before the QR
-    ops.push({ t: "qr", x: qrX, y: y - 5 - QSIZE / 2, area: QSIZE, size: matrix.size, data: matrix.data, color: QR_GOLD });
-    y += 42;
+    divider(ops, y, "微醺絮语 · THE STORY", textRight); // cap the right rule before the QR
+    const blockTop = y + 42;
+    const lineH = 33;
+    let ty = blockTop;
     for (const line of lines) {
-      ops.push({ t: "text", x: CX, y, size: 18, color: "rgba(231,214,177,0.82)", stack: CN, align: "center", text: line });
-      y += 33;
+      ops.push({ t: "text", x: PAD, y: ty, size: 18, color: "rgba(231,214,177,0.82)", stack: CN, align: "left", text: line });
+      ty += lineH;
     }
-    y += 14;
+    let qrY = blockTop + ((lines.length - 1) * lineH) / 2 - QSIZE / 2 - 9;
+    if (qrY < y + 4) qrY = y + 4;
+    ops.push({ t: "qr", x: qrX, y: qrY, area: QSIZE, size: matrix.size, data: matrix.data, color: QR_GOLD });
+    y = ty + 14;
   } else {
     ops.push({ t: "qr", x: qrX, y, area: QSIZE, size: matrix.size, data: matrix.data, color: QR_GOLD });
     y += QSIZE + 10;
@@ -290,32 +296,45 @@ function drawGlass(
   } else if (opaqueFam) {
     aT = 0.97; aM = 0.97; aB = 1;
   }
-  const liq = ctx.createLinearGradient(0, liquidTop, 0, fillBottom);
-  liq.addColorStop(0, withAlpha(hi, aT));
-  liq.addColorStop(0.45, withAlpha(body, aM));
-  liq.addColorStop(1, withAlpha(shadow, aB));
-  ctx.fillStyle = liq;
-  ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
-  // wall shading — the body darkens toward the glass walls (3D volume)
-  const liqEdge = ctx.createLinearGradient(0, 0, 200, 0);
-  liqEdge.addColorStop(0, withAlpha(shadow, 0.58));
-  liqEdge.addColorStop(0.09, withAlpha(shadow, 0.22));
-  liqEdge.addColorStop(0.24, withAlpha(shadow, 0));
-  liqEdge.addColorStop(0.6, withAlpha(hi, 0.1));
-  liqEdge.addColorStop(0.78, withAlpha(shadow, 0));
-  liqEdge.addColorStop(0.92, withAlpha(shadow, 0.26));
-  liqEdge.addColorStop(1, withAlpha(shadow, 0.5));
-  ctx.fillStyle = liqEdge;
-  ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
+  // colour-layered drinks (B-52…) fill as discrete bands; others as a gradient.
+  const bands = result.layers && result.layers.length > 1 ? layerBands(result.layers, liquidTop, fillBottom) : null;
+  if (bands) {
+    // one continuous gradient over the whole liquid (no abutting band rects → no
+    // seam lines), translucent so it reads like real layered liquid
+    const lg = ctx.createLinearGradient(0, liquidTop, 0, fillBottom);
+    for (const s of layerGradientStops(bands, liquidTop, fillBottom)) lg.addColorStop(s.offset, withAlpha(s.color, 0.7));
+    ctx.fillStyle = lg;
+    ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
+  } else {
+    const liq = ctx.createLinearGradient(0, liquidTop, 0, fillBottom);
+    liq.addColorStop(0, withAlpha(hi, aT));
+    liq.addColorStop(0.45, withAlpha(body, aM));
+    liq.addColorStop(1, withAlpha(shadow, aB));
+    ctx.fillStyle = liq;
+    ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
+    // wall shading — the body darkens toward the glass walls (3D volume)
+    const liqEdge = ctx.createLinearGradient(0, 0, 200, 0);
+    liqEdge.addColorStop(0, withAlpha(shadow, 0.58));
+    liqEdge.addColorStop(0.09, withAlpha(shadow, 0.22));
+    liqEdge.addColorStop(0.24, withAlpha(shadow, 0));
+    liqEdge.addColorStop(0.6, withAlpha(hi, 0.1));
+    liqEdge.addColorStop(0.78, withAlpha(shadow, 0));
+    liqEdge.addColorStop(0.92, withAlpha(shadow, 0.26));
+    liqEdge.addColorStop(1, withAlpha(shadow, 0.5));
+    ctx.fillStyle = liqEdge;
+    ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
+  }
+  const surfHi = bands ? bands[bands.length - 1].hi : hi;
+  const baseHi = bands ? bands[0].hi : hi;
   // warm caustic pool at the base
   ctx.globalAlpha = 0.3;
-  ctx.fillStyle = hi;
+  ctx.fillStyle = baseHi;
   ellipse(ctx, 100, cb - 5, surfHW * 0.74, 7);
   ctx.fill();
   ctx.globalAlpha = 1;
   // meniscus disc + bright skin line
   ctx.globalAlpha = 0.55;
-  ctx.fillStyle = hi;
+  ctx.fillStyle = surfHi;
   ellipse(ctx, 100, liquidTop, surfHW, surfRy);
   ctx.fill();
   ctx.globalAlpha = 1;

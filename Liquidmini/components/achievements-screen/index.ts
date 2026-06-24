@@ -15,7 +15,7 @@ Component({
     progressPct: 0,
     xp: 0,
     nextText: "",
-    ranks: [] as any[],
+    timeline: [] as any[],
     stats: [] as any[],
     groups: [] as any[],
     doneCount: 0,
@@ -35,7 +35,7 @@ Component({
 
   methods: {
     rebuild(s: any) {
-      const { meta, progress, next } = store.rank();
+      const { meta, progress, next, index } = store.rank();
       const xp = s.xp;
 
       const stats = statsFrom({
@@ -85,7 +85,20 @@ Component({
         progressPct: Math.round(progress * 100),
         xp,
         nextText: next ? `距 ${next.name} 还需 ${next.minXp - xp} XP` : "已达最高阶位 · 液体诗人",
-        ranks: RANKS.map((r) => ({ id: r.id, name: r.name, xp: kxp(r.minXp), reached: xp >= r.minXp, current: r.id === meta.id })),
+        timeline: (() => {
+          const start = Math.max(0, index - 1); // 上一(已达成) · 当前 · 下一
+          return RANKS.slice(start, start + 3).map((r, i) => {
+            const g = start + i;
+            return {
+              id: r.id,
+              name: r.name,
+              state: g < index ? "done" : g === index ? "cur" : "future",
+              sub: g === index ? "当前" : `${kxp(r.minXp)} XP`,
+              // connector before this node: full once past it, else progress on the current→next segment
+              connFill: g <= index ? 100 : g - 1 === index ? Math.round(progress * 100) : 0,
+            };
+          });
+        })(),
         stats: [
           { label: "调制总数", value: s.pours, icon: "droplet" },
           { label: "徽章解锁", value: `${doneCount}/${BADGE_COUNT}`, icon: "trophy" },

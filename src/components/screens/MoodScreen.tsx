@@ -5,6 +5,7 @@ import { AnimatePresence } from "framer-motion";
 import type { LayoutMode } from "@/hooks/useLayout";
 import { MOOD_SEEDS, MOOD_PROMPTS } from "@/lib/data/moods";
 import { cocktailAI } from "@/lib/ai/cocktailAI";
+import { maybeGradientPour } from "@/lib/tokens";
 import { sound } from "@/lib/sound";
 import { useAtelier } from "@/store/useAtelier";
 import { useNav } from "@/store/useNav";
@@ -51,6 +52,7 @@ export default function MoodScreen({ layout }: { layout: LayoutMode }) {
     setVeilLine(0);
     sound.play("shake");
     const result = await cocktailAI.generateFromMood({ text: text.trim(), tags });
+    maybeGradientPour(result); // ~20% get a smooth two-tone gradient body
     addXp(50);
     recordDrink(result, "mood");
     setLastResult(result, "mood");

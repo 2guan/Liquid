@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import type { LayoutMode } from "@/hooks/useLayout";
 import { RANKS } from "@/lib/data/catalog";
 import {
@@ -24,7 +25,10 @@ export default function AchievementsScreen({ layout }: { layout: LayoutMode }) {
   const icesUsed = useAtelier((s) => s.icesUsed);
   const ingredientsUsed = useAtelier((s) => s.ingredientsUsed);
   const shares = useAtelier((s) => s.shares);
-  const { meta, progress, next } = useAtelier((s) => s.rank)();
+  const { meta, progress, next, index } = useAtelier((s) => s.rank)();
+  // timeline window: previous (achieved) · current · next — clamped at the ends.
+  const startIdx = Math.max(0, index - 1);
+  const tiers = RANKS.slice(startIdx, startIdx + 3).map((r, i) => ({ ...r, g: startIdx + i }));
 
   const stats = statsFrom({
     xp,
@@ -70,21 +74,35 @@ export default function AchievementsScreen({ layout }: { layout: LayoutMode }) {
           <span>{xp} XP</span>
           <span>{next ? `距 ${next.name} 还需 ${next.minXp - xp} XP` : "已达最高阶位 · 液体诗人"}</span>
         </div>
-        {/* full 12-tier ladder */}
-        <div className="mt-5 grid grid-cols-3 gap-2 md:grid-cols-6">
-          {RANKS.map((r) => {
-            const reached = xp >= r.minXp;
-            const current = r.id === meta.id;
+        {/* timeline: 上一(已达成) · 当前 · 下一 */}
+        <div className="mt-6 flex items-start">
+          {tiers.map((r, i) => {
+            const isCur = r.g === index;
+            const isDone = r.g < index;
+            // connector before this node: full if already past it, else fills by
+            // the current-rank progress when it's the current→next segment.
+            const fill = r.g <= index ? 100 : r.g - 1 === index ? progress * 100 : 0;
             return (
-              <div
-                key={r.id}
-                className={`rounded-lg border p-2 text-center transition-colors ${
-                  current ? "border-gold/70 bg-gold/15 shadow-amber-soft" : reached ? "border-gold/40 bg-gold/8" : "border-gold/12"
-                }`}
-              >
-                <p className={`font-cn text-[11px] leading-tight ${reached ? "text-gold-bright" : "text-paper/40"}`}>{r.name}</p>
-                <p className="font-ui text-[9px] text-paper/35">{r.minXp >= 1000 ? `${r.minXp / 1000}k` : r.minXp}</p>
-              </div>
+              <Fragment key={r.id}>
+                {i > 0 && (
+                  <div className="relative mt-[7px] h-[3px] flex-1 overflow-hidden rounded-full bg-gold/15">
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber to-gold-bright" style={{ width: `${fill}%` }} />
+                  </div>
+                )}
+                <div className="flex w-20 shrink-0 flex-col items-center gap-1.5 text-center">
+                  <span
+                    className={`h-3.5 w-3.5 rounded-full border-2 ${
+                      isCur
+                        ? "border-gold-bright bg-gold-bright shadow-amber-soft"
+                        : isDone
+                          ? "border-gold/55 bg-gold/55"
+                          : "border-gold/40 bg-bg-primary"
+                    }`}
+                  />
+                  <span className={`font-cn text-[12px] leading-tight ${isCur ? "text-gold-bright" : isDone ? "text-paper/70" : "text-paper/45"}`}>{r.name}</span>
+                  <span className="font-ui text-[9px] text-paper/35">{isCur ? "当前" : `${r.minXp >= 1000 ? `${r.minXp / 1000}k` : r.minXp} XP`}</span>
+                </div>
+              </Fragment>
             );
           })}
         </div>

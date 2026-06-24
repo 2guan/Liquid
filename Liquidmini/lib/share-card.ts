@@ -8,7 +8,7 @@
  *     (the web build generated it at runtime via the `qrcode` lib).
  */
 import type { CocktailResult } from "./types";
-import { liquidRamp, rampFromColor, isFizzy } from "./tokens";
+import { liquidRamp, rampFromColor, isFizzy, layerBands, layerGradientStops } from "./tokens";
 import { glassById, iceById } from "./data/catalog";
 import { geomFor, halfWidthAt, servedFill } from "./data/glasses";
 import { garnishesFor, type GarnishSpec, type GarnishKind } from "./data/garnish";
@@ -205,18 +205,25 @@ function layout(result: CocktailResult): Layout {
   y += 48;
 
   const storyBody = result.story.replace(/\n[\s\S]*$/, "").trim();
-  const lines = wrapCJK(storyBody, 21).slice(0, 6);
-  const QSIZE = 58;
-  const qrX = W - PAD - QSIZE;
+  // story body is left-aligned across the left 3/4; the mini-code occupies the
+  // right quarter, vertically centred against the text block.
+  const QSIZE = 132;                 // ≈ right quarter of the card
+  const qrX = W - PAD - QSIZE;       // left edge of the code column
+  const textRight = qrX - 24;        // story wraps before the code gutter
+  const lines = wrapCJK(storyBody, 23).slice(0, 6);
   if (lines.length) {
-    divider(ops, y, "微醺絮语 · THE STORY", qrX - 16);
-    ops.push({ t: "qr", x: qrX, y: y - 5 - QSIZE / 2, area: QSIZE });
-    y += 42;
+    divider(ops, y, "微醺絮语 · THE STORY", textRight);
+    const blockTop = y + 42;
+    const lineH = 33;
+    let ty = blockTop;
     for (const line of lines) {
-      ops.push({ t: "text", x: CX, y, size: 18, color: "rgba(231,214,177,0.82)", stack: CN, align: "center", text: line });
-      y += 33;
+      ops.push({ t: "text", x: PAD, y: ty, size: 18, color: "rgba(231,214,177,0.82)", stack: CN, align: "left", text: line });
+      ty += lineH;
     }
-    y += 14;
+    let qrY = blockTop + ((lines.length - 1) * lineH) / 2 - QSIZE / 2 - 9;
+    if (qrY < y + 4) qrY = y + 4;
+    ops.push({ t: "qr", x: qrX, y: qrY, area: QSIZE });
+    y = ty + 14;
   } else {
     ops.push({ t: "qr", x: qrX, y, area: QSIZE });
     y += QSIZE + 10;
@@ -240,7 +247,7 @@ function divider(ops: Op[], y: number, label: string, rightEnd: number = W - PAD
  * Draw the full share card. Sizes the canvas node, paints, returns {W,H} so the
  * caller can canvasToTempFilePath the exact region.
  */
-export function drawShareCard(canvas: any, ctx: any, dpr: number, result: CocktailResult): { W: number; H: number } {
+export function drawShareCard(canvas: any, ctx: any, dpr: number, result: CocktailResult, qrImg?: any): { W: number; H: number } {
   const clearFam = ["gin", "vodka", "sparkling", "rumWhite"].indexOf(result.family) > -1;
   const [hi, body, shadow] = result.liquidColor
     ? rampFromColor(result.liquidColor)
@@ -281,6 +288,11 @@ export function drawShareCard(canvas: any, ctx: any, dpr: number, result: Cockta
       continue;
     }
     if (op.t === "qr") {
+      // mini-program code image when available; fall back to the baked matrix
+      if (qrImg) {
+        ctx.drawImage(qrImg, op.x, op.y, op.area, op.area);
+        continue;
+      }
       const n = QR_SIZE;
       const cell = op.area / n;
       ctx.fillStyle = "rgba(200,164,93,0.5)";
@@ -415,15 +427,26 @@ function drawGlass(ctx: any, result: CocktailResult, hi: string, body: string, s
     aT = f; aM = f; aB = Math.min(1, f + 0.16);
   } else if (clearFam) { aT = 0.56; aM = 0.5; aB = 0.8; }
   else if (opaqueFam) { aT = 0.97; aM = 0.97; aB = 1; }
-  const liq = ctx.createLinearGradient(0, liquidTop, 0, fillBottom);
-  liq.addColorStop(0, withAlpha(hi, aT)); liq.addColorStop(0.45, withAlpha(body, aM)); liq.addColorStop(1, withAlpha(shadow, aB));
-  ctx.fillStyle = liq; ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
-  const liqEdge = ctx.createLinearGradient(0, 0, 200, 0);
-  liqEdge.addColorStop(0, withAlpha(shadow, 0.58)); liqEdge.addColorStop(0.09, withAlpha(shadow, 0.22)); liqEdge.addColorStop(0.24, withAlpha(shadow, 0));
-  liqEdge.addColorStop(0.6, withAlpha(hi, 0.1)); liqEdge.addColorStop(0.78, withAlpha(shadow, 0)); liqEdge.addColorStop(0.92, withAlpha(shadow, 0.26)); liqEdge.addColorStop(1, withAlpha(shadow, 0.5));
-  ctx.fillStyle = liqEdge; ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
-  ctx.globalAlpha = 0.3; ctx.fillStyle = hi; ellipse(ctx, 100, cb - 5, surfHW * 0.74, 7); ctx.fill(); ctx.globalAlpha = 1;
-  ctx.globalAlpha = 0.55; ctx.fillStyle = hi; ellipse(ctx, 100, liquidTop, surfHW, surfRy); ctx.fill(); ctx.globalAlpha = 1;
+  // colour-layered drinks (B-52…) fill as discrete bands; others as a gradient.
+  const bands = result.layers && result.layers.length > 1 ? layerBands(result.layers, liquidTop, fillBottom) : null;
+  if (bands) {
+    // one continuous gradient over the whole liquid → no seam lines, translucent
+    const lg = ctx.createLinearGradient(0, liquidTop, 0, fillBottom);
+    for (const s of layerGradientStops(bands, liquidTop, fillBottom)) lg.addColorStop(s.offset, withAlpha(s.color, 0.7));
+    ctx.fillStyle = lg; ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
+  } else {
+    const liq = ctx.createLinearGradient(0, liquidTop, 0, fillBottom);
+    liq.addColorStop(0, withAlpha(hi, aT)); liq.addColorStop(0.45, withAlpha(body, aM)); liq.addColorStop(1, withAlpha(shadow, aB));
+    ctx.fillStyle = liq; ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
+    const liqEdge = ctx.createLinearGradient(0, 0, 200, 0);
+    liqEdge.addColorStop(0, withAlpha(shadow, 0.58)); liqEdge.addColorStop(0.09, withAlpha(shadow, 0.22)); liqEdge.addColorStop(0.24, withAlpha(shadow, 0));
+    liqEdge.addColorStop(0.6, withAlpha(hi, 0.1)); liqEdge.addColorStop(0.78, withAlpha(shadow, 0)); liqEdge.addColorStop(0.92, withAlpha(shadow, 0.26)); liqEdge.addColorStop(1, withAlpha(shadow, 0.5));
+    ctx.fillStyle = liqEdge; ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
+  }
+  const surfHi = bands ? bands[bands.length - 1].hi : hi;
+  const baseHi = bands ? bands[0].hi : hi;
+  ctx.globalAlpha = 0.3; ctx.fillStyle = baseHi; ellipse(ctx, 100, cb - 5, surfHW * 0.74, 7); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.globalAlpha = 0.55; ctx.fillStyle = surfHi; ellipse(ctx, 100, liquidTop, surfHW, surfRy); ctx.fill(); ctx.globalAlpha = 1;
   ctx.strokeStyle = "rgba(255,246,226,0.5)"; ctx.lineWidth = 0.8; ellipse(ctx, 100, liquidTop, surfHW, surfRy); ctx.stroke();
   if (fizzy) {
     ctx.fillStyle = "rgba(255,255,255,0.55)";

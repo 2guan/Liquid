@@ -128,6 +128,7 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
     addXp(success ? 60 : 30);
     // AI writes the tasting notes & prose; falls back to the offline poet
     const result = await cocktailAI.describeMix(recipe, success, accuracy);
+    if (recipe.layers) result.layers = recipe.layers; // ensure layered drinks layer regardless of AI path
     setBusy(false);
     recordDrink(result, "mixology");
     setLastResult(result, "mixology");

@@ -19,11 +19,17 @@
         <text>{{xp}} XP</text>
         <text>{{nextText}}</text>
       </view>
-      <view class="ladder">
-        <view wx:for="{{ranks}}" wx:key="id" class="ladder-cell {{item.current ? 'cur' : ''}} {{item.reached ? 'on' : ''}}">
-          <text class="ladder-name">{{item.name}}</text>
-          <text class="ladder-xp">{{item.xp}}</text>
-        </view>
+      <view class="timeline">
+        <block wx:for="{{timeline}}" wx:key="id">
+          <view wx:if="{{index > 0}}" class="tl-conn">
+            <view class="tl-conn-fill" style="width:{{item.connFill}}%"></view>
+          </view>
+          <view class="tl-node {{item.state}}">
+            <view class="tl-dot"></view>
+            <text class="tl-name">{{item.name}}</text>
+            <text class="tl-xp">{{item.sub}}</text>
+          </view>
+        </block>
       </view>
     </view>
 

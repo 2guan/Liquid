@@ -25,7 +25,7 @@ export default function SettingsScreen({ layout }: { layout: LayoutMode }) {
           <Icon name={soundOn ? "sound-on" : "sound-off"} size={20} className="text-gold/70" />
           <div>
             <p className="font-cn text-sm text-paper">环境音效</p>
-            <p className="font-cn text-[11px] text-paper/45">吧台白噪音与交互音效</p>
+            <p className="font-cn text-[11px] text-paper/45">吧台背景音及交互音效</p>
           </div>
         </div>
         <IconButton icon={soundOn ? "sound-on" : "sound-off"} label="切换音效" active={soundOn} onClick={toggleSound} />
@@ -37,9 +37,9 @@ export default function SettingsScreen({ layout }: { layout: LayoutMode }) {
         <p className="title-engrave font-cn text-xl">微醺时刻</p>
         <p className="font-serif text-sm italic text-gold/75">The Sip &amp; Sigh</p>
         <p className="mt-3 font-cn text-[13px] leading-relaxed text-paper/60">
-          一杯酒，一段心情，一场灵感。以代码实时合成的酒馆音景与离线 AI 调酒师，为你斟出此刻独属的风味。
+          夜色温柔，城市次第熄灯。这里没有喧嚣，只有一盏暖光、一段心事，和一杯为你而调的酒。说出此刻的心绪，光影便为你斟满杯盏，把悲欢酿成色泽与气味——或浓烈，或清浅，或层层流转。愿每一次微醺，都是与自己温柔相认的时刻。
         </p>
-        <p className="mt-3 font-ui text-[11px] text-paper/35">v1.0 · EST 2024</p>
+        <p className="mt-3 font-ui text-[11px] text-paper/35">v1.02</p>
       </div>
     </div>
   );

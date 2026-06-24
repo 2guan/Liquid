@@ -4,6 +4,7 @@
 import type { FlavorPick } from "../../lib/types";
 import { FLAVOR_CATEGORIES, FLAVOR_COUNT, flavorById, flavorsByCategory, searchFlavors } from "../../lib/data/flavors";
 import { cocktailAI } from "../../lib/ai/cocktailAI";
+import { maybeGradientPour } from "../../lib/tokens";
 import { sound } from "../../lib/sound/index";
 import { store } from "../../lib/store";
 import { sceneForFamily } from "../../lib/config";
@@ -114,6 +115,7 @@ Component({
         .filter(Boolean)
         .map((f: any) => ({ id: f.id, name: f.name, nameEn: f.nameEn, category: f.category, color: f.color, flavor: f.flavor, family: f.family }));
       const analysis = await cocktailAI.analyzeFlavorMix(picks);
+      if (!analysis.hidden) maybeGradientPour(analysis); // ~20% get a gradient body
       if (this._veil) { clearInterval(this._veil); this._veil = null; }
       sound.play(analysis.hidden ? "unlock" : "success");
       store.addXp(analysis.hidden ? 120 : 55);

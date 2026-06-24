@@ -30,6 +30,7 @@ function entryToResult(e: JournalEntry): CocktailResult {
     liquidColor: e.liquidColor,
     fillLevel: e.fillLevel,
     hidden: e.hidden,
+    layers: e.layers,
   };
 }
 
@@ -86,7 +87,7 @@ export default function JournalScreen({ layout }: { layout: LayoutMode }) {
 
                     {/* glass on the right — vertically centred, pulled in from the edge */}
                     <div className="absolute inset-y-0 right-10 flex items-center">
-                      <Glass glassType={e.glass} family={e.family} liquidColor={e.liquidColor} ice={e.ice} fillLevel={e.fillLevel ?? servedFill(e.glass)} fizzy={isFizzy(e.recipe)} garnishes={garnishesFor(e.recipe)} size={104} fit />
+                      <Glass glassType={e.glass} family={e.family} liquidColor={e.liquidColor} layers={e.layers} ice={e.ice} fillLevel={e.fillLevel ?? servedFill(e.glass)} fizzy={isFizzy(e.recipe)} garnishes={garnishesFor(e.recipe)} size={104} fit />
                     </div>
 
                     {/* title on the banner, left side */}

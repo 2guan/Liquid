@@ -282,5 +282,6 @@ export function assembleMixResult(
     taste_profile: taste,
     story: `${baseStory}\n${tail}\n—— ${sig}`,
     emotion_mapping: success ? "对经典的敬意，藏在每一毫升的精确里。" : "偏差也是风格，干杯。",
+    layers: recipe.layers,
   };
 }

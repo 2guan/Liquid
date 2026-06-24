@@ -30,7 +30,12 @@
 .hero-name { font-family: var(--font-cinzel); font-size: 30px; color: #E7D6B1; letter-spacing: 0.05em; text-shadow: 0 2px 16px rgba(0,0,0,0.7); }
 .hero-nameen { font-family: var(--font-cormorant); font-style: italic; font-size: 18px; color: rgba(227,198,132,0.9); }
 .hero-emotion { margin-top: 4px; max-width: 520rpx; text-align: center; font-style: italic; font-size: 13px; line-height: 1.6; color: rgba(231,214,177,0.75); }
-.hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; justify-content: center; }
+/* three equal-width pills, centred — not stretched to the full row */
+.hero-actions { display: flex; flex-wrap: nowrap; gap: 8px; margin-top: 14px; justify-content: center; }
+.hero-actions .btn { width: 92px; box-sizing: border-box; padding: 7px 0; font-size: 13px; gap: 5px; justify-content: center; white-space: nowrap; }
+/* reset the native <button open-type="share"> (drop its full-width default + ::after border) */
+.share-btn { margin: 0; line-height: 1.2; }
+.share-btn::after { border: none; }
 
 /* recipe book */
 .book { border-radius: 18px; border: 1px solid rgba(200,164,93,0.25); overflow: hidden; }
@@ -66,10 +71,6 @@
 /* offscreen render canvas — kept out of view but still painted */
 .card-canvas { position: fixed; left: -3000px; top: 0; width: 720px; height: 1700px; }
 .share-canvas { position: fixed; left: -3000px; top: 0; width: 360px; height: 288px; }
-
-/* native <button open-type="share"> reset so it matches the .btn ghost pills */
-.share-btn { margin: 0; line-height: normal; }
-.share-btn::after { border: none; }
 
 /* generated-card overlay */
 .card-mask {

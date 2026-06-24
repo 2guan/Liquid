@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import type { LayoutMode } from "@/hooks/useLayout";
 import type { ModeId, GlassType, IceType } from "@/types";
-import type { SpiritFamily } from "@/lib/tokens";
+import type { SpiritFamily, LiquidLayer } from "@/lib/tokens";
 import { MODES, type ModeMeta } from "@/lib/data/catalog";
 import { useNav } from "@/store/useNav";
 import Glass from "@/components/art/Glass";
@@ -11,6 +11,12 @@ import { garnishesFor } from "@/lib/data/garnish";
 import { Flourish, Diamond, Candle, NavMedallion } from "@/components/ui/ornaments";
 
 /* ── per-mode card theme + the drinks that sit on its little shelf ── */
+/** A gradient pour for the 心事 card — 红黄蓝, blended (bottom → top: blue → red). */
+const RAINBOW: LiquidLayer[] = [
+  { color: "#3F6FD8", ratio: 1 }, // 蓝
+  { color: "#F4D03F", ratio: 1 }, // 黄
+  { color: "#E74C3C", ratio: 1 }, // 红
+];
 interface DrinkSpec {
   glass: GlassType;
   family: SpiritFamily;
@@ -19,6 +25,7 @@ interface DrinkSpec {
   size: number;
   fizzy?: boolean;
   garnish?: string[];
+  layers?: LiquidLayer[];
 }
 const THEME: Record<ModeId, { wash: [string, string]; glow: string; drinks: DrinkSpec[] }> = {
   pure: {
@@ -34,7 +41,7 @@ const THEME: Record<ModeId, { wash: [string, string]; glow: string; drinks: Drin
   mood: {
     wash: ["#2c3656", "#11162a"],
     glow: "#8AA0D8",
-    drinks: [{ glass: "highball", family: "cranberry", ice: "cube", fill: 0.92, size: 168, garnish: ["迷迭香", "食用花"] }],
+    drinks: [{ glass: "highball", family: "cranberry", ice: "none", fill: 0.92, size: 168, garnish: ["食用花"], layers: RAINBOW }],
   },
   zen: {
     wash: ["#3f3160", "#1a1230"],
@@ -77,6 +84,7 @@ function DrinkScene({ mode }: { mode: ModeId }) {
     <Glass
       glassType={d.glass}
       family={d.family}
+      layers={d.layers}
       ice={d.ice}
       fillLevel={d.fill}
       fizzy={d.fizzy}

@@ -1,6 +1,7 @@
 /** Whisper of Mood — emotion → drink. Ported from MoodScreen.tsx. */
 import { MOOD_SEEDS, MOOD_PROMPTS } from "../../lib/data/moods";
 import { cocktailAI } from "../../lib/ai/cocktailAI";
+import { maybeGradientPour } from "../../lib/tokens";
 import { sound } from "../../lib/sound/index";
 import { store } from "../../lib/store";
 import { emblemDataUri } from "../../lib/svg/emblem";
@@ -73,6 +74,7 @@ Component({
       }, 900) as unknown as number;
 
       const result = await cocktailAI.generateFromMood({ text: this.data.text.trim(), tags: this.data.tags });
+      maybeGradientPour(result); // ~20% get a smooth two-tone gradient body
       if (this._veilTimer) { clearInterval(this._veilTimer); this._veilTimer = null; }
       store.addXp(50);
       store.recordDrink(result, "mood");

@@ -5,8 +5,8 @@
  * src/components/art/Glass.tsx (JSX → SVG string for <image>).
  */
 import type { GlassType, IceType, LiquidState } from "../types";
-import type { SpiritFamily } from "../tokens";
-import { liquidRamp, rampFromColor } from "../tokens";
+import type { SpiritFamily, LiquidLayer } from "../tokens";
+import { liquidRamp, rampFromColor, layerBands, layerGradientStops } from "../tokens";
 import { geomFor, halfWidthAt } from "../data/glasses";
 import type { GarnishSpec } from "../data/garnish";
 import { iceGroup } from "./ice";
@@ -20,6 +20,8 @@ export interface GlassOpts {
   family?: SpiritFamily;
   /** explicit liquid colour (any hex) — overrides `family` when set */
   liquidColor?: string;
+  /** colour-layered drink (B-52…): bands bottom → top, overrides the single fill */
+  layers?: LiquidLayer[];
   ice?: IceType;
   state?: LiquidState;
   /** amber halo behind the glass for hero placements */
@@ -63,6 +65,7 @@ export function glassSvg(opts: GlassOpts): string {
     fizzy = false,
     garnishes,
     title,
+    layers,
   } = opts;
 
   const uid = nextUid();
@@ -103,6 +106,12 @@ export function glassSvg(opts: GlassOpts): string {
   const surfaceHW = Math.max(2, halfWidthAt(geom, liquidTop) - 2);
   const hasLiquid = level > 0.005;
   const surfaceRy = surfaceHW * 0.14 + 1.5;
+
+  // colour-layered drinks (B-52, Black Velvet…): slice the liquid into bands.
+  const bands = layers && layers.length > 1 && hasLiquid ? layerBands(layers, liquidTop, geom.cup.bottom + 30) : null;
+  const surfHi = bands ? bands[bands.length - 1].hi : hi;
+  const surfShadow = bands ? bands[bands.length - 1].shadow : shadow;
+  const baseHi = bands ? bands[0].hi : hi;
 
   const cupH = geom.cup.bottom - geom.cup.top;
   const interiorHW = Math.max(
@@ -200,14 +209,16 @@ export function glassSvg(opts: GlassOpts): string {
     const glint = detailed
       ? `<ellipse cx="${n(100 - surfaceHW * 0.28)}" cy="${n(liquidTop - 0.5)}" rx="${n(surfaceHW * 0.34)}" ry="${n(Math.max(1, surfaceRy * 0.5))}" fill="#ffffff" class="glint-drift" style="transform-origin:100px ${n(liquidTop)}px"/>`
       : "";
+    const fillMarkup = bands
+      ? `<defs><linearGradient id="lay-${uid}" x1="0" y1="0" x2="0" y2="1">${layerGradientStops(bands, liquidTop, geom.cup.bottom + 30).map((s) => `<stop offset="${n(s.offset * 100)}%" stop-color="${s.color}"/>`).join("")}</linearGradient></defs><rect x="0" y="${n(liquidTop)}" width="200" height="${n(geom.cup.bottom + 30 - liquidTop)}" fill="url(#lay-${uid})" opacity="0.7"/>`
+      : `<rect x="0" y="${n(liquidTop)}" width="200" height="${n(geom.cup.bottom + 30 - liquidTop)}" fill="url(#liquid-${uid})"/><rect x="0" y="${n(liquidTop)}" width="200" height="${n(geom.cup.bottom + 30 - liquidTop)}" fill="url(#liqEdge-${uid})"/>`;
     liquidGroup = `<g clip-path="url(#cup-${uid})">
-      <rect x="0" y="${n(liquidTop)}" width="200" height="${n(geom.cup.bottom + 30 - liquidTop)}" fill="url(#liquid-${uid})"/>
-      <rect x="0" y="${n(liquidTop)}" width="200" height="${n(geom.cup.bottom + 30 - liquidTop)}" fill="url(#liqEdge-${uid})"/>
+      ${fillMarkup}
       <rect x="0" y="${n(liquidTop)}" width="200" height="${n(geom.cup.bottom + 30 - liquidTop)}" fill="url(#liqlight-${uid})" opacity="0.6"/>
-      <ellipse cx="100" cy="${n(geom.cup.bottom - 5)}" rx="${n(surfaceHW * 0.74)}" ry="7" fill="${hi}" opacity="0.3"/>
+      <ellipse cx="100" cy="${n(geom.cup.bottom - 5)}" rx="${n(surfaceHW * 0.74)}" ry="7" fill="${baseHi}" opacity="0.3"/>
       <ellipse cx="100" cy="${n(geom.cup.bottom - 4)}" rx="${n(surfaceHW * 0.4)}" ry="3.5" fill="#ffffff" opacity="0.16"/>
-      <ellipse cx="100" cy="${n(liquidTop + surfaceRy + 2)}" rx="${n(surfaceHW)}" ry="${n(surfaceRy)}" fill="${shadow}" opacity="0.28"/>
-      <ellipse cx="100" cy="${n(liquidTop)}" rx="${n(surfaceHW)}" ry="${n(surfaceRy)}" fill="${hi}" opacity="0.6"/>
+      <ellipse cx="100" cy="${n(liquidTop + surfaceRy + 2)}" rx="${n(surfaceHW)}" ry="${n(surfaceRy)}" fill="${surfShadow}" opacity="0.28"/>
+      <ellipse cx="100" cy="${n(liquidTop)}" rx="${n(surfaceHW)}" ry="${n(surfaceRy)}" fill="${surfHi}" opacity="0.6"/>
       <ellipse cx="100" cy="${n(liquidTop)}" rx="${n(surfaceHW)}" ry="${n(surfaceRy)}" fill="none" stroke="#fff6e2" stroke-opacity="0.5" stroke-width="0.9"${detailed ? ` class="surface-shimmer" style="transform-origin:100px ${n(liquidTop)}px"` : ""}/>
       ${glint}${swirl}${bubbles}
     </g>`;

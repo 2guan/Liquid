@@ -95,6 +95,105 @@ export function rampFromColor(hex: string): [string, string, string] {
   return [mixChannel(hex, 255, 0.34), hex, mixChannel(hex, 0, 0.45)];
 }
 
+/** One colour band of a layered drink (B-52, Black Velvet…), bottom → top. */
+export interface LiquidLayer {
+  color: string; // hex
+  ratio: number; // relative thickness
+}
+
+/** Average two hex colours (used to blend adjacent layers at their boundary). */
+function avgHex(a: string, b: string): string {
+  const pa = a.replace("#", ""), pb = b.replace("#", "");
+  const ch = (i: number) => {
+    const v = Math.round((parseInt(pa.slice(i, i + 2), 16) + parseInt(pb.slice(i, i + 2), 16)) / 2);
+    return Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0");
+  };
+  return `#${ch(0)}${ch(2)}${ch(4)}`;
+}
+
+/** A computed band with absolute y-bounds, a shading ramp, and the blended edge
+ *  colours that fade into the layer above (`blendUp`) and below (`blendDown`). */
+export interface LayerBand {
+  color: string;
+  top: number;
+  bottom: number;
+  hi: string;
+  body: string;
+  shadow: string;
+  blendUp: string;
+  blendDown: string;
+}
+
+/**
+ * Slice the liquid column [top..bottom] into bands by layer ratio. `layers[0]`
+ * is the BOTTOM layer (densest, sinks); the last layer's band top == `top`.
+ * Each band carries `blendUp`/`blendDown` = the half-way colour into its
+ * neighbours, so renderers fade between layers instead of drawing a hard line.
+ * Shared by every glass renderer so on-screen and exported cards layer identically.
+ */
+export function layerBands(layers: LiquidLayer[], top: number, bottom: number): LayerBand[] {
+  const total = layers.reduce((s, l) => s + Math.max(0.0001, l.ratio), 0);
+  const h = bottom - top;
+  let acc = 0;
+  const n = layers.length;
+  return layers.map((l, i) => {
+    const bandTop = bottom - ((acc + l.ratio) / total) * h;
+    const bandBottom = bottom - (acc / total) * h;
+    acc += l.ratio;
+    const [hi, body, shadow] = rampFromColor(l.color);
+    const blendUp = i < n - 1 ? avgHex(l.color, layers[i + 1].color) : l.color;
+    const blendDown = i > 0 ? avgHex(l.color, layers[i - 1].color) : l.color;
+    return { color: l.color, top: bandTop, bottom: bandBottom, hi, body, shadow, blendUp, blendDown };
+  });
+}
+
+/**
+ * Flatten layer bands into a single continuous gradient (offset 0 = column top,
+ * 1 = bottom) so the whole liquid can be ONE rect/fill — no abutting band rects,
+ * hence no antialiased seam lines (the Android "two lines" bug).
+ */
+export function layerGradientStops(bands: LayerBand[], top: number, bottom: number): { offset: number; color: string }[] {
+  const H = Math.max(1e-6, bottom - top);
+  const off = (y: number) => Math.max(0, Math.min(1, (y - top) / H));
+  const stops: { offset: number; color: string }[] = [];
+  for (let i = bands.length - 1; i >= 0; i--) {
+    const b = bands[i];
+    stops.push({ offset: off(b.top), color: b.blendUp });
+    stops.push({ offset: off((b.top + b.bottom) / 2), color: b.body });
+    stops.push({ offset: off(b.bottom), color: b.blendDown });
+  }
+  return stops;
+}
+
+/** Accents used to build a two-tone gradient pour for Mood / Zen drinks. */
+const GRADIENT_ACCENTS = ["#F4A93E", "#E0567F", "#5BC8EC", "#A66BD6", "#2ECC71", "#F4D03F"];
+
+/**
+ * A pleasing two-tone gradient pour: the drink's own colour at the bottom fading
+ * up into a seeded accent. Returns `null` for an unusable base. Used to give
+ * ~20% of Mood / Zen results a smooth-gradient body.
+ */
+export function gradientLayersFor(base: string | undefined, seed: number): LiquidLayer[] | null {
+  if (!base || !/^#?[0-9a-fA-F]{6}$/.test(base)) return null;
+  const accent = GRADIENT_ACCENTS[Math.abs(Math.round(seed)) % GRADIENT_ACCENTS.length];
+  return [
+    { color: base.startsWith("#") ? base : `#${base}`, ratio: 1.1 },
+    { color: accent, ratio: 0.9 },
+  ];
+}
+
+/**
+ * Give ~20% of Mood / Zen drinks a smooth two-tone gradient body. Mutates the
+ * result in place (no-op if it's already layered).
+ */
+export function maybeGradientPour(result: { liquidColor?: string; family: string; layers?: LiquidLayer[] }): void {
+  if (result.layers && result.layers.length > 1) return;
+  if (Math.random() >= 0.2) return;
+  const base = result.liquidColor || (liquidRamp[result.family] ?? liquidRamp.default)[1];
+  const layers = gradientLayersFor(base, Math.floor(Math.random() * 997));
+  if (layers) result.layers = layers;
+}
+
 /** Blend a set of hex colours into one (used to colour a free mix by its
  *  ingredients). Weighted toward saturation so a pile of bright picks doesn't
  *  average into grey mud. Returns null if nothing usable. */

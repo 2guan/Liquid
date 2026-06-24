@@ -33,6 +33,7 @@
         <glass
           glass-type="{{item.glassType}}"
           family="{{item.family}}"
+          layers="{{item.layers}}"
           ice="{{item.ice}}"
           fill-level="{{item.fill}}"
           fizzy="{{item.fizzy}}"

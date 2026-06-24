@@ -1,7 +1,32 @@
-import type { GlassType, IceType, Recipe, RecipeCategory } from "../types";
+import type { GlassType, IceType, Recipe, RecipeCategory, LiquidLayer } from "../types";
 import type { SpiritFamily } from "../tokens";
 import { inferLiquidFamily } from "../tokens";
 import { isGlassId } from "./glasses";
+
+/**
+ * Genuinely colour-layered drinks — bands from BOTTOM (densest) to TOP. Smooth
+ * sunrise-style gradients already render via their `sunrise`/family ramp, so
+ * they're not here. Keyed by nameEn.
+ */
+const RECIPE_LAYERS: Record<string, LiquidLayer[]> = {
+  "B-52": [
+    { color: "#2A180B", ratio: 1 }, // 咖啡利口酒 — dark coffee
+    { color: "#E7D2A4", ratio: 1 }, // 百利甜 — Irish cream
+    { color: "#D6862A", ratio: 1 }, // 金万利 — orange cognac
+  ],
+  "Black Velvet": [
+    { color: "#150B05", ratio: 1 }, // 司陶特 — near-black stout
+    { color: "#E2C870", ratio: 1 }, // 香槟 — pale gold
+  ],
+  "New York Sour": [
+    { color: "#C6862F", ratio: 0.72 }, // 威士忌酸酒 — amber sour
+    { color: "#5E1B28", ratio: 0.28 }, // 红酒漂浮 — red-wine float
+  ],
+  "White Russian": [
+    { color: "#34200F", ratio: 0.62 }, // 伏特加 + 咖啡利口酒 — coffee
+    { color: "#EFE3C6", ratio: 0.38 }, // 鲜奶油 — cream float
+  ],
+};
 
 /**
  * The Mixology Chronicles recipe book — a few hundred cocktails grouped by era
@@ -345,6 +370,7 @@ function build(): Recipe[] {
         ingredients,
         tasting,
         alcoholFree: cat === "zero",
+        layers: RECIPE_LAYERS[nameEn],
       });
     });
   });
