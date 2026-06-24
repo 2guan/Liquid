@@ -36,12 +36,12 @@ const THEME: Record<ModeId, { wash: [string, string]; glow: string; drinks: Drin
   mixology: {
     wash: ["#3c4a30", "#171f12"],
     glow: "#9DB85F",
-    drinks: [{ glass: "martini", family: "gin", ice: "none", fill: 0.9, size: 178, garnish: ["橄榄"] }],
+    drinks: [{ glass: "martini", family: "gin", ice: "none", fill: 0.9, size: 178, fizzy: true, garnish: ["橄榄"] }],
   },
   mood: {
     wash: ["#2c3656", "#11162a"],
     glow: "#8AA0D8",
-    drinks: [{ glass: "highball", family: "cranberry", ice: "none", fill: 0.92, size: 168, garnish: ["食用花"], layers: RAINBOW }],
+    drinks: [{ glass: "highball", family: "cranberry", ice: "none", fill: 0.92, size: 168, fizzy: true, garnish: ["食用花"], layers: RAINBOW }],
   },
   zen: {
     wash: ["#3f3160", "#1a1230"],
