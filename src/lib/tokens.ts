@@ -167,34 +167,32 @@ export function layerGradientStops(bands: LayerBand[], top: number, bottom: numb
   return stops;
 }
 
-/** Accents used to build a two-tone gradient pour for Mood / Zen drinks. */
-const GRADIENT_ACCENTS = ["#F4A93E", "#E0567F", "#5BC8EC", "#A66BD6", "#2ECC71", "#F4D03F"];
-
 /**
- * A pleasing two-tone gradient pour: the drink's own colour at the bottom fading
- * up into a seeded accent. Returns `null` for an unusable base. Used to give
- * ~20% of Mood / Zen results a smooth-gradient body.
+ * Build the pour's gradient body from the drink's OWN ingredient colours, bottom
+ * → top. A drink mixed from several differently-coloured spirits / liqueurs /
+ * syrups becomes genuinely multi-colour (like the home card); one whose parts
+ * share a colour stays near-uniform (barely a gradient). No-op if already layered
+ * (an explicitly-layered recipe) or single-colour. Mutates the result in place.
  */
-export function gradientLayersFor(base: string | undefined, seed: number): LiquidLayer[] | null {
-  if (!base || !/^#?[0-9a-fA-F]{6}$/.test(base)) return null;
-  const accent = GRADIENT_ACCENTS[Math.abs(Math.round(seed)) % GRADIENT_ACCENTS.length];
-  return [
-    { color: base.startsWith("#") ? base : `#${base}`, ratio: 1.1 }, // bottom: own colour
-    { color: accent, ratio: 0.9 }, // top: bright accent → two-tone gradient
-  ];
-}
-
-/**
- * Give ~20% of Mood / Zen drinks a smooth two-tone gradient body. Mutates the
- * result in place (no-op if it's already layered). Called by the Mood & Zen
- * screens right after the AI produces a result.
- */
-export function maybeGradientPour(result: { liquidColor?: string; family: string; layers?: LiquidLayer[] }): void {
+export function maybeGradientPour(result: {
+  ingredients?: { name?: string; nameEn?: string; family?: string }[];
+  family: string;
+  layers?: LiquidLayer[];
+}): void {
   if (result.layers && result.layers.length > 1) return;
-  if (Math.random() >= 0.2) return;
-  const base = result.liquidColor || (liquidRamp[result.family] ?? liquidRamp.default)[1];
-  const layers = gradientLayersFor(base, Math.floor(Math.random() * 997));
-  if (layers) result.layers = layers;
+  const cols: string[] = [];
+  for (const ing of result.ingredients ?? []) {
+    // use the tagged family, else read the colour from the ingredient's name
+    // (remote LLM results carry names but no family field)
+    const fam = (ing.family as SpiritFamily | undefined) || familyFromName(ing.name, ing.nameEn);
+    // skip colourless parts so a clear base doesn't add a pale/transparent band
+    if (!fam || fam === "gin" || fam === "vodka" || fam === "rumWhite" || fam === "sparkling") continue;
+    const c = (liquidRamp[fam] ?? [])[1];
+    if (c && cols.indexOf(c) === -1) cols.push(c);
+  }
+  if (cols.length < 2) return; // uniform colour → keep the normal single-tone fill
+  // bottom (base spirit) → top (lighter mixers); cap at 4 bands for a rich blend
+  result.layers = cols.slice(0, 4).map((color) => ({ color, ratio: 1 }));
 }
 
 /** Blend a set of hex colours into one (used to colour a free mix by its
@@ -295,6 +293,33 @@ export function inferLiquidFamily(
   // clear/white base spirits shouldn't render as aged amber
   if (fallback === "rum" && has("白朗姆", "银朗姆", "白色朗姆", "white rum", "silver rum", "light rum")) return "rumWhite";
   return fallback;
+}
+
+/**
+ * Best-effort colour family for a SINGLE ingredient — from its `family` tag if
+ * present, else read from its name (coloured liqueurs/syrups AND base spirits).
+ * Lets the pour gradient be built from a recipe whose parts carry only names
+ * (e.g. a remote LLM result). Returns undefined for colourless parts (soda,
+ * citrus, bitters, herbs) so they don't tint the blend.
+ */
+export function familyFromName(name?: string, nameEn?: string): SpiritFamily | undefined {
+  const text = `${name ?? ""} ${nameEn ?? ""}`.trim();
+  if (!text) return undefined;
+  const colorant = inferLiquidFamily([{ name, nameEn }], "default");
+  if (colorant !== "default") return colorant;
+  const t = text.toLowerCase();
+  if (/泥煤|艾雷|peat|islay/.test(t)) return "whiskyPeat";
+  if (/威士忌|波本|苏格兰|黑麦|whisky|whiskey|bourbon|scotch|rye/.test(t)) return "whisky";
+  if (/金酒|琴酒|gin/.test(t)) return "gin";
+  if (/伏特加|vodka/.test(t)) return "vodka";
+  if (/白朗姆|银朗姆|white rum|light rum|silver rum/.test(t)) return "rumWhite";
+  if (/朗姆|rum/.test(t)) return "rum";
+  if (/龙舌兰|特其拉|梅斯卡尔|tequila|mezcal/.test(t)) return "tequila";
+  if (/白兰地|干邑|雅文邑|brandy|cognac|armagnac/.test(t)) return "brandy";
+  if (/苦艾酒|茴香|absinthe|pastis/.test(t)) return "absinthe";
+  if (/味美思|vermouth/.test(t)) return "vermouth";
+  if (/红葡萄酒|红酒|red wine/.test(t)) return "wine";
+  return undefined;
 }
 
 /**

@@ -8,7 +8,7 @@
  */
 import type { CocktailResult, FlavorPick, GlassType, IceType, Ingredient, MoodInput, Recipe } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
-import { liquidRamp, inferLiquidFamily, blendColors } from "@/lib/tokens";
+import { liquidRamp, inferLiquidFamily, blendColors, familyFromName } from "@/lib/tokens";
 import { GLASSES, isGlassId } from "@/lib/data/glasses";
 import { spiritById } from "@/lib/data/spirits";
 import { aromaticForFamily } from "@/lib/data/garnish";
@@ -128,7 +128,9 @@ function coerceIngredients(v: unknown, fallback: Ingredient[]): Ingredient[] {
           nameEn: str(o.nameEn) || undefined,
           amount,
           parts: partsForAmount(amount),
-          family: o.family ? coerceFamily(o.family) : undefined,
+          // tag the colour: model-provided family, else read it from the name so
+          // the pour gradient can be built from the recipe's real colours
+          family: o.family ? coerceFamily(o.family) : familyFromName(name, str(o.nameEn) || undefined),
         };
       }
       return null;
@@ -166,7 +168,7 @@ const SYSTEM = `你是「微醺时刻 The Sip & Sigh」的 AI 调酒师，同时
 {
   "name": "中文酒名（写意、有画面感，4-8字）",
   "nameEn": "对应的英文名（与中文意象一致）",
-  "ingredients": [{"name":"中文原料名","nameEn":"英文名","amount":"如 60ml / 2 dash / 1 片"}],
+  "ingredients": [{"name":"中文原料名","nameEn":"英文名","amount":"如 60ml / 2 dash / 1 片","family":"该原料酒液颜色，从下方 family 列表中选最接近的"}],
   "glass": "杯型id，从给定列表中选最合适的",
   "ice": "none | sphere(大冰球) | cube(老式大方冰) | cubes(多颗小方冰填满杯) | bullets(子弹冰粒填满杯) | crushed(碎冰)，长饮/气泡类多用 cubes，休闲清爽可用 bullets",
   "family": "酒液主色，从给定列表中选：${FAMILIES.join(" | ")}",
@@ -182,7 +184,8 @@ const SYSTEM = `你是「微醺时刻 The Sip & Sigh」的 AI 调酒师，同时
 export async function dsMoodPour(input: MoodInput): Promise<CocktailResult> {
   const user = `用户此刻的心情：「${input.text || "（未填写）"}」
 ${input.tags.length ? `心绪标签：${input.tags.join("、")}` : ""}
-请为这份心情创作一杯专属鸡尾酒，让酒成为情绪的化身。`;
+请为这份心情创作一杯专属鸡尾酒，让酒成为情绪的化身。
+配方尽量丰富多彩、有层次：在基酒之外加入 1-2 种有颜色的利口酒或糖浆（如蓝橙、蜜瓜、金巴利、艾普罗、黑加仑、石榴糖浆、紫罗兰、蝶豆花等），让酒体呈现漂亮的颜色或自然分层；除非心情明确清冷素净，否则避免做成无色透明的酒。每种原料都要标注其 family 颜色。`;
   const raw = await callDeepSeek([
     { role: "system", content: SYSTEM },
     { role: "user", content: user },

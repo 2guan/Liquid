@@ -14,7 +14,7 @@ import { Flourish, Diamond, Candle, NavMedallion } from "@/components/ui/ornamen
 /** A gradient pour for the 心事 card — 红黄蓝, blended (bottom → top: blue → red). */
 const RAINBOW: LiquidLayer[] = [
   { color: "#3F6FD8", ratio: 1 }, // 蓝
-  { color: "#F4D03F", ratio: 1 }, // 黄
+  { color: "#F4D03F", ratio: 1.35 }, // 黄 — a touch wider
   { color: "#E74C3C", ratio: 1 }, // 红
 ];
 interface DrinkSpec {

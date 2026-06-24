@@ -10,17 +10,35 @@ import { aromaticForFamily } from "@/lib/data/garnish";
 import { VOICE, SIGNATURES, EMOTION_BRIDGES, randomSignature } from "./lexicon";
 import { makeRng, hashString, type Rng } from "./rng";
 
-/** Modifiers & accents the chemist reaches for, grouped by purpose. */
-const MODIFIERS = [
-  { name: "红味美思", nameEn: "Sweet Vermouth", family: "vermouth" as SpiritFamily },
-  { name: "干味美思", nameEn: "Dry Vermouth", family: "vermouth" as SpiritFamily },
-  { name: "君度橙酒", nameEn: "Cointreau" },
-  { name: "黑樱桃利口酒", nameEn: "Maraschino" },
+/** Modifiers & accents the chemist reaches for, grouped by purpose. `family`
+ *  tags the modifier's colour (via liquidRamp) so a varied mix pours multi-colour. */
+const MODIFIERS: { name: string; nameEn: string; family?: SpiritFamily }[] = [
+  { name: "红味美思", nameEn: "Sweet Vermouth", family: "vermouth" },
+  { name: "干味美思", nameEn: "Dry Vermouth", family: "vermouth" },
+  { name: "君度橙酒", nameEn: "Cointreau", family: "orange" },
+  { name: "黑樱桃利口酒", nameEn: "Maraschino", family: "cranberry" },
   { name: "接骨木花利口酒", nameEn: "Elderflower" },
-  { name: "咖啡利口酒", nameEn: "Coffee Liqueur" },
+  { name: "咖啡利口酒", nameEn: "Coffee Liqueur", family: "coffee" },
+  { name: "蓝橙利口酒", nameEn: "Blue Curaçao", family: "blue" },
+  { name: "蜜瓜利口酒", nameEn: "Midori", family: "green" },
+  { name: "黑加仑利口酒", nameEn: "Crème de Cassis", family: "berry" },
+  { name: "金巴利", nameEn: "Campari", family: "campari" },
+  { name: "艾普罗", nameEn: "Aperol", family: "sunrise" },
 ];
 
-const ACCENTS = [
+/** Bright liqueurs / syrups added as a "splash" to tint a mix into a multi-colour pour. */
+const COLORFUL_SPLASH: { name: string; nameEn: string; family: SpiritFamily }[] = [
+  { name: "蓝橙利口酒", nameEn: "Blue Curaçao", family: "blue" },
+  { name: "蜜瓜利口酒", nameEn: "Midori", family: "green" },
+  { name: "石榴糖浆", nameEn: "Grenadine", family: "grenadine" },
+  { name: "黑加仑利口酒", nameEn: "Crème de Cassis", family: "berry" },
+  { name: "金巴利", nameEn: "Campari", family: "campari" },
+  { name: "艾普罗", nameEn: "Aperol", family: "sunrise" },
+  { name: "君度橙酒", nameEn: "Cointreau", family: "orange" },
+  { name: "蝶豆花糖浆", nameEn: "Butterfly Pea", family: "blue" },
+];
+
+const ACCENTS: { name: string; nameEn: string; amount: string; family?: SpiritFamily }[] = [
   { name: "安格仕苦精", nameEn: "Angostura Bitters", amount: "2 dash" },
   { name: "橙味苦精", nameEn: "Orange Bitters", amount: "1 dash" },
   { name: "鲜柠檬汁", nameEn: "Lemon Juice", amount: "15ml" },
@@ -29,6 +47,7 @@ const ACCENTS = [
   { name: "薄荷叶", nameEn: "Fresh Mint", amount: "6 片" },
   { name: "迷迭香", nameEn: "Rosemary", amount: "1 枝" },
   { name: "苏打水", nameEn: "Soda", amount: "顶部补满" },
+  { name: "石榴糖浆", nameEn: "Grenadine", amount: "10ml", family: "grenadine" },
 ];
 
 const GLASS_BY_FAMILY: Record<SpiritFamily, GlassType> = {
@@ -162,6 +181,14 @@ function buildIngredients(family: SpiritFamily, rng: Rng, keywords: string[]): {
     const m = rng.pick(MODIFIERS);
     ingredients.push({ name: m.name, nameEn: m.nameEn, amount: `${rng.pick([10, 15, 20])}ml`, parts: rng.int(1, 2), family: m.family });
   }
+  // a colourful splash — a bright liqueur/syrup of a new colour, so a varied mix
+  // genuinely pours multi-colour (the gradient is built from these ingredients)
+  if (rng.chance(0.5)) {
+    const sp = rng.pick(COLORFUL_SPLASH);
+    if (!ingredients.some((i) => i.family === sp.family)) {
+      ingredients.push({ name: sp.name, nameEn: sp.nameEn, amount: `${rng.pick([8, 10, 15])}ml`, parts: 1, family: sp.family });
+    }
+  }
   // keyword-led accent (mint for calm, citrus for joy, etc.)
   const wantsHerb = keywords.some((k) => /薄荷|草|森林|呼吸/.test(k));
   const wantsCitrus = keywords.some((k) => /柑橘|阳光|气泡|微风|柠/.test(k));
@@ -169,7 +196,7 @@ function buildIngredients(family: SpiritFamily, rng: Rng, keywords: string[]): {
   if (wantsHerb) accent = ACCENTS.find((a) => a.name === "薄荷叶")!;
   else if (wantsCitrus) accent = ACCENTS.find((a) => a.name === "鲜柠檬汁")!;
   else accent = rng.pick(ACCENTS);
-  ingredients.push({ name: accent.name, nameEn: accent.nameEn, amount: accent.amount, parts: 1 });
+  ingredients.push({ name: accent.name, nameEn: accent.nameEn, amount: accent.amount, parts: 1, family: accent.family });
 
   const ratio = ingredients.map((i) => i.parts ?? 1);
   return { ingredients, ratio };
