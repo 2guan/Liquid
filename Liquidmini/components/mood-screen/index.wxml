@@ -44,7 +44,7 @@
 </scroll-view>
 
 <view wx:if="{{busy}}" class="veil">
-  <view class="veil-mark"></view>
+  <image class="veil-mark" src="{{veilLogo}}" mode="aspectFit"></image>
   <view class="veil-dots"><view class="d"></view><view class="d"></view><view class="d"></view></view>
   <text class="veil-line">{{veilLine}}</text>
 </view>

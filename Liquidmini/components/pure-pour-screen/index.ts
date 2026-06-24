@@ -13,6 +13,7 @@ import { cocktailAI } from "../../lib/ai/cocktailAI";
 import { sound } from "../../lib/sound/index";
 import { store } from "../../lib/store";
 import { liquidRamp } from "../../lib/tokens";
+import { logoDataUri } from "../../lib/svg/logo";
 
 const STEPS = [
   { key: "glass", label: "选择杯型" },
@@ -21,6 +22,12 @@ const STEPS = [
   { key: "ice", label: "选择冰型" },
 ];
 const POUR_TARGET = 0.58;
+const VEIL_LINES = [
+  "正在斟酌这杯纯饮…",
+  "调酒师在端详酒色…",
+  "诗人在斟酌词句…",
+  "化学家在校准风味…",
+];
 
 const CLEAR = ["#EEF6F8", "#D6E6EC", "#A2BAC4"] as const;
 function rgba(hex: string, a: number): string {
@@ -53,6 +60,8 @@ Component({
     pouring: false,
     ice: "none" as IceType,
     busy: false,
+    veilLine: "",
+    veilLogo: logoDataUri(64),
     glassCat: "tumbler",
     glassQuery: "",
     spiritCat: "whisky",
@@ -70,6 +79,7 @@ Component({
   },
 
   _timer: null as null | number,
+  _veil: null as null | number,
 
   lifetimes: {
     attached() {
@@ -85,6 +95,7 @@ Component({
     },
     detached() {
       if (this._timer) clearInterval(this._timer);
+      if (this._veil) clearInterval(this._veil);
     },
   },
 
@@ -169,10 +180,16 @@ Component({
 
     async finish() {
       if (!this.data.spiritId || this.data.busy) return;
-      this.setData({ busy: true });
+      this.setData({ busy: true, veilLine: VEIL_LINES[0] });
       sound.play("success");
       store.addXp(40);
+      let l = 0;
+      this._veil = setInterval(() => {
+        l = (l + 1) % VEIL_LINES.length;
+        this.setData({ veilLine: VEIL_LINES[l] });
+      }, 900) as unknown as number;
       const result = await cocktailAI.describePour(this.data.spiritId, this.data.glassType, this.data.ice);
+      if (this._veil) { clearInterval(this._veil); this._veil = null; }
       const ml = Math.max(15, Math.round((this.data.fill * 90) / 5) * 5);
       const poured: CocktailResult = {
         ...result,

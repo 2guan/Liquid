@@ -35,7 +35,7 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
   const [step, setStep] = useState<Step>("recipe");
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [pours, setPours] = useState<number[]>([]);
-  const [showHint, setShowHint] = useState(true);
+  const [showHint, setShowHint] = useState(false);
   const [category, setCategory] = useState<RecipeCategory>("whisky");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
@@ -137,9 +137,10 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
 
   return (
     <div className="flex h-full flex-col px-4 py-4 md:px-8 md:py-6">
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-1">
         <BilingualTitle zh="酒谱" en="The Liquid Codex" align="center" />
-        <StepDots steps={STEPS} current={stepIndex} />
+        {/* 步骤提示暂时隐藏 */}
+        {false && <StepDots steps={STEPS} current={stepIndex} />}
       </div>
 
       <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
@@ -200,14 +201,14 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
                 <Divider className="mb-3" />
 
                 {/* recipe grid — larger, richer cards so the area fills the screen */}
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
                   {recipeList.map((r) => (
                     <button
                       key={r.id}
                       onClick={() => pickRecipe(r)}
-                      className="group flex items-center gap-4 rounded-xl border border-gold/20 wood-panel p-5 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50"
+                      className="group flex items-center gap-3 rounded-xl border border-gold/20 wood-panel p-3 text-left transition-all hover:-translate-y-0.5 hover:border-gold/50"
                     >
-                      <span className="grid h-[104px] w-[84px] shrink-0 place-items-center">
+                      <span className="grid h-[80px] w-[64px] shrink-0 place-items-center">
                         <Glass
                           glassType={r.glass}
                           family={r.family}
@@ -215,7 +216,7 @@ export default function MixologyScreen({ layout }: { layout: LayoutMode }) {
                           fillLevel={servedFill(r.glass)}
                           fizzy={isFizzy(r.ingredients)}
                           garnishes={garnishesFor(r.ingredients)}
-                          size={84}
+                          size={64}
                           fit
                         />
                       </span>

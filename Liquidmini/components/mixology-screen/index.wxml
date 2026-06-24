@@ -1,5 +1,6 @@
 <view class="mx">
-  <view class="steps">
+  <!-- 步骤提示暂时隐藏 -->
+  <view wx:if="{{false}}" class="steps">
     <block wx:for="{{steps}}" wx:key="key">
       <view class="step-dot {{index === stepIndex ? 'on' : ''}} {{index < stepIndex ? 'done' : ''}}">
         <text class="step-num">{{index + 1}}</text>
@@ -26,7 +27,7 @@
       <view class="mx-recipes">
         <view wx:for="{{recipeList}}" wx:key="id" class="mx-card wood-panel" data-id="{{item.id}}" bindtap="pickRecipe">
           <view class="mx-card-glass">
-            <glass glass-type="{{item.glass}}" family="{{item.family}}" ice="{{item.ice}}" fill-level="{{item.fill}}" fizzy="{{item.fizzy}}" garnishes="{{item.garnishes}}" size="{{84}}" fit="{{true}}" css-height="104px"></glass>
+            <glass glass-type="{{item.glass}}" family="{{item.family}}" ice="{{item.ice}}" fill-level="{{item.fill}}" fizzy="{{item.fizzy}}" garnishes="{{item.garnishes}}" size="{{64}}" fit="{{true}}" css-height="80px"></glass>
           </view>
           <view class="mx-card-info">
             <text class="mx-card-name">{{item.name}}</text>
@@ -106,7 +107,7 @@
 </view>
 
 <view wx:if="{{busy}}" class="veil">
-  <view class="veil-mark"></view>
+  <image class="veil-mark" src="{{veilLogo}}" mode="aspectFit"></image>
   <view class="veil-dots"><view class="d"></view><view class="d"></view><view class="d"></view></view>
   <text class="veil-line">{{veilLine}}</text>
 </view>

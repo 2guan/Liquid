@@ -27,6 +27,7 @@ import Button from "@/components/ui/Button";
 import { BilingualTitle, StepDots, Divider } from "@/components/ui/atoms";
 import { StepFooter } from "@/components/ui/ornaments";
 import { Icon } from "@/components/art/icons";
+import LoadingVeil from "@/components/ui/LoadingVeil";
 import { cocktailAI } from "@/lib/ai/cocktailAI";
 import { sound } from "@/lib/sound";
 import { liquidRamp } from "@/lib/tokens";
@@ -63,6 +64,7 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
   const [pouring, setPouring] = useState(false);
   const [ice, setIce] = useState<IceType>("none");
   const [busy, setBusy] = useState(false);
+  const [veilLine, setVeilLine] = useState(0);
   const [glassCat, setGlassCat] = useState<GlassCategory>("tumbler");
   const [glassQuery, setGlassQuery] = useState("");
   const [spiritCat, setSpiritCat] = useState<SpiritCategory>("whisky");
@@ -115,9 +117,17 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
     };
   }, [pouring]);
 
+  // cycle the loading status lines while the AI composes
+  useEffect(() => {
+    if (!busy) return;
+    const id = setInterval(() => setVeilLine((l) => l + 1), 900);
+    return () => clearInterval(id);
+  }, [busy]);
+
   async function finish() {
     if (!spiritId) return;
     setBusy(true);
+    setVeilLine(0);
     sound.play("success");
     addXp(40);
     const result = await cocktailAI.describePour(spiritId, glassType, ice);
@@ -175,21 +185,22 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
           fillLevel={fill}
           state={pouring ? "pouring" : "still"}
           glow={fill > 0.1}
-          size={layout === "portrait" ? 190 : 410}
+          size={layout === "portrait" ? 162 : 410}
         />
     </div>
   );
 
   return (
-    <div className="flex h-full flex-col px-4 py-4 md:px-8 md:py-6">
-      <div className="flex flex-col items-center gap-3">
+    <div className="relative flex h-full flex-col px-4 py-4 md:px-8 md:py-6">
+      <div className="flex flex-col items-center gap-1">
         <BilingualTitle zh="纯饮" en="The Pure Pour" align="center" />
-        <StepDots steps={STEPS} current={stepIndex} />
+        {/* 步骤提示暂时隐藏 */}
+        {false && <StepDots steps={STEPS} current={stepIndex} />}
       </div>
 
       <div className={`mt-2 flex min-h-0 flex-1 gap-6 ${layout === "portrait" ? "flex-col" : "flex-row items-stretch"}`}>
         {/* stage */}
-        <div className={`relative flex items-center justify-center ${layout === "portrait" ? "min-h-[230px] flex-1" : "flex-[1.1]"}`}>
+        <div className={`relative flex items-center justify-center ${layout === "portrait" ? "min-h-[176px] flex-1" : "flex-[1.1]"}`}>
           {stage}
         </div>
 
@@ -215,10 +226,10 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
                         onPick={(id) => setGlassCat(id as GlassCategory)}
                       />
                     )}
-                    <div className="mt-2 grid min-h-0 flex-1 auto-rows-min content-start grid-cols-3 gap-2 overflow-y-auto pr-1">
+                    <div className="mt-2 grid min-h-0 flex-1 auto-rows-min content-start grid-cols-3 gap-1.5 overflow-y-auto pr-1">
                       {glassList.map((g) => (
-                        <PickTile key={g.id} active={glassType === g.id} onClick={() => setGlassType(g.id)} label={g.name} sub={g.nameEn} mediaH={64}>
-                          <Glass glassType={g.id} family={family} fillLevel={0} size={58} fit />
+                        <PickTile key={g.id} active={glassType === g.id} onClick={() => setGlassType(g.id)} label={g.name} sub={g.nameEn} mediaH={52}>
+                          <Glass glassType={g.id} family={family} fillLevel={0} size={48} fit />
                         </PickTile>
                       ))}
                       {glassList.length === 0 && <p className="col-span-full py-6 text-center font-cn text-xs text-paper/40">无匹配杯型</p>}
@@ -236,10 +247,10 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
                         onPick={(id) => setSpiritCat(id as SpiritCategory)}
                       />
                     )}
-                    <div className="mt-2 grid min-h-0 flex-1 auto-rows-min content-start grid-cols-2 gap-2 overflow-y-auto pr-1">
+                    <div className="mt-2 grid min-h-0 flex-1 auto-rows-min content-start grid-cols-2 gap-1.5 overflow-y-auto pr-1">
                       {spiritList.map((s) => (
-                        <PickTile key={s.id} active={spiritId === s.id} onClick={() => setSpiritId(s.id)} label={s.name} sub={s.nameEn} mediaH={84}>
-                          <Bottle family={s.family} label={s.nameEn[0]} size={34} />
+                        <PickTile key={s.id} active={spiritId === s.id} onClick={() => setSpiritId(s.id)} label={s.name} sub={s.nameEn} mediaH={72}>
+                          <Bottle family={s.family} label={s.nameEn[0]} size={30} />
                         </PickTile>
                       ))}
                       {spiritList.length === 0 && <p className="col-span-full py-6 text-center font-cn text-xs text-paper/40">无匹配基酒</p>}
@@ -347,6 +358,8 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
           </StepFooter>
         </div>
       </div>
+
+      <AnimatePresence>{busy && <LoadingVeil visible line={veilLine} />}</AnimatePresence>
     </div>
   );
 }

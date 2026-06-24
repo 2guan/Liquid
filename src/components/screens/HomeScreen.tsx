@@ -106,7 +106,7 @@ function ModeCard({ mode }: { mode: ModeMeta }) {
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 300, damping: 24 }}
       className="group relative flex min-h-0 flex-col overflow-hidden rounded-[14px] border border-gold/40 text-center shadow-[0_18px_40px_-24px_rgba(0,0,0,0.9)] transition-colors hover:border-gold/65"
-      style={{ background: `linear-gradient(180deg, ${t.wash[0]}, ${t.wash[1]})` }}
+      style={{ background: `linear-gradient(180deg, ${t.wash[0]}, ${t.wash[1]})`, opacity: 0.95 }}
     >
       {/* whole-card lighting & texture */}
       <div className="paper-texture pointer-events-none absolute inset-0 opacity-[0.1] mix-blend-overlay" />

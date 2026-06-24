@@ -1,7 +1,9 @@
 {
   "description": "微醺时刻 The Sip & Sigh — 原生微信小程序 (TypeScript)",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      { "type": "glob", "value": "**/.DS_Store" }
+    ],
     "include": []
   },
   "setting": {
@@ -10,7 +12,7 @@
     "enhance": true,
     "postcss": true,
     "preloadBackgroundData": false,
-    "minified": false,
+    "minified": true,
     "newFeature": true,
     "coverView": true,
     "nodeModules": false,

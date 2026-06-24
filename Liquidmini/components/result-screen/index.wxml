@@ -34,7 +34,8 @@
           <view wx:if="{{!fromJournal}}" class="btn primary" bindtap="handleSave">
             <icon name="{{saved ? 'check' : 'save'}}" size="14" color="#1A1612"></icon><text>{{saved ? '已加入' : '加入日记'}}</text>
           </view>
-          <button class="btn ghost share-btn" open-type="share"><icon name="share" size="14"></icon><text>文字分享</text></button>
+          <!-- 文字分享按钮暂时隐藏 -->
+          <button wx:if="{{false}}" class="btn ghost share-btn" open-type="share"><icon name="share" size="14"></icon><text>文字分享</text></button>
           <view class="btn ghost {{exporting ? 'disabled' : ''}}" bindtap="exportCard"><icon name="droplet" size="14"></icon><text>{{exporting ? '生成中…' : '保存酒卡'}}</text></view>
         </view>
       </view>
@@ -67,7 +68,8 @@
       </view>
     </view>
 
-    <view class="home-row">
+    <!-- 返回工坊按钮暂时隐藏 -->
+    <view wx:if="{{false}}" class="home-row">
       <view class="btn ghost" bindtap="goHome"><icon name="home" size="15"></icon><text>返回工坊</text></view>
     </view>
   </view>

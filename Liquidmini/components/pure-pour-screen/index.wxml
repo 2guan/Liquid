@@ -1,6 +1,6 @@
 <view class="pure">
-  <!-- step dots -->
-  <view class="steps">
+  <!-- step dots（暂时隐藏） -->
+  <view wx:if="{{false}}" class="steps">
     <block wx:for="{{steps}}" wx:key="key">
       <view class="step-dot {{index === stepIndex ? 'on' : ''}} {{index < stepIndex ? 'done' : ''}}">
         <text class="step-num">{{index + 1}}</text>
@@ -24,8 +24,8 @@
       fill-level="{{glassFill}}"
       state="{{pouring ? 'pouring' : 'still'}}"
       glow="{{fill > 0.1}}"
-      size="{{200}}"
-      css-height="240px"
+      size="{{168}}"
+      css-height="196px"
     ></glass>
   </view>
 
@@ -42,7 +42,7 @@
       <scroll-view scroll-y class="grid-scroll">
         <view class="grid grid-3">
           <view wx:for="{{glassList}}" wx:key="id" class="tile {{glassType === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickGlass">
-            <view class="tile-art h64"><glass glass-type="{{item.id}}" family="{{family}}" fill-level="{{0}}" size="{{58}}" fit="{{true}}" css-height="64px"></glass></view>
+            <view class="tile-art h52"><glass glass-type="{{item.id}}" family="{{family}}" fill-level="{{0}}" size="{{48}}" fit="{{true}}" css-height="52px"></glass></view>
             <text class="tile-label">{{item.name}}</text>
           </view>
         </view>
@@ -58,9 +58,9 @@
         <view wx:for="{{spiritCats}}" wx:key="id" class="pill {{spiritCat === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickSpiritCat">{{item.name}}</view>
       </view>
       <scroll-view scroll-y class="grid-scroll">
-        <view class="grid grid-2">
+        <view class="grid grid-3">
           <view wx:for="{{spiritList}}" wx:key="id" class="tile {{spiritId === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickSpirit">
-            <view class="tile-art h84"><bottle family="{{item.family}}" label="{{item.nameEn}}" size="{{34}}" css-height="80px"></bottle></view>
+            <view class="tile-art h64"><bottle family="{{item.family}}" label="{{item.nameEn}}" size="{{28}}" css-height="62px"></bottle></view>
             <text class="tile-label">{{item.name}}</text>
             <text class="tile-sub">{{item.nameEn}}</text>
           </view>
@@ -111,4 +111,10 @@
       <text>{{busy ? '调制中…' : '完成调制'}}</text><icon name="sparkle" size="15" color="#1A1612"></icon>
     </view>
   </view>
+</view>
+
+<view wx:if="{{busy}}" class="veil">
+  <image class="veil-mark" src="{{veilLogo}}" mode="aspectFit"></image>
+  <view class="veil-dots"><view class="d"></view><view class="d"></view><view class="d"></view></view>
+  <text class="veil-line">{{veilLine}}</text>
 </view>

@@ -7,6 +7,7 @@ import { garnishesFor } from "../../lib/data/garnish";
 import { servedFill } from "../../lib/data/glasses";
 import { sound } from "../../lib/sound/index";
 import { store } from "../../lib/store";
+import { logoDataUri } from "../../lib/svg/logo";
 
 const STEPS = [
   { key: "recipe", label: "选择配方" },
@@ -38,7 +39,7 @@ Component({
     recipeList: [] as any[],
     recipe: null as null | Recipe,
     rGlass: "rocks", rFamily: "whisky", rIce: "none", rName: "", rNameEn: "",
-    showHint: true,
+    showHint: false,
     ratioItems: [] as any[],
     pours: [] as number[],
     ratioAccuracyPct: 0,
@@ -52,6 +53,7 @@ Component({
     actionLabel: "停！",
     busy: false,
     veilLine: "",
+    veilLogo: logoDataUri(64),
   },
 
   _timing: null as null | number,

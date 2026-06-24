@@ -9,6 +9,7 @@ import { sound } from "../../lib/sound/index";
 import { store } from "../../lib/store";
 import { sceneForFamily } from "../../lib/config";
 import { svgToDataUri } from "../../lib/svg/helpers";
+import { logoDataUri } from "../../lib/svg/logo";
 
 const MAX_NODES = 8;
 const VEIL_LINES = ["正在聆听你的心绪…", "调酒师在挑选基酒…", "诗人在斟酌词句…", "化学家在校准风味…"];
@@ -34,6 +35,7 @@ Component({
     max: MAX_NODES,
     busy: false,
     veilLine: "",
+    veilLogo: logoDataUri(64),
     edges: "",
     scene: sceneForFamily("absinthe"),
     hintComplex: false,

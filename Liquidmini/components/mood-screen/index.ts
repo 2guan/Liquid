@@ -5,6 +5,7 @@ import { maybeGradientPour } from "../../lib/tokens";
 import { sound } from "../../lib/sound/index";
 import { store } from "../../lib/store";
 import { emblemDataUri } from "../../lib/svg/emblem";
+import { logoDataUri } from "../../lib/svg/logo";
 
 const VEIL_LINES = [
   "正在聆听你的心绪…",
@@ -23,6 +24,7 @@ Component({
     placeholder: MOOD_PROMPTS[0],
     seeds: sampleSeeds(8).map((m) => ({ tag: m.tag, label: m.label })),
     emblem: emblemDataUri("mood", 54, "#D89C3A"),
+    veilLogo: logoDataUri(64),
     charCount: 0,
   },
 
