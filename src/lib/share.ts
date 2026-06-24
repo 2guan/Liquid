@@ -34,7 +34,7 @@ const CN = '"Maoken Fengyasong", "Songti SC", "STSong", "Noto Serif SC", serif';
 const EN = 'Georgia, "Times New Roman", serif';
 
 type Op =
-  | { t: "text"; x: number; y: number; size: number; color: string; stack: string; align: CanvasTextAlign; italic?: boolean; spacing?: number; text: string }
+  | { t: "text"; x: number; y: number; size: number; color: string; stack: string; align: CanvasTextAlign; italic?: boolean; spacing?: number; text: string; tag?: "body" | "sig" }
   | { t: "line"; x1: number; x2: number; y: number; opacity: number }
   | { t: "qr"; x: number; y: number; area: number; size: number; data: ArrayLike<number>; color: string };
 
@@ -85,17 +85,17 @@ function layout(result: CocktailResult): Layout {
   // quarter, vertically centred against the text block.
   const matrix = QRCode.create(siteUrl(), { errorCorrectionLevel: "M" }).modules;
   const QR_GOLD = "rgba(200,164,93,0.5)";
-  const QSIZE = 132;                 // ≈ right quarter of the card
-  const qrX = W - PAD - QSIZE;       // left edge of the code column
-  const textRight = qrX - 24;        // story wraps before the code gutter
-  const lines = wrapCJK(storyBody, 23).slice(0, 6);
+  const QSIZE = 106;                 // mini-code column (20% smaller)
+  const textRight = W - PAD - QSIZE - 20;                      // body column right edge
+  const qrX = textRight + (W - PAD - textRight - QSIZE) / 2;   // code centred in the right region
+  const lines = wrapCJK(storyBody, 25).slice(0, 6);
   if (lines.length) {
-    divider(ops, y, "微醺絮语 · THE STORY", textRight); // cap the right rule before the QR
+    divider(ops, y, "微醺絮语 · THE STORY"); // full-width rules, same as 专属配方
     const blockTop = y + 42;
     const lineH = 33;
     let ty = blockTop;
     for (const line of lines) {
-      ops.push({ t: "text", x: PAD, y: ty, size: 18, color: "rgba(231,214,177,0.82)", stack: CN, align: "left", text: line });
+      ops.push({ t: "text", x: PAD, y: ty, size: 18, color: "rgba(231,214,177,0.82)", stack: CN, align: "left", text: line, tag: "body" });
       ty += lineH;
     }
     let qrY = blockTop + ((lines.length - 1) * lineH) / 2 - QSIZE / 2 - 9;
@@ -109,7 +109,7 @@ function layout(result: CocktailResult): Layout {
 
   // signature
   const signature = result.story.match(/——\s*([^\n]+)\s*$/)?.[1]?.trim() || "The Sip & Sigh";
-  ops.push({ t: "text", x: CX, y, size: 18, color: "rgba(200,164,93,0.85)", stack: CN, align: "center", italic: true, text: `—— ${signature}` });
+  ops.push({ t: "text", x: textRight, y, size: 18, color: "rgba(200,164,93,0.85)", stack: CN, align: "right", italic: true, text: `—— ${signature}`, tag: "sig" });
   y += 44; // bottom margin
 
   return { H: Math.round(y), ops, haloCy };
@@ -177,6 +177,7 @@ export async function renderShareCard(result: CocktailResult): Promise<HTMLCanva
   drawGlass(ctx, result, hi, body, shadow, 124, 210, isFizzy(result.ingredients), garnishesFor(result.ingredients));
 
   // ── text + rules ──
+  let bodyRight = 0; // furthest right edge of the story body — signature aligns to it
   for (const op of ops) {
     if (op.t === "line") {
       ctx.strokeStyle = withAlpha("#C8A45D", op.opacity);
@@ -204,8 +205,21 @@ export async function renderShareCard(result: CocktailResult): Promise<HTMLCanva
     }
     ctx.font = `${op.italic ? "italic " : ""}${op.size}px ${op.stack}`;
     ctx.fillStyle = op.color;
-    ctx.textAlign = op.align;
     setSpacing(ctx, op.spacing ?? 0);
+    if (op.tag === "body") {
+      // left-aligned line; remember the furthest right edge so the signature lines up
+      ctx.textAlign = "left";
+      ctx.fillText(op.text, op.x, op.y);
+      bodyRight = Math.max(bodyRight, op.x + ctx.measureText(op.text).width);
+      continue;
+    }
+    if (op.tag === "sig") {
+      // flush-right to the body's true rightmost edge
+      ctx.textAlign = "right";
+      ctx.fillText(op.text, bodyRight || op.x, op.y);
+      continue;
+    }
+    ctx.textAlign = op.align;
     ctx.fillText(op.text, op.x, op.y);
   }
   setSpacing(ctx, 0);

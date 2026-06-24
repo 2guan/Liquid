@@ -26,7 +26,7 @@ const QR_BITS =
   "1111111000000100101111111100000100101111100100000110111010101100111010111011011101011111111101011101101110101001110010101110110000010100001110010000011111111010101010101111111000000001100001010000000010111110001101100011111000010110100000100100100010110111100101001110011101101011000000010010110000011010001110001111011110111101001011000001011010101010100011010111011011110111001110001010011101110001100111110101110111111010000000000101011001000110001111111001101110101010111100000101000100010001101110111010111001111111101001011101011110010101011111101110101000001000000110110000010001100011101110011111111010011110000111111";
 
 type Op =
-  | { t: "text"; x: number; y: number; size: number; color: string; stack: string; align: string; italic?: boolean; spacing?: number; text: string }
+  | { t: "text"; x: number; y: number; size: number; color: string; stack: string; align: string; italic?: boolean; spacing?: number; text: string; tag?: "body" | "sig" }
   | { t: "line"; x1: number; x2: number; y: number; opacity: number }
   | { t: "qr"; x: number; y: number; area: number };
 
@@ -207,17 +207,17 @@ function layout(result: CocktailResult): Layout {
   const storyBody = result.story.replace(/\n[\s\S]*$/, "").trim();
   // story body is left-aligned across the left 3/4; the mini-code occupies the
   // right quarter, vertically centred against the text block.
-  const QSIZE = 132;                 // ≈ right quarter of the card
-  const qrX = W - PAD - QSIZE;       // left edge of the code column
-  const textRight = qrX - 24;        // story wraps before the code gutter
-  const lines = wrapCJK(storyBody, 23).slice(0, 6);
+  const QSIZE = 106;                 // mini-code column (20% smaller)
+  const textRight = W - PAD - QSIZE - 20;                      // body column right edge
+  const qrX = textRight + (W - PAD - textRight - QSIZE) / 2;   // code centred in the right region
+  const lines = wrapCJK(storyBody, 25).slice(0, 6);
   if (lines.length) {
-    divider(ops, y, "微醺絮语 · THE STORY", textRight);
+    divider(ops, y, "微醺絮语 · THE STORY"); // full-width rules, same as 专属配方
     const blockTop = y + 42;
     const lineH = 33;
     let ty = blockTop;
     for (const line of lines) {
-      ops.push({ t: "text", x: PAD, y: ty, size: 18, color: "rgba(231,214,177,0.82)", stack: CN, align: "left", text: line });
+      ops.push({ t: "text", x: PAD, y: ty, size: 18, color: "rgba(231,214,177,0.82)", stack: CN, align: "left", text: line, tag: "body" });
       ty += lineH;
     }
     let qrY = blockTop + ((lines.length - 1) * lineH) / 2 - QSIZE / 2 - 9;
@@ -231,7 +231,7 @@ function layout(result: CocktailResult): Layout {
 
   const m = result.story.match(/——\s*([^\n]+)\s*$/);
   const signature = (m && m[1] ? m[1].trim() : "") || "The Sip & Sigh";
-  ops.push({ t: "text", x: CX, y, size: 18, color: "rgba(200,164,93,0.85)", stack: CN, align: "center", italic: true, text: `—— ${signature}` });
+  ops.push({ t: "text", x: textRight, y, size: 18, color: "rgba(200,164,93,0.85)", stack: CN, align: "right", italic: true, text: `—— ${signature}`, tag: "sig" });
   y += 44;
 
   return { H: Math.round(y), ops, haloCy };
@@ -281,6 +281,7 @@ export function drawShareCard(canvas: any, ctx: any, dpr: number, result: Cockta
   drawGlass(ctx, result, hi, body, shadow, 124, 210, isFizzy(result.ingredients), garnishesFor(result.ingredients));
 
   // text + rules + qr
+  let bodyRight = 0; // furthest right edge of the story body — signature aligns to it
   for (const op of ops) {
     if (op.t === "line") {
       ctx.strokeStyle = withAlpha("#C8A45D", op.opacity); ctx.lineWidth = 1;
@@ -305,8 +306,21 @@ export function drawShareCard(canvas: any, ctx: any, dpr: number, result: Cockta
     }
     ctx.font = `${op.italic ? "italic " : ""}${op.size}px ${op.stack}`;
     ctx.fillStyle = op.color;
-    ctx.textAlign = op.align;
     setSpacing(ctx, op.spacing || 0);
+    if (op.tag === "body") {
+      // left-aligned line; remember the furthest right edge so the signature lines up
+      ctx.textAlign = "left";
+      ctx.fillText(op.text, op.x, op.y);
+      bodyRight = Math.max(bodyRight, op.x + ctx.measureText(op.text).width);
+      continue;
+    }
+    if (op.tag === "sig") {
+      // flush-right to the body's true rightmost edge
+      ctx.textAlign = "right";
+      ctx.fillText(op.text, bodyRight || op.x, op.y);
+      continue;
+    }
+    ctx.textAlign = op.align;
     ctx.fillText(op.text, op.x, op.y);
   }
   setSpacing(ctx, 0);
