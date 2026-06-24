@@ -12,6 +12,7 @@ import { svgToDataUri } from "../../lib/svg/helpers";
 import { cocktailAI } from "../../lib/ai/cocktailAI";
 import { sound } from "../../lib/sound/index";
 import { store } from "../../lib/store";
+import { liquidRamp } from "../../lib/tokens";
 
 const STEPS = [
   { key: "glass", label: "选择杯型" },
@@ -20,6 +21,18 @@ const STEPS = [
   { key: "ice", label: "选择冰型" },
 ];
 const POUR_TARGET = 0.58;
+
+const CLEAR = ["#EEF6F8", "#D6E6EC", "#A2BAC4"] as const;
+function rgba(hex: string, a: number): string {
+  const m = hex.replace("#", "");
+  return `rgba(${parseInt(m.slice(0, 2), 16)},${parseInt(m.slice(2, 4), 16)},${parseInt(m.slice(4, 6), 16)},${a})`;
+}
+/** Pour-stream gradient that matches the spirit's liquid colour in the glass. */
+function streamGradient(family: string): string {
+  const clear = family === "gin" || family === "vodka" || family === "sparkling" || family === "rumWhite";
+  const ramp = clear ? CLEAR : (liquidRamp[family] ?? liquidRamp.default);
+  return `linear-gradient(180deg, ${rgba(ramp[0], 0)} 0%, ${rgba(ramp[0], 0.85)} 14%, ${rgba(ramp[1], 0.92)} 100%)`;
+}
 
 function iceList() {
   return ICES.map((i) => ({ ...i, swatch: svgToDataUri(iceSwatch(i.id, 56)) }));
@@ -34,7 +47,9 @@ Component({
     glassType: "rocks" as GlassType,
     spiritId: "",
     family: "whisky",
+    streamBg: streamGradient("whisky"),
     fill: 0,
+    glassFill: 0, // quantised fill fed to the <glass> so it rebuilds less often
     pouring: false,
     ice: "none" as IceType,
     busy: false,
@@ -63,7 +78,8 @@ Component({
       const seed = store.get().pureSeed;
       if (seed) {
         const sp = spiritById(seed);
-        this.setData({ spiritId: seed, step: "spirit", stepIndex: 1, family: sp ? sp.family : "whisky" });
+        const fam = sp ? sp.family : "whisky";
+        this.setData({ spiritId: seed, step: "spirit", stepIndex: 1, family: fam, streamBg: streamGradient(fam) });
         store.consumePureSeed();
       }
     },
@@ -97,7 +113,8 @@ Component({
       sound.play("click");
       const id = e.currentTarget.dataset.id;
       const sp = spiritById(id);
-      this.setData({ spiritId: id, family: sp ? sp.family : "whisky" });
+      const fam = sp ? sp.family : "whisky";
+      this.setData({ spiritId: id, family: fam, streamBg: streamGradient(fam) });
     },
     pickIce(e: any) {
       const id = e.currentTarget.dataset.id as IceType;
@@ -128,7 +145,11 @@ Component({
     applyFill(fill: number) {
       const quality = Math.max(0, 1 - Math.abs(fill - POUR_TARGET) / 0.5);
       const msg = fill < 0.05 ? "杯子还是空的" : quality > 0.8 ? "完美的注酒线 ✦" : fill > 0.8 ? "斟得有些满了" : "继续……";
-      this.setData({ fill, pourPct: Math.round(fill * 100), pourMsg: msg });
+      const data: any = { fill, pourPct: Math.round(fill * 100), pourMsg: msg };
+      // only rebuild the heavy glass SVG when the fill moves a visible step (~0.04)
+      const gq = Math.round(fill / 0.04) * 0.04;
+      if (gq !== this.data.glassFill) data.glassFill = gq;
+      this.setData(data);
     },
 
     prevStep() {

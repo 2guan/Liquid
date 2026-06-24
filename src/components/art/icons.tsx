@@ -28,7 +28,8 @@ export type IconName =
   | "search"
   | "refresh"
   | "trash"
-  | "stir";
+  | "stir"
+  | "feather";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: <path d="M4 11.5 12 4l8 7.5M6 10v9.5h12V10" />,
@@ -120,6 +121,12 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M14 3 8 17a3 3 0 1 1-2-1L12 2" />
       <circle cx="6.5" cy="18.5" r="2" />
+    </>
+  ),
+  feather: (
+    <>
+      <path d="M20 4C10 5 5 11 5 20M20 4c1.4 7-1.4 12.5-7 14.5-2.6.9-6 1-6 1z" />
+      <path d="M9 14.5c2.2-3 5-5.3 8.5-6.8" />
     </>
   ),
 };

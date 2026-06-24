@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { LayoutMode } from "@/hooks/useLayout";
-import { MOOD_SEEDS, MOOD_PROMPTS } from "@/lib/data/moods";
+import { MOOD_PROMPTS, sampleSeeds, randomPrompt } from "@/lib/data/moods";
 import { cocktailAI } from "@/lib/ai/cocktailAI";
 import { maybeGradientPour } from "@/lib/tokens";
 import { sound } from "@/lib/sound";
@@ -21,7 +21,8 @@ export default function MoodScreen({ layout }: { layout: LayoutMode }) {
   const [busy, setBusy] = useState(false);
   const [veilLine, setVeilLine] = useState(0);
   const [placeholder, setPlaceholder] = useState(MOOD_PROMPTS[0]);
-  const [listening, setListening] = useState(false);
+  // a fresh random 7–8 chips per mount
+  const [seeds] = useState(() => sampleSeeds(7 + Math.floor(Math.random() * 2)));
 
   const setLastResult = useAtelier((s) => s.setLastResult);
   const addXp = useAtelier((s) => s.addXp);
@@ -60,40 +61,10 @@ export default function MoodScreen({ layout }: { layout: LayoutMode }) {
     showResult();
   }
 
-  /* ── voice input (Web Speech API, graceful fallback) ── */
-  const recogRef = useRef<unknown>(null);
-  function toggleVoice() {
-    const SR =
-      (typeof window !== "undefined" &&
-        ((window as unknown as { SpeechRecognition?: unknown }).SpeechRecognition ||
-          (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition)) ||
-      null;
-    if (!SR) {
-      // fallback: drop in an inspiring prompt
-      setText((t) => (t ? t : MOOD_PROMPTS[Math.floor(Math.random() * MOOD_PROMPTS.length)]));
-      return;
-    }
-    if (listening) {
-      (recogRef.current as { stop: () => void } | null)?.stop?.();
-      setListening(false);
-      return;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const recog: any = new (SR as any)();
-    recog.lang = "zh-CN";
-    recog.interimResults = true;
-    recog.continuous = false;
-    recog.onresult = (e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => {
-      const said = Array.from(e.results as ArrayLike<ArrayLike<{ transcript: string }>>)
-        .map((r) => r[0].transcript)
-        .join("");
-      setText(said);
-    };
-    recog.onend = () => setListening(false);
-    recog.onerror = () => setListening(false);
-    recogRef.current = recog;
-    recog.start();
-    setListening(true);
+  /* ── inspiration: drop in a random mood line, replacing whatever is there ── */
+  function inspire() {
+    setText((t) => randomPrompt(t.trim()));
+    sound.play("click");
   }
 
   return (
@@ -122,12 +93,10 @@ export default function MoodScreen({ layout }: { layout: LayoutMode }) {
           />
           <div className="flex items-center justify-between px-3 pb-2">
             <button
-              onClick={toggleVoice}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-cn text-xs transition-colors ${
-                listening ? "border-copper bg-copper/20 text-copper animate-breathe" : "border-ink/25 text-ink/60 hover:border-ink/45"
-              }`}
+              onClick={inspire}
+              className="inline-flex items-center gap-1.5 rounded-full border border-ink/25 px-3 py-1.5 font-cn text-xs text-ink/60 transition-colors hover:border-ink/45"
             >
-              <Icon name="mic" size={14} /> {listening ? "聆听中…" : "语音输入"}
+              <Icon name="feather" size={14} /> 来点灵感
             </button>
             <span className="font-ui text-[11px] text-ink/40">{text.length} 字</span>
           </div>
@@ -136,7 +105,7 @@ export default function MoodScreen({ layout }: { layout: LayoutMode }) {
         {/* emotion seeds */}
         <p className="mb-2 mt-5 font-cn text-xs text-paper/50">或者，点选一种心绪：</p>
         <div className="flex flex-wrap gap-2">
-          {MOOD_SEEDS.map((m) => (
+          {seeds.map((m) => (
             <Chip key={m.tag} active={tags.includes(m.tag)} onClick={() => toggleTag(m.tag)}>
               {m.label}
             </Chip>

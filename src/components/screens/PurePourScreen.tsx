@@ -29,10 +29,23 @@ import { StepFooter } from "@/components/ui/ornaments";
 import { Icon } from "@/components/art/icons";
 import { cocktailAI } from "@/lib/ai/cocktailAI";
 import { sound } from "@/lib/sound";
+import { liquidRamp } from "@/lib/tokens";
 import { useAtelier } from "@/store/useAtelier";
 import { useNav } from "@/store/useNav";
 
 type Step = "glass" | "spirit" | "pour" | "ice";
+
+const CLEAR_RAMP = ["#EEF6F8", "#D6E6EC", "#A2BAC4"] as const;
+function rgba(hex: string, a: number): string {
+  const m = hex.replace("#", "");
+  return `rgba(${parseInt(m.slice(0, 2), 16)},${parseInt(m.slice(2, 4), 16)},${parseInt(m.slice(4, 6), 16)},${a})`;
+}
+/** Pour-stream gradient matching the spirit's liquid colour in the glass. */
+function streamGradient(family: string): string {
+  const clear = family === "gin" || family === "vodka" || family === "sparkling" || family === "rumWhite";
+  const ramp = clear ? CLEAR_RAMP : (liquidRamp[family] ?? liquidRamp.default);
+  return `linear-gradient(180deg, ${rgba(ramp[0], 0)} 0%, ${rgba(ramp[0], 0.85)} 14%, ${rgba(ramp[1], 0.92)} 100%)`;
+}
 const STEPS: { key: Step; label: string }[] = [
   { key: "glass", label: "选择杯型" },
   { key: "spirit", label: "倒入基酒" },
@@ -139,7 +152,7 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
               {/* pour stream falling from the mouth into the glass */}
               <span
                 className="pour-stream absolute left-1/2 w-[3px] -translate-x-1/2 rounded-full"
-                style={{ top: "13%", height: "30%" }}
+                style={{ top: "13%", height: "30%", background: streamGradient(family) }}
               />
               {/* bottle: its mouth is pinned just above the glass rim; the body
                   tilts up so it reads as pouring in. (pivot = the bottle's mouth) */}

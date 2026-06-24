@@ -1,5 +1,5 @@
 /** Whisper of Mood — emotion → drink. Ported from MoodScreen.tsx. */
-import { MOOD_SEEDS, MOOD_PROMPTS } from "../../lib/data/moods";
+import { MOOD_PROMPTS, sampleSeeds, randomPrompt } from "../../lib/data/moods";
 import { cocktailAI } from "../../lib/ai/cocktailAI";
 import { maybeGradientPour } from "../../lib/tokens";
 import { sound } from "../../lib/sound/index";
@@ -21,7 +21,7 @@ Component({
     busy: false,
     veilLine: "",
     placeholder: MOOD_PROMPTS[0],
-    seeds: MOOD_SEEDS.map((m) => ({ tag: m.tag, label: m.label })),
+    seeds: sampleSeeds(8).map((m) => ({ tag: m.tag, label: m.label })),
     emblem: emblemDataUri("mood", 54, "#D89C3A"),
     charCount: 0,
   },
@@ -31,6 +31,8 @@ Component({
 
   lifetimes: {
     attached() {
+      // a fresh random 7–8 chips each time the screen opens
+      this.setData({ seeds: sampleSeeds(7 + Math.floor(Math.random() * 2)).map((m) => ({ tag: m.tag, label: m.label })) });
       let i = 0;
       this._promptTimer = setInterval(() => {
         i = (i + 1) % MOOD_PROMPTS.length;
@@ -57,10 +59,10 @@ Component({
       sound.play("click");
     },
     inspire() {
-      // no Web Speech API in the mini-program — drop in an inspiring prompt
-      if (this.data.text.trim()) return;
-      const p = MOOD_PROMPTS[Math.floor((Date.now() / 1000) % MOOD_PROMPTS.length)];
+      // drop in a random mood line; replace whatever is already in the box
+      const p = randomPrompt(this.data.text.trim());
       this.setData({ text: p, charCount: p.length });
+      sound.play("click");
     },
     async generate() {
       if (this.data.busy) return;

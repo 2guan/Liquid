@@ -263,11 +263,6 @@ body {
 
 /* Pour stream used by the Pure Pour canvas overlay */
 .pour-stream {
-  background: linear-gradient(
-    180deg,
-    rgba(232, 169, 78, 0.0) 0%,
-    rgba(232, 169, 78, 0.85) 12%,
-    rgba(185, 116, 42, 0.9) 100%
-  );
+  /* background is set inline per-spirit (see PurePourScreen.streamGradient) */
   filter: blur(0.4px);
 }

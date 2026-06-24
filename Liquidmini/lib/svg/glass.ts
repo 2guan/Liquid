@@ -94,7 +94,10 @@ export function glassSvg(opts: GlassOpts): string {
   }
   const edgeK = clearFam && !liquidColor ? 0.5 : 1;
 
-  const detailed = size >= 130;
+  // The ink-distortion filter (feTurbulence + feDisplacementMap) is expensive to
+  // rasterise. While pouring, the glass is re-rendered ~20×/s as the fill ramps,
+  // so drop the heavy filter then — it would flicker/blank on the device.
+  const detailed = size >= 130 && state !== "pouring";
 
   const garnishHead = fit && garnishes && garnishes.length > 0 ? 40 : 0;
   const vbTop = fit ? geom.content.top - garnishHead : 0;

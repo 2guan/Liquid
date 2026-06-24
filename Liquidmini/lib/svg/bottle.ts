@@ -74,7 +74,11 @@ export function bottleSvg(opts: BottleOpts): string {
 
   const liquidTopY = shoulderBottom + (1 - Math.max(0, Math.min(1, fillLevel))) * (bodyBottom - shoulderBottom - 8);
   const mono = (label ?? family[0] ?? "L").toUpperCase().slice(0, 2);
-  const transform = tilt ? ` transform="rotate(${n(tilt)} 60 270)"` : "";
+  // `tilt` is intentionally NOT baked into the SVG — an internal rotation gets
+  // clipped by the viewBox. The pour tilt is applied with a CSS transform on the
+  // container instead (see pure-pour-screen .pour-bottle), matching the web build.
+  void tilt;
+  const transform = "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${n(size)}" height="${n(size * (300 / 120))}" viewBox="0 0 120 300" role="img" aria-label="${(title ?? `${family} bottle`).replace(/"/g, "")}">
     <defs>

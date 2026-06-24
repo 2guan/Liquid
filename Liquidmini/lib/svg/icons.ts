@@ -8,7 +8,7 @@ export type IconName =
   | "home" | "library" | "journal" | "trophy" | "settings" | "back" | "forward"
   | "share" | "save" | "mic" | "sound-on" | "sound-off" | "close" | "plus"
   | "sparkle" | "lock" | "check" | "info" | "droplet" | "snow" | "search"
-  | "refresh" | "trash" | "stir";
+  | "refresh" | "trash" | "stir" | "feather";
 
 const PATHS: Record<IconName, string> = {
   home: `<path d="M4 11.5 12 4l8 7.5M6 10v9.5h12V10"/>`,
@@ -35,6 +35,7 @@ const PATHS: Record<IconName, string> = {
   refresh: `<path d="M5 12a7 7 0 0 1 12-5l2 2M19 12a7 7 0 0 1-12 5l-2-2M17 4v5h-5M7 20v-5h5"/>`,
   trash: `<path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/>`,
   stir: `<path d="M14 3 8 17a3 3 0 1 1-2-1L12 2"/><circle cx="6.5" cy="18.5" r="2"/>`,
+  feather: `<path d="M20 4C10 5 5 11 5 20M20 4c1.4 7-1.4 12.5-7 14.5-2.6.9-6 1-6 1z"/><path d="M9 14.5c2.2-3 5-5.3 8.5-6.8"/>`,
 };
 
 export function iconSvg(name: IconName, size = 22, color = "#C8A45D", strokeWidth = 1.5): string {

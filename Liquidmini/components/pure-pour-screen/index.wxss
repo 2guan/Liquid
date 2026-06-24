@@ -30,7 +30,9 @@
 }
 .pour-fx { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 5; pointer-events: none; }
 .stream { position: absolute; left: 50%; transform: translateX(-50%); top: 8%; width: 3px; height: 30%; border-radius: 4px; }
-.pour-bottle { position: absolute; left: 50%; top: 2%; width: 80px; transform: translateX(-50%); }
+/* tilt the upright bottle via CSS (the SVG itself isn't rotated, so it never
+   clips); pivot at the mouth so it reads as pouring into the glass below */
+.pour-bottle { position: absolute; left: 50%; top: 4%; width: 80px; transform: translateX(-50%) rotate(128deg); transform-origin: 50% 9%; }
 
 /* control panel */
 .panel {

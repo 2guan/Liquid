@@ -12,16 +12,16 @@
   <!-- stage -->
   <view class="stage">
     <view wx:if="{{step === 'pour' && pouring}}" class="pour-fx">
-      <view class="pour-stream stream"></view>
+      <view class="pour-stream stream" style="background:{{streamBg}}"></view>
       <view class="pour-bottle">
-        <bottle family="{{family}}" size="{{78}}" tilt="{{128}}" css-height="150px"></bottle>
+        <bottle family="{{family}}" size="{{78}}" css-height="150px"></bottle>
       </view>
     </view>
     <glass
       glass-type="{{glassType}}"
       family="{{family}}"
       ice="{{step === 'ice' ? ice : 'none'}}"
-      fill-level="{{fill}}"
+      fill-level="{{glassFill}}"
       state="{{pouring ? 'pouring' : 'still'}}"
       glow="{{fill > 0.1}}"
       size="{{200}}"

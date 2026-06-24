@@ -19,7 +19,7 @@
         auto-height
       ></textarea>
       <view class="m-input-foot">
-        <view class="m-voice" bindtap="inspire"><icon name="mic" size="14" color="#5a4326"></icon><text>来点灵感</text></view>
+        <view class="m-voice" bindtap="inspire"><icon name="feather" size="14" color="#5a4326"></icon><text>来点灵感</text></view>
         <text class="m-count">{{charCount}} 字</text>
       </view>
     </view>
