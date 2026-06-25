@@ -88,16 +88,20 @@ function ViewRouter({ layout }: { layout: "landscape" | "portrait" }) {
 
 export default function AppShell() {
   const layout = useLayout();
-  const soundOn = useAtelier((s) => s.soundOn);
+  const musicOn = useAtelier((s) => s.musicOn);
+  const sfxOn = useAtelier((s) => s.sfxOn);
   // the Home view is a full-bleed landing (its own header + bottom nav) — the
   // sidebar / top bar / mobile chrome only appear once a section is open.
   const isHome = useNav((s) => s.view) === "home";
 
-  // Keep the synth's enabled flag in sync with the persisted preference, and
-  // re-arm the AudioContext on the first user gesture (browser autoplay policy).
+  // Keep the synth's flags in sync with the persisted preferences, and re-arm
+  // the AudioContext on the first user gesture (browser autoplay policy).
   useEffect(() => {
-    sound.setEnabled(soundOn);
-  }, [soundOn]);
+    sound.setMusicEnabled(musicOn);
+  }, [musicOn]);
+  useEffect(() => {
+    sound.setSfxEnabled(sfxOn);
+  }, [sfxOn]);
   useEffect(() => {
     const handler = () => sound.resumeIfEnabled();
     window.addEventListener("pointerdown", handler);

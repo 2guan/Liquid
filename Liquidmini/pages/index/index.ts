@@ -5,7 +5,6 @@
  * navigation) and mirrors the web build's view-switching AppShell.
  */
 import { store, type View } from "../../lib/store";
-import { sound } from "../../lib/sound/index";
 import { loadServerFont } from "../../lib/fonts";
 import { FONT_MAOKEN, FONT_CINZEL, FONT_CORMORANT } from "../../lib/config";
 
@@ -26,7 +25,6 @@ const SECTION: Record<string, { zh: string; en: string }> = {
 Page({
   data: {
     view: "home" as View,
-    soundOn: false,
     section: null as null | { zh: string; en: string },
     statusBarHeight: 20,
     rankName: "",
@@ -45,7 +43,6 @@ Page({
       const rank = store.rank();
       this.setData({
         view: s.view,
-        soundOn: s.soundOn,
         section: SECTION[s.view] || null,
         rankName: rank.meta.name,
         rankProgress: Math.round(rank.progress * 100),
@@ -100,10 +97,6 @@ Page({
 
   goHome() {
     store.home();
-  },
-  toggleSound() {
-    store.toggleSound();
-    sound.setEnabled(store.get().soundOn);
   },
   goAchievements() {
     store.go("achievements");

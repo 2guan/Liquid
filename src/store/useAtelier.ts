@@ -31,8 +31,10 @@ interface AtelierState {
   setLastResult: (result: CocktailResult, mode: ModeId) => void;
 
   // ── preferences ──
-  soundOn: boolean;
-  toggleSound: () => void;
+  musicOn: boolean; // ambient background music
+  sfxOn: boolean; // button / interaction sound effects
+  setMusic: (on: boolean) => void;
+  setSfx: (on: boolean) => void;
 
   // ── stats for achievements ──
   pours: number;
@@ -97,8 +99,10 @@ export const useAtelier = create<AtelierState>()(
         lastResult: null,
         setLastResult: (result, mode) => set({ lastResult: { result, mode } }),
 
-        soundOn: false,
-        toggleSound: () => set((s) => ({ soundOn: !s.soundOn })),
+        musicOn: false,
+        sfxOn: false,
+        setMusic: (on) => set({ musicOn: on }),
+        setSfx: (on) => set({ sfxOn: on }),
 
         pours: 0,
         unlocked: [],
@@ -159,7 +163,8 @@ export const useAtelier = create<AtelierState>()(
       partialize: (s) => ({
         xp: s.xp,
         journal: s.journal,
-        soundOn: s.soundOn,
+        musicOn: s.musicOn,
+        sfxOn: s.sfxOn,
         pours: s.pours,
         unlocked: s.unlocked,
         modes: s.modes,
@@ -172,10 +177,13 @@ export const useAtelier = create<AtelierState>()(
       }),
       // older persisted blobs won't have the new fields — backfill on hydrate
       merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<AtelierState>;
+        const p = (persisted ?? {}) as Partial<AtelierState> & { soundOn?: boolean };
         return {
           ...current,
           ...p,
+          // migrate the old single `soundOn` flag into both new switches
+          musicOn: p.musicOn ?? p.soundOn ?? false,
+          sfxOn: p.sfxOn ?? p.soundOn ?? false,
           modes: { pure: 0, mixology: 0, mood: 0, zen: 0, ...(p.modes ?? {}) },
           glassesUsed: p.glassesUsed ?? [],
           familiesUsed: p.familiesUsed ?? [],

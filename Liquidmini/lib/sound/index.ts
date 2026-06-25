@@ -21,7 +21,8 @@ type Sfx =
 let ctx: any = null;
 let master: any = null;
 let ambient: { stop: () => void } | null = null;
-let enabled = false;
+let musicOn = false; // ambient background music
+let sfxOn = false; // tactile button / interaction sound effects
 
 function ensure(): any {
   if (typeof wx === "undefined" || !wx.createWebAudioContext) return null;
@@ -220,11 +221,15 @@ function stopAmbient() {
 }
 
 export const sound = {
-  get enabled() {
-    return enabled;
+  get musicEnabled() {
+    return musicOn;
   },
-  setEnabled(on: boolean) {
-    enabled = on;
+  get sfxEnabled() {
+    return sfxOn;
+  },
+  /** Background music (the ambient lounge bed). */
+  setMusicEnabled(on: boolean) {
+    musicOn = on;
     try {
       if (on) {
         ensure();
@@ -236,18 +241,30 @@ export const sound = {
       /* audio unavailable — fail silently */
     }
   },
+  /** Button / interaction sound effects. */
+  setSfxEnabled(on: boolean) {
+    sfxOn = on;
+    try {
+      if (on) ensure();
+    } catch (e) {
+      /* audio unavailable — fail silently */
+    }
+  },
   /** Re-arm the audio context after a user gesture (autoplay policy). */
   resumeIfEnabled() {
-    if (!enabled) return;
     try {
-      ensure();
-      startAmbient();
+      if (musicOn) {
+        ensure();
+        startAmbient();
+      } else if (sfxOn) {
+        ensure();
+      }
     } catch (e) {
       /* audio unavailable — fail silently */
     }
   },
   play(name: Sfx) {
-    if (!enabled) return;
+    if (!sfxOn) return;
     let c: any = null;
     try {
       c = ensure();

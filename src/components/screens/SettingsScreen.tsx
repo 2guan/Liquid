@@ -10,8 +10,10 @@ import { Icon } from "@/components/art/icons";
  * its own page. Same in-world styling as the Achievements screen.
  */
 export default function SettingsScreen({ layout }: { layout: LayoutMode }) {
-  const soundOn = useAtelier((s) => s.soundOn);
-  const toggleSound = useAtelier((s) => s.toggleSound);
+  const musicOn = useAtelier((s) => s.musicOn);
+  const sfxOn = useAtelier((s) => s.sfxOn);
+  const setMusic = useAtelier((s) => s.setMusic);
+  const setSfx = useAtelier((s) => s.setSfx);
 
   return (
     <div className="h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
@@ -20,15 +22,27 @@ export default function SettingsScreen({ layout }: { layout: LayoutMode }) {
 
       {/* 音效 */}
       <p className="mb-3 font-title text-[11px] uppercase tracking-title text-gold/55">音效 · Sound</p>
-      <div className="flex items-center justify-between rounded-xl border border-gold/15 bg-bg-secondary/50 p-4">
-        <div className="flex items-center gap-3">
-          <Icon name={soundOn ? "sound-on" : "sound-off"} size={20} className="text-gold/70" />
-          <div>
-            <p className="font-cn text-sm text-paper">环境音效</p>
-            <p className="font-cn text-[11px] text-paper/45">吧台背景音及交互音效</p>
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between rounded-xl border border-gold/15 bg-bg-secondary/50 p-4">
+          <div className="flex items-center gap-3">
+            <Icon name={musicOn ? "sound-on" : "sound-off"} size={20} className="text-gold/70" />
+            <div>
+              <p className="font-cn text-sm text-paper">背景音乐</p>
+              <p className="font-cn text-[11px] text-paper/45">吧台爵士氛围乐</p>
+            </div>
           </div>
+          <IconButton icon={musicOn ? "sound-on" : "sound-off"} label="切换背景音乐" active={musicOn} onClick={() => setMusic(!musicOn)} />
         </div>
-        <IconButton icon={soundOn ? "sound-on" : "sound-off"} label="切换音效" active={soundOn} onClick={toggleSound} />
+        <div className="flex items-center justify-between rounded-xl border border-gold/15 bg-bg-secondary/50 p-4">
+          <div className="flex items-center gap-3">
+            <Icon name={sfxOn ? "sound-on" : "sound-off"} size={20} className="text-gold/70" />
+            <div>
+              <p className="font-cn text-sm text-paper">按钮音效</p>
+              <p className="font-cn text-[11px] text-paper/45">点击、倒酒、加冰等交互音</p>
+            </div>
+          </div>
+          <IconButton icon={sfxOn ? "sound-on" : "sound-off"} label="切换按钮音效" active={sfxOn} onClick={() => setSfx(!sfxOn)} />
+        </div>
       </div>
 
       {/* 关于 */}

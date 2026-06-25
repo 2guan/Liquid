@@ -7,15 +7,25 @@
 
     <!-- 音效 -->
     <text class="section-label">音效 · Sound</text>
-    <view class="setting" bindtap="toggleSound">
+    <view class="setting" bindtap="toggleMusic">
       <view class="setting-left">
-        <icon name="{{soundOn ? 'sound-on' : 'sound-off'}}" size="20" color="#C8A45D"></icon>
+        <icon name="{{musicOn ? 'sound-on' : 'sound-off'}}" size="20" color="#C8A45D"></icon>
         <view>
-          <text class="setting-name">环境音效</text>
-          <text class="setting-sub">吧台背景音及交互音效</text>
+          <text class="setting-name">背景音乐</text>
+          <text class="setting-sub">吧台爵士氛围乐</text>
         </view>
       </view>
-      <view class="toggle {{soundOn ? 'on' : ''}}"><view class="knob"></view></view>
+      <view class="toggle {{musicOn ? 'on' : ''}}"><view class="knob"></view></view>
+    </view>
+    <view class="setting" bindtap="toggleSfx">
+      <view class="setting-left">
+        <icon name="{{sfxOn ? 'sound-on' : 'sound-off'}}" size="20" color="#C8A45D"></icon>
+        <view>
+          <text class="setting-name">按钮音效</text>
+          <text class="setting-sub">点击、倒酒、加冰等交互音</text>
+        </view>
+      </view>
+      <view class="toggle {{sfxOn ? 'on' : ''}}"><view class="knob"></view></view>
     </view>
 
     <!-- 关于 -->

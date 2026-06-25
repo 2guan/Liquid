@@ -41,7 +41,8 @@ export interface AtelierState {
   lastResult: { result: CocktailResult; mode: ModeId } | null;
 
   // ── preferences ──
-  soundOn: boolean;
+  musicOn: boolean; // ambient background music
+  sfxOn: boolean; // button / interaction sound effects
 
   // ── stats for achievements ──
   pours: number;
@@ -64,7 +65,8 @@ const STORAGE_KEY = "liquid-atelier";
 const PERSIST_KEYS: (keyof AtelierState)[] = [
   "xp",
   "journal",
-  "soundOn",
+  "musicOn",
+  "sfxOn",
   "pours",
   "unlocked",
   "modes",
@@ -95,7 +97,8 @@ const defaults: AtelierState = {
   xp: 200, // a fresh barback, just past the first sip
   journal: [],
   lastResult: null,
-  soundOn: false,
+  musicOn: false,
+  sfxOn: false,
   pours: 0,
   unlocked: [],
   modes: { pure: 0, mixology: 0, mood: 0, zen: 0 },
@@ -110,9 +113,13 @@ const defaults: AtelierState = {
 };
 
 const persisted = loadPersisted();
+const legacySound = (persisted as { soundOn?: boolean }).soundOn;
 let state: AtelierState = {
   ...defaults,
   ...persisted,
+  // migrate the old single `soundOn` flag into the two new switches
+  musicOn: persisted.musicOn ?? legacySound ?? false,
+  sfxOn: persisted.sfxOn ?? legacySound ?? false,
   // backfill nested/array fields older blobs won't have
   modes: { ...defaults.modes, ...(persisted.modes || {}) },
   glassesUsed: persisted.glassesUsed || [],
@@ -240,8 +247,11 @@ export const store = {
   },
 
   // ── preferences ──
-  toggleSound() {
-    set({ soundOn: !state.soundOn });
+  setMusic(on: boolean) {
+    set({ musicOn: on });
+  },
+  setSfx(on: boolean) {
+    set({ sfxOn: on });
   },
 
   // ── stats ──

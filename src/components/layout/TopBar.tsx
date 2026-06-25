@@ -23,8 +23,17 @@ export default function TopBar() {
   const view = useNav((s) => s.view);
   const go = useNav((s) => s.go);
   const home = useNav((s) => s.home);
-  const soundOn = useAtelier((s) => s.soundOn);
-  const toggleSound = useAtelier((s) => s.toggleSound);
+  const musicOn = useAtelier((s) => s.musicOn);
+  const sfxOn = useAtelier((s) => s.sfxOn);
+  const setMusic = useAtelier((s) => s.setMusic);
+  const setSfx = useAtelier((s) => s.setSfx);
+  const anySound = musicOn || sfxOn;
+  // top-bar button is a master mute: flip both music + SFX together
+  const toggleSound = () => {
+    const next = !anySound;
+    setMusic(next);
+    setSfx(next);
+  };
   const section = SECTION[view];
 
   return (
@@ -53,7 +62,7 @@ export default function TopBar() {
         <div className="flex items-center gap-1.5">
           <IconButton icon="trophy" label="成就" active={view === "achievements"} onClick={() => go("achievements")} />
           <IconButton icon="journal" label="日记" active={view === "journal"} onClick={() => go("journal")} />
-          <IconButton icon={soundOn ? "sound-on" : "sound-off"} label={soundOn ? "静音" : "开启音效"} onClick={toggleSound} />
+          <IconButton icon={anySound ? "sound-on" : "sound-off"} label={anySound ? "静音" : "开启音效"} onClick={toggleSound} />
           <IconButton icon="settings" label="设置" active={view === "settings"} onClick={() => go("settings")} />
         </div>
       </div>

@@ -8,7 +8,7 @@
 .section-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(200,164,93,0.55); margin: 6px 0 12px; }
 .section-label:not(:first-of-type) { margin-top: 24px; }
 
-.setting { display: flex; align-items: center; justify-content: space-between; border-radius: 14px; border: 1px solid rgba(200,164,93,0.15); background: rgba(21,17,13,0.5); padding: 16px; }
+.setting { display: flex; align-items: center; justify-content: space-between; border-radius: 14px; border: 1px solid rgba(200,164,93,0.15); background: rgba(21,17,13,0.5); padding: 16px; margin-bottom: 10px; }
 .setting-left { display: flex; align-items: center; gap: 12px; }
 .setting-name { display: block; font-size: 14px; color: #E7D6B1; }
 .setting-sub { display: block; font-size: 11px; color: rgba(231,214,177,0.45); }

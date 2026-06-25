@@ -12,10 +12,10 @@ App({
     // wx.loadFontFace called in App.onLaunch (before any page/renderer exists)
     // fails on-device with "loadFontFace:fail A network error occurred."
 
-    // Restore the persisted sound preference and arm the synth if it was on.
-    if (store.get().soundOn) {
-      sound.setEnabled(true);
-    }
+    // Restore the persisted sound preferences and arm the synth accordingly.
+    const s = store.get();
+    if (s.musicOn) sound.setMusicEnabled(true);
+    if (s.sfxOn) sound.setSfxEnabled(true);
   },
   onShow() {
     sound.resumeIfEnabled();
