@@ -264,8 +264,11 @@ export function glassSvg(opts: GlassOpts): string {
     <path d="M${n(rim.cx - rim.rx * 0.42)},${n(rim.cy - rim.ry * 0.62)} A${n(rim.rx)} ${n(rim.ry)} 0 0 1 ${n(rim.cx + rim.rx * 0.06)},${n(rim.cy - rim.ry)}" fill="none" stroke="#ffffff" stroke-opacity="0.3" stroke-width="0.9" stroke-linecap="round"${detailed ? ` class="rim-glint"` : ""}/>
   </g>`;
 
+  // halo radius & centre clamped to the viewBox so the soft glow is never clipped
+  const glowR = 98;
+  const glowCy = Math.max(vbTop + glowR, Math.min(vbTop + vbH - glowR, geom.cup.top + 40));
   const glowMarkup = glow
-    ? `<ellipse cx="100" cy="${n(geom.cup.top + 40)}" rx="110" ry="110" fill="url(#glow-${uid})"${detailed ? ` class="animate-breathe"` : ""}/>`
+    ? `<ellipse cx="100" cy="${n(glowCy)}" rx="${glowR}" ry="${glowR}" fill="url(#glow-${uid})"${detailed ? ` class="animate-breathe"` : ""}/>`
     : "";
   const stemMarkup = geom.stem
     ? `<path d="${geom.stem}" fill="url(#glass-${uid})" stroke="#E7D6B1" stroke-opacity="0.32" stroke-width="1" ${inkFilter}/>`

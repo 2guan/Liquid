@@ -444,9 +444,11 @@ export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, 
         {/* floating fruit / cherries / coffee beans — sitting *in* the drink */}
         {surf.map((g, i) => {
           const m = surf.length;
-          const gap = Math.min(surfaceHW * 0.72, sItem * 1.8);
+          // fan several floaters across the surface instead of stacking them;
+          // stagger depth a touch so any overlap reads as front/back, not a clash
+          const gap = m > 1 ? Math.min(sItem * 1.7, (surfaceHW * 1.5) / (m - 1)) : 0;
           const x = 100 + (i - (m - 1) / 2) * gap;
-          const y = liquidTop + sItem * 0.16; // centre just below the surface
+          const y = liquidTop + sItem * 0.16 + (i % 2 ? sItem * 0.22 : 0);
           const wl = liquidTop - y; // waterline in the floater's local coords
           return (
             <g key={`s${i}`} transform={`translate(${x} ${y})`}>
@@ -487,17 +489,25 @@ export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, 
         })}
 
       {tall.map((g, i) => {
-        const side = i === 0 ? 1 : -1;
-        const ax = 100 + side * rim.rx * 0.4;
-        const ay = rim.cy + 1;
-        const rot = side * 12;
+        const m = tall.length;
+        // fan the sprigs/sticks across the mouth like a planted bunch, spread
+        // toward the inner walls and fanned outward.
+        const off = m === 1 ? 0.16 : i / (m - 1) - 0.5; // -0.5..0.5 (single leans to a wall)
+        const ax = 100 + off * rim.rx * 1.2;
+        // plant the stalk DOWN into the drink (base at the liquid surface) so soft
+        // herbs like mint sit inside the glass / lean on the wall, half-submerged;
+        // only rest on the lip when the liquid is right up at the brim (or empty,
+        // where liquidTop sits at the cup base → it stands from the bottom).
+        const restOnRim = liquidTop <= rim.cy + 6;
+        const baseY = restOnRim ? rim.cy + 1 : liquidTop - 2;
+        const rot = off * 26;
         const sTall = Math.max(7, Math.min(14, surfaceHW * 0.34));
-        const grow = tallH / (sTall * 2.8) > 1.6 ? 1.4 : 1;
+        const grow = (tallH / (sTall * 2.8) > 1.6 ? 1.35 : 1) * (1 - Math.abs(off) * 0.12);
         return (
           <g key={`t${i}`}>
-            {/* shadow where the stalk rests on the lip */}
-            <ellipse cx={ax + side * 1.5} cy={rim.cy + 2.5} rx={sTall * 0.8} ry={Math.max(1.4, sTall * 0.24)} fill={liquidShadow} opacity="0.3" />
-            <g transform={`translate(${ax} ${ay}) rotate(${rot})`}>
+            {/* shadow where the stalk meets the surface / lip */}
+            <ellipse cx={ax + 1.5} cy={baseY + 2.5} rx={sTall * 0.8} ry={Math.max(1.4, sTall * 0.24)} fill={liquidShadow} opacity="0.28" />
+            <g transform={`translate(${ax} ${baseY}) rotate(${rot})`}>
               <g transform={`scale(${grow})`}>
                 <Shape kind={g.kind} color={g.color} s={sTall} />
               </g>

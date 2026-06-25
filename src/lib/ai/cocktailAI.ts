@@ -13,7 +13,8 @@ import { inferLiquidFamily, blendColors } from "@/lib/tokens";
 import { MOOD_SEEDS } from "@/lib/data/moods";
 import { composeFromMood, composePour, assembleMixResult } from "./composer";
 import { randomSignature, withSignature } from "./lexicon";
-import { hashString } from "./rng";
+import { hashString, makeRng } from "./rng";
+import { classifyMix, dominantFamily, type AmountedPick } from "./magicMix";
 
 /** Result of a Zen-mode flavour analysis. */
 export interface MixAnalysis extends CocktailResult {
@@ -91,48 +92,6 @@ const HIDDEN: HiddenDef[] = [
   },
 ];
 
-/** Colour ramp fallback when no base spirit is in the mix, keyed by category. */
-const CATEGORY_FAMILY: Record<string, SpiritFamily> = {
-  spirit: "whisky",
-  liqueur: "brandy",
-  fortified: "vermouth",
-  bitters: "campari",
-  fruit: "tequila",
-  herb: "absinthe",
-  spice: "brandy",
-  syrup: "cream",
-  mixer: "gin",
-  garnish: "default",
-};
-
-/** The drink's colour family: the most common base family, else by dominant category. */
-function familyForPicks(picks: FlavorPick[]): SpiritFamily {
-  const famCounts = new Map<SpiritFamily, number>();
-  for (const p of picks) if (p.family) famCounts.set(p.family, (famCounts.get(p.family) ?? 0) + 1);
-  if (famCounts.size) {
-    let best: SpiritFamily = "default";
-    let max = -1;
-    famCounts.forEach((n, f) => {
-      if (n > max) {
-        max = n;
-        best = f;
-      }
-    });
-    return best;
-  }
-  const catCounts = new Map<string, number>();
-  for (const p of picks) catCounts.set(p.category, (catCounts.get(p.category) ?? 0) + 1);
-  let bestCat = "spirit";
-  let maxC = -1;
-  catCounts.forEach((n, c) => {
-    if (n > maxC) {
-      maxC = n;
-      bestCat = c;
-    }
-  });
-  return CATEGORY_FAMILY[bestCat] ?? "default";
-}
-
 /** Harmony heuristic: shared flavour descriptors raise it, too many distinct families/picks lower it. */
 function computeHarmony(picks: FlavorPick[]): number {
   if (picks.length <= 1) return 0.92;
@@ -190,18 +149,26 @@ export class MockCocktailAI implements CocktailAI {
     const hidden = HIDDEN.find(
       (h) => h.families.every((f) => families.has(f)) && families.size <= h.families.length + 1,
     );
-    const family = familyForPicks(picks);
+    const family = dominantFamily(picks);
     const harmony = computeHarmony(picks);
 
     // Long-drink heuristic: a sparkling/soft mixer pushes toward a highball.
     const hasMixer = picks.some((p) => p.category === "mixer");
+    // honour the player's own measure when the builder passes one through
     const ingredients = picks.map((p) => ({
       name: p.name,
       nameEn: p.nameEn,
-      amount: amountFor(p.category),
+      amount: (p as AmountedPick).amount ?? amountFor(p.category),
       parts: 1,
       family: p.family,
     }));
+
+    // ── honest, witty branches (Magic builder) ──────────────────────────────
+    // An empty glass dressed only in garnish, or a zero-proof creation, gets a
+    // card that owns the joke instead of pretending to be a cocktail.
+    const klass = classifyMix(picks);
+    if (klass.onlyGarnish) return this.think(wittyGarnishOnly(picks, ingredients, harmony));
+    if (klass.mocktail) return this.think(wittyMocktail(picks, ingredients, family, harmony));
 
     if (hidden) {
       return this.think({
@@ -273,6 +240,85 @@ function amountFor(category: string): string {
   }
 }
 
+type MixIngredient = { name: string; nameEn?: string; amount: string; parts?: number; family?: SpiritFamily };
+
+/** Witty card for an empty glass dressed only in garnish — it owns the joke. */
+function wittyGarnishOnly(picks: FlavorPick[], ingredients: MixIngredient[], harmony: number): MixAnalysis {
+  const rng = makeRng(hashString(picks.map((p) => p.id).join("|")) || 1);
+  const adorn = picks.map((p) => p.name).slice(0, 3).join("、");
+  const cards = [
+    {
+      name: "皇帝的新酒",
+      nameEn: "The Emperor's New Pour",
+      story: `杯子是空的，可点缀一丝不苟——${adorn}郑重其事地停在杯沿。\n这不是一杯酒，而是一场关于「想象力」的行为艺术：请用目光把它斟满。`,
+      taste: "气氛浓郁，酒精为零，余味全凭脑补。",
+      emotion: "有时候，仪式感本身就足够醉人。",
+    },
+    {
+      name: "空杯协奏曲",
+      nameEn: "Ode to an Empty Glass",
+      story: `没有酒，只有${adorn}在杯口打转。它像一封不写正文的信，把所有内容都留给了你。`,
+      taste: "前调是期待，中段是留白，尾韵是一记会心的微笑。",
+      emotion: "留白，是另一种丰盈。",
+    },
+    {
+      name: "禅意虚无",
+      nameEn: "Zen of Nothing",
+      story: `你一丝不苟地装饰了一只空杯，缀上${adorn}。它什么也不是，却也因此可以是任何东西。`,
+      taste: "无味之味，至味也——这话不一定对，但听起来很对。",
+      emotion: "放空，也是一种调制。",
+    },
+  ];
+  const c = rng.pick(cards);
+  return {
+    name: c.name,
+    nameEn: c.nameEn,
+    ingredients,
+    ratio: ingredients.map(() => 1),
+    glass: "coupe",
+    ice: "none",
+    family: "default",
+    taste_profile: c.taste,
+    story: withSignature(c.story, randomSignature()),
+    emotion_mapping: c.emotion,
+    harmony: Math.max(harmony, 0.8),
+    verdict: "这是一只非常体面的空杯——严格来说，并不是酒。",
+  };
+}
+
+/** Witty card for a zero-proof creation — honest that there's no alcohol. */
+function wittyMocktail(picks: FlavorPick[], ingredients: MixIngredient[], family: SpiritFamily, harmony: number): MixAnalysis {
+  const rng = makeRng(hashString(picks.map((p) => p.id).join("|") + "mock") || 1);
+  const lead = picks.map((p) => p.name).slice(0, 3).join("、");
+  const firstNote = picks[0]?.flavor?.[0] ?? "清新";
+  const names = [
+    { name: "清醒的诚实", nameEn: "Sober & Honest" },
+    { name: "无酒之名", nameEn: "No-Proof Manifesto" },
+    { name: "零度宣言", nameEn: "Zero-Proof Declaration" },
+    { name: "不醉者联盟", nameEn: "The Teetotaler's Toast" },
+  ];
+  const n = rng.pick(names);
+  const story =
+    `没有一滴酒精，却装满了诚意。${lead}在杯中各自发声，谁也没醉，谁也不吵。\n` +
+    `这是一杯无酒精特调——清醒，正是它最大的秘密。`;
+  const taste = `入口是${firstNote}的明亮，中段顺滑饱满，尾韵干净利落，不留半分宿醉。`;
+  return {
+    name: n.name,
+    nameEn: n.nameEn,
+    ingredients,
+    ratio: ingredients.map(() => 1),
+    glass: picks.some((p) => p.category === "mixer") ? "highball" : "rocks",
+    ice: "cubes",
+    family: inferLiquidFamily(ingredients, family),
+    liquidColor: blendColors(picks.map((p) => p.color)) ?? undefined,
+    taste_profile: taste,
+    story: withSignature(story, randomSignature()),
+    emotion_mapping: "清醒着，也可以很尽兴。",
+    harmony: Math.max(harmony, 0.7),
+    verdict: "零酒精，满分真诚——这是一杯无酒精特调。",
+  };
+}
+
 /**
  * RemoteCocktailAI — posts to the app's own /api routes (same origin), which
  * proxy to the DeepSeek LLM server-side (the API key never reaches the client).
@@ -330,6 +376,10 @@ class HybridCocktailAI implements CocktailAI {
     return this.withFallback(() => this.remote.describePour(spiritId, glass, ice), () => this.fallback.describePour(spiritId, glass, ice));
   }
   analyzeFlavorMix(picks: FlavorPick[]) {
+    // A garnish-only / zero-proof creation must get the honest, witty card — the
+    // remote LLM would happily invent a cocktail, so resolve these offline.
+    const klass = classifyMix(picks);
+    if (klass.onlyGarnish || klass.mocktail) return this.fallback.analyzeFlavorMix(picks);
     return this.withFallback(() => this.remote.analyzeFlavorMix(picks), () => this.fallback.analyzeFlavorMix(picks));
   }
   describeMix(recipe: Recipe, success: boolean, accuracy: number) {

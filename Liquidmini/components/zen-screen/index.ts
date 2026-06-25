@@ -1,129 +1,315 @@
-/** The Alchemy Atelier — free-mix flavour graph. Ported from ZenScreen.tsx.
- *  Node positions don't affect the analysis (only which flavours are picked),
- *  so orbs auto-arrange in a ring rather than free-drag. */
-import type { FlavorPick } from "../../lib/types";
-import { FLAVOR_CATEGORIES, FLAVOR_COUNT, flavorById, flavorsByCategory, searchFlavors } from "../../lib/data/flavors";
+/**
+ * The Alchemy Atelier (魔法模式) — a 4-step builder: glass → ingredients →
+ * ice → generate. Ported from the web ZenScreen. Materials are poured in order;
+ * the drink layers by default and only blends once stirred; every mutation is
+ * undoable. Garnish-only / zero-proof creations get an honest, witty card.
+ */
+import type { GlassType, IceType, CocktailResult } from "../../lib/types";
+import type { SpiritFamily } from "../../lib/tokens";
+import { isFizzy } from "../../lib/tokens";
+import {
+  FLAVOR_CATEGORIES,
+  FLAVOR_COUNT,
+  flavorById,
+  flavorsByCategory,
+  searchFlavors,
+} from "../../lib/data/flavors";
+import { ICES } from "../../lib/data/catalog";
+import { GLASS_CATEGORIES, GLASS_COUNT, glassesByCategory, searchGlasses } from "../../lib/data/glasses";
+import { garnishesFor } from "../../lib/data/garnish";
+import { iceSwatch } from "../../lib/svg/ice";
+import { svgToDataUri } from "../../lib/svg/helpers";
 import { cocktailAI } from "../../lib/ai/cocktailAI";
-import { maybeGradientPour } from "../../lib/tokens";
+import {
+  amountLabel,
+  amountStep,
+  blendForItems,
+  buildLayers,
+  classifyMix,
+  defaultAmount,
+  dominantFamily,
+  fillForVolume,
+  itemVolumeMl,
+  totalVolumeMl,
+  type AmountedPick,
+  type MixUnit,
+} from "../../lib/ai/magicMix";
 import { sound } from "../../lib/sound/index";
 import { store } from "../../lib/store";
-import { sceneForFamily } from "../../lib/config";
-import { svgToDataUri } from "../../lib/svg/helpers";
 import { logoDataUri } from "../../lib/svg/logo";
 
-const MAX_NODES = 8;
-const VEIL_LINES = ["正在聆听你的心绪…", "调酒师在挑选基酒…", "诗人在斟酌词句…", "化学家在校准风味…"];
-let nid = 0;
+const STEPS = [
+  { key: "glass", label: "选择杯型" },
+  { key: "build", label: "调制酒液" },
+  { key: "ice", label: "选择冰块" },
+];
+const MAX_ITEMS = 10;
+const VEIL_LINES = ["正在聆听你的灵感…", "调酒师在分层斟酒…", "诗人在斟酌词句…", "化学家在校准风味…"];
+let uidc = 0;
 
-function edgesSvg(nodes: { x: number; y: number; color: string }[]): string {
-  const lines = nodes
-    .map((n) => `<line x1="50" y1="50" x2="${(n.x * 100).toFixed(1)}" y2="${(n.y * 100).toFixed(1)}" stroke="${n.color}" stroke-opacity="0.4" stroke-width="0.5" stroke-dasharray="1 2"/>`)
-    .join("");
-  return svgToDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>`);
+interface BuildItem {
+  uid: string;
+  flavorId: string;
+  category: string;
+  name: string;
+  nameEn: string;
+  color: string;
+  family?: SpiritFamily;
+  qty: number;
+  unit: MixUnit;
+}
+interface Snapshot {
+  items: BuildItem[];
+  stirred: boolean;
 }
 
 Component({
   options: { styleIsolation: "apply-shared" },
   data: {
-    nodes: [] as any[],
-    pickedIds: [] as string[],
-    category: "spirit",
-    query: "",
-    cats: FLAVOR_CATEGORIES.map((c) => ({ id: c.id, name: c.name, color: c.color })),
-    list: [] as any[],
-    count: FLAVOR_COUNT,
-    max: MAX_NODES,
+    step: "glass" as string,
+    stepIndex: 0,
+    steps: STEPS,
+    glassType: "rocks" as GlassType,
+    items: [] as BuildItem[],
+    rows: [] as any[], // display rows for the added list
+    stirred: false,
+    stirring: false,
+    ice: "none" as IceType,
     busy: false,
     veilLine: "",
     veilLogo: logoDataUri(64),
-    edges: "",
-    scene: sceneForFamily("absinthe"),
-    hintComplex: false,
+
+    glassCat: "tumbler",
+    glassQuery: "",
+    glassCats: GLASS_CATEGORIES.map((c) => ({ id: c.id, name: c.name })),
+    glassCount: GLASS_COUNT,
+    glassList: [] as any[],
+
+    category: "spirit",
+    query: "",
+    cats: FLAVOR_CATEGORIES.map((c) => ({ id: c.id, name: c.name, color: c.color })),
+    count: FLAVOR_COUNT,
+    list: [] as any[],
+    max: MAX_ITEMS,
+
+    ices: ICES.map((i) => ({ id: i.id, name: i.name, nameEn: i.nameEn, swatch: svgToDataUri(iceSwatch(i.id, 56)) })),
+
+    // preview (live glass)
+    family: "absinthe",
+    previewColor: "",
+    previewLayers: [] as any[],
+    previewFill: 0,
+    fizzy: false,
+    garnishes: [] as any[],
+    layerBadge: "",
+    canStir: false,
+    canUndo: false,
   },
 
+  _history: [] as Snapshot[],
   _veil: null as null | number,
+  _stir: null as null | number,
 
   lifetimes: {
-    attached() { this.refresh(); },
-    detached() { if (this._veil) clearInterval(this._veil); },
+    attached() {
+      this.refreshGlassList();
+      this.refreshList();
+      this.recompute();
+    },
+    detached() {
+      if (this._veil) clearInterval(this._veil);
+      if (this._stir) clearTimeout(this._stir);
+    },
   },
 
   methods: {
-    refresh() {
+    /* ── pickers ── */
+    refreshGlassList() {
+      const q = this.data.glassQuery.trim();
+      const list = q ? searchGlasses(q) : glassesByCategory(this.data.glassCat as any);
+      this.setData({ glassList: list });
+    },
+    refreshList() {
       const q = this.data.query.trim();
-      const picked = this.data.pickedIds;
-      const full = this.data.nodes.length >= MAX_NODES;
       const list = (q ? searchFlavors(q) : flavorsByCategory(this.data.category as any)).map((f) => ({
-        id: f.id, name: f.name, nameEn: f.nameEn, color: f.color,
+        id: f.id,
+        name: f.name,
+        nameEn: f.nameEn,
+        color: f.color,
         sub: `${f.nameEn} · ${f.flavor.slice(0, 2).join("·")}`,
-        picked: picked.indexOf(f.id) > -1,
-        disabled: full && picked.indexOf(f.id) === -1,
       }));
       this.setData({ list });
     },
-    onQuery(e: any) { this.setData({ query: e.detail.value }, () => this.refresh()); },
-    clearQuery() { this.setData({ query: "" }, () => this.refresh()); },
-    pickCat(e: any) { this.setData({ category: e.currentTarget.dataset.id }, () => this.refresh()); },
-
-    relayout(rawNodes: { id: string; flavorId: string }[]) {
-      const n = rawNodes.length;
-      const nodes = rawNodes.map((nd, i) => {
-        const f = flavorById(nd.flavorId);
-        const angle = (i / Math.max(1, n)) * Math.PI * 2 - Math.PI / 2;
-        const x = 0.5 + Math.cos(angle) * 0.3;
-        const y = 0.5 + Math.sin(angle) * 0.34;
-        return {
-          id: nd.id, flavorId: nd.flavorId,
-          x, y, leftPct: x * 100, topPct: y * 100,
-          color: f ? f.color : "#C8A45D",
-          name: f ? f.name : "",
-          short: f ? f.name.slice(0, 2) : "",
-        };
-      });
-      const dominant = nodes.length ? (flavorById(nodes[0].flavorId)?.family || "absinthe") : "absinthe";
-      this.setData({
-        nodes,
-        pickedIds: nodes.map((x) => x.flavorId),
-        edges: edgesSvg(nodes),
-        scene: sceneForFamily(dominant),
-        hintComplex: nodes.length > 3,
-      });
-      this.refresh();
+    onGlassQuery(e: any) { this.setData({ glassQuery: e.detail.value }, () => this.refreshGlassList()); },
+    onQuery(e: any) { this.setData({ query: e.detail.value }, () => this.refreshList()); },
+    pickGlassCat(e: any) { this.setData({ glassCat: e.currentTarget.dataset.id }, () => this.refreshGlassList()); },
+    pickCat(e: any) { this.setData({ category: e.currentTarget.dataset.id }, () => this.refreshList()); },
+    pickGlass(e: any) {
+      sound.play("click");
+      this.setData({ glassType: e.currentTarget.dataset.id }, () => this.recompute());
+    },
+    pickIce(e: any) {
+      const id = e.currentTarget.dataset.id as IceType;
+      this.setData({ ice: id }, () => this.recompute());
+      if (id !== "none") sound.play("ice");
     },
 
-    toggleFlavor(e: any) {
-      const id = e.currentTarget.dataset.id as string;
-      const cur = this.data.nodes as { id: string; flavorId: string }[];
-      if (cur.some((n) => n.flavorId === id)) {
-        this.relayout(cur.filter((n) => n.flavorId !== id));
-        return;
-      }
-      if (cur.length >= MAX_NODES) return;
+    /* ── history ── */
+    pushHistory() {
+      this._history.push({ items: this.data.items.map((it) => ({ ...it })), stirred: this.data.stirred });
+      if (this._history.length > 30) this._history.shift();
+      this.setData({ canUndo: this._history.length > 0 });
+    },
+    undo() {
+      const prev = this._history.pop();
+      if (!prev) return;
       sound.play("ice");
-      this.relayout([...cur, { id: `z${nid++}`, flavorId: id }]);
-    },
-    removeNode(e: any) {
-      const id = e.currentTarget.dataset.id;
-      this.relayout((this.data.nodes as any[]).filter((n) => n.id !== id));
+      this.setData({ items: prev.items, stirred: prev.stirred, canUndo: this._history.length > 0 }, () => this.recompute());
     },
 
-    async analyze() {
-      if (this.data.busy || this.data.nodes.length < 1) return;
+    /* ── build mutations ── */
+    addFlavor(e: any) {
+      if (this.data.items.length >= MAX_ITEMS) return;
+      const f = flavorById(e.currentTarget.dataset.id);
+      if (!f) return;
+      this.pushHistory();
+      const amt = defaultAmount(f.category);
+      const item: BuildItem = {
+        uid: `m${uidc++}`, flavorId: f.id, category: f.category, name: f.name, nameEn: f.nameEn,
+        color: f.color, family: f.family, qty: amt.qty, unit: amt.unit,
+      };
+      sound.play("pour");
+      this.setData({ items: [...this.data.items, item], stirred: false }, () => this.recompute());
+    },
+    removeItem(e: any) {
+      const uid = e.currentTarget.dataset.uid;
+      this.pushHistory();
+      this.setData({ items: this.data.items.filter((it) => it.uid !== uid) }, () => this.recompute());
+    },
+    bumpQty(e: any) {
+      const { uid, dir } = e.currentTarget.dataset;
+      const d = Number(dir);
+      this.pushHistory();
+      const items = this.data.items.map((it) => {
+        if (it.uid !== uid) return it;
+        const s = amountStep(it.unit);
+        return { ...it, qty: Math.max(s, it.qty + d * s) };
+      });
+      this.setData({ items }, () => this.recompute());
+    },
+    move(e: any) {
+      const { uid, dir } = e.currentTarget.dataset;
+      const d = Number(dir);
+      const items = this.data.items.slice();
+      const i = items.findIndex((it) => it.uid === uid);
+      const j = i + d;
+      if (i < 0 || j < 0 || j >= items.length) return;
+      this.pushHistory();
+      const t = items[i]; items[i] = items[j]; items[j] = t;
+      this.setData({ items, stirred: false }, () => this.recompute());
+    },
+    stir() {
+      const liquids = this.data.items.filter((it) => itemVolumeMl(it) > 0);
+      if (liquids.length < 2) return;
+      this.pushHistory();
+      sound.play("ice");
+      this.setData({ stirred: true, stirring: true }, () => this.recompute());
+      if (this._stir) clearTimeout(this._stir);
+      this._stir = setTimeout(() => this.setData({ stirring: false }), 1200) as unknown as number;
+    },
+
+    /* ── recompute the live preview from items + stirred ── */
+    recompute() {
+      const items = this.data.items;
+      const klass = classifyMix(items as any);
+      const liquidItems = items.filter((it) => itemVolumeMl(it) > 0);
+      const totalMl = totalVolumeMl(items as any);
+      const family = items.length ? dominantFamily(items as any) : "absinthe";
+      const layered = !this.data.stirred && liquidItems.length >= 2;
+      const previewLayers = layered ? buildLayers(items as any) : [];
+      const previewColor = layered
+        ? ""
+        : this.data.stirred
+          ? blendForItems(items as any) || ""
+          : liquidItems.length
+            ? liquidItems[0].color
+            : "";
+      const previewFill = klass.onlyGarnish ? 0 : fillForVolume(totalMl);
+      const garnishes = garnishesFor(items.map((it) => ({ name: it.name, category: it.category, amount: amountLabel(it.qty, it.unit) })));
+      const fizzy = isFizzy(items.map((it) => ({ name: it.name, nameEn: it.nameEn })));
+      const layerBadge = liquidItems.length >= 2
+        ? (this.data.stirred ? "已搅匀 · 融合" : "未搅拌 · 分层")
+        : liquidItems.length === 1 ? "单一酒液" : "";
+
+      const rows = items.map((it, i) => ({
+        uid: it.uid, n: i + 1, name: it.name, color: it.color,
+        liquid: itemVolumeMl(it) > 0,
+        amount: amountLabel(it.qty, it.unit),
+        isFirst: i === 0, isLast: i === items.length - 1,
+      }));
+
+      this.setData({
+        rows, family, previewColor, previewLayers, previewFill, garnishes, fizzy, layerBadge,
+        canStir: liquidItems.length >= 2,
+      });
+    },
+
+    /* ── steps ── */
+    prevStep() {
+      const i = this.data.stepIndex - 1;
+      if (i < 0) return;
+      sound.play("click");
+      this.setData({ step: STEPS[i].key, stepIndex: i });
+    },
+    nextStep() {
+      const i = this.data.stepIndex + 1;
+      if (i >= STEPS.length) return;
+      if (this.data.step === "build" && this.data.items.length === 0) return;
+      sound.play("click");
+      this.setData({ step: STEPS[i].key, stepIndex: i });
+    },
+
+    async finish() {
+      if (this.data.items.length === 0 || this.data.busy) return;
       this.setData({ busy: true, veilLine: VEIL_LINES[0] });
       let l = 0;
       this._veil = setInterval(() => { l = (l + 1) % VEIL_LINES.length; this.setData({ veilLine: VEIL_LINES[l] }); }, 900) as unknown as number;
-      const picks: FlavorPick[] = this.data.nodes
-        .map((n: any) => flavorById(n.flavorId))
-        .filter(Boolean)
-        .map((f: any) => ({ id: f.id, name: f.name, nameEn: f.nameEn, category: f.category, color: f.color, flavor: f.flavor, family: f.family }));
+
+      const items = this.data.items;
+      const picks: AmountedPick[] = items.map((it) => ({
+        id: it.flavorId, name: it.name, nameEn: it.nameEn, category: it.category,
+        color: it.color, flavor: flavorById(it.flavorId)?.flavor || [], family: it.family,
+        amount: amountLabel(it.qty, it.unit),
+      }));
       const analysis = await cocktailAI.analyzeFlavorMix(picks);
-      if (!analysis.hidden) maybeGradientPour(analysis); // ~20% get a gradient body
       if (this._veil) { clearInterval(this._veil); this._veil = null; }
+
+      // the card shows the player's exact recipe — order, measures and all
+      analysis.ingredients = items.map((it) => ({
+        name: it.name, nameEn: it.nameEn, amount: amountLabel(it.qty, it.unit), parts: 1, family: it.family,
+      }));
+      analysis.ratio = analysis.ingredients.map(() => 1);
+
+      const klass = classifyMix(picks);
+      const liquidItems = items.filter((it) => itemVolumeMl(it) > 0);
+      const layered = !this.data.stirred && liquidItems.length >= 2;
+      analysis.glass = this.data.glassType;
+      analysis.ice = klass.onlyGarnish ? "none" : this.data.ice;
+      analysis.family = items.length ? dominantFamily(items as any) : analysis.family;
+      analysis.fillLevel = klass.onlyGarnish ? 0 : fillForVolume(totalVolumeMl(items as any));
+      if (layered) {
+        analysis.layers = buildLayers(items as any);
+        analysis.liquidColor = undefined;
+      } else {
+        analysis.layers = undefined;
+        analysis.liquidColor = klass.onlyGarnish ? undefined : (this.data.stirred ? blendForItems(items as any) || undefined : (liquidItems.length ? liquidItems[0].color : undefined));
+      }
+
       sound.play(analysis.hidden ? "unlock" : "success");
-      store.addXp(analysis.hidden ? 120 : 55);
-      store.recordDrink(analysis, "zen");
+      store.addXp(analysis.hidden ? 120 : 60);
+      store.recordDrink(analysis as CocktailResult, "zen");
       if (analysis.hidden) store.recordUnlock(analysis.name);
-      store.setLastResult(analysis, "zen");
+      store.setLastResult(analysis as CocktailResult, "zen");
       this.setData({ busy: false });
       store.showResult();
     },

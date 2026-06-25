@@ -1,82 +1,121 @@
-<view class="zen">
-  <!-- flavour graph canvas -->
-  <view class="zen-canvas">
-    <image class="zen-scene" src="{{scene}}" mode="aspectFill"></image>
-    <image wx:if="{{nodes.length}}" class="zen-edges" src="{{edges}}" mode="scaleToFill"></image>
-
-    <view class="zen-cap">
-      <text class="sel-zh">魔法 · The Alchemy Atelier</text>
-      <text class="zen-cap-sub">自由组合，让风味在画布上彼此扩散。</text>
-    </view>
-
-    <!-- cauldron -->
-    <view class="zen-cauldron">
-      <view class="zen-pot"><icon name="droplet" size="30" color="#D89C3A"></icon></view>
-      <text class="zen-pot-label">调和</text>
-    </view>
-
-    <!-- orbs -->
-    <view
-      wx:for="{{nodes}}"
-      wx:key="id"
-      class="zen-orb"
-      style="left:{{item.leftPct}}%;top:{{item.topPct}}%"
-    >
-      <view class="zen-orb-ring" style="border-color:{{item.color}}"></view>
-      <view class="zen-orb-body" style="background:radial-gradient(circle at 35% 30%, {{item.color}}, {{item.color}}99 60%, {{item.color}}40)">
-        <text class="zen-orb-short">{{item.short}}</text>
-      </view>
-      <text class="zen-orb-name">{{item.name}}</text>
-      <view class="zen-orb-x" data-id="{{item.id}}" catchtap="removeNode"><icon name="close" size="12" color="#E7D6B1"></icon></view>
-    </view>
-
-    <view wx:if="{{nodes.length === 0}}" class="zen-empty">从下方 {{count}} 种风味中挑选，开始你的实验</view>
+<view class="pure">
+  <!-- stage: live preview of the drink being built -->
+  <view class="stage">
+    <view wx:if="{{layerBadge}}" class="layer-badge">{{layerBadge}}</view>
+    <glass
+      glass-type="{{glassType}}"
+      family="{{family}}"
+      liquid-color="{{previewColor}}"
+      layers="{{previewLayers}}"
+      ice="{{step === 'ice' ? ice : 'none'}}"
+      fill-level="{{previewFill}}"
+      state="{{stirring ? 'swirling' : 'still'}}"
+      glow="{{previewFill > 0.05}}"
+      fizzy="{{fizzy}}"
+      garnishes="{{garnishes}}"
+      size="{{168}}"
+      css-height="196px"
+    ></glass>
   </view>
 
-  <!-- ingredient library panel -->
-  <view class="zen-panel glass-panel">
-    <view class="zen-panel-head">
-      <text class="sel-zh">风味原料 · Ingredients</text>
-      <text class="zen-counter">已选 {{nodes.length}}/{{max}}</text>
-    </view>
-
-    <view class="zen-search">
-      <icon name="search" size="15" color="#9a7b3a"></icon>
-      <input class="zen-input" placeholder="搜索 {{count}} 种风味…" value="{{query}}" bindinput="onQuery" />
-      <view wx:if="{{query}}" class="zen-clear" bindtap="clearQuery"><icon name="close" size="14" color="#b89b6a"></icon></view>
-    </view>
-
-    <scroll-view wx:if="{{!query}}" scroll-x class="zen-cats">
-      <view wx:for="{{cats}}" wx:key="id" class="zen-cat {{category === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickCat">
-        <view class="zen-cat-dot" style="background:{{item.color}}"></view><text>{{item.name}}</text>
+  <!-- control panel -->
+  <view class="panel glass-panel">
+    <!-- glass step -->
+    <block wx:if="{{step === 'glass'}}">
+      <view class="sel-head"><text class="sel-zh">选择杯型</text><text class="sel-en">Select Glass</text></view>
+      <text class="sel-hint">{{glassCount}} 种杯型，先为这场实验挑一只容器。</text>
+      <input class="search" placeholder="搜索 {{glassCount}} 种杯型…" value="{{glassQuery}}" bindinput="onGlassQuery" />
+      <view wx:if="{{!glassQuery}}" class="pills">
+        <view wx:for="{{glassCats}}" wx:key="id" class="pill {{glassCat === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickGlassCat">{{item.name}}</view>
       </view>
-    </scroll-view>
-
-    <view class="zen-divider"></view>
-
-    <scroll-view scroll-y class="zen-list">
-      <view
-        wx:for="{{list}}"
-        wx:key="id"
-        class="zen-item {{item.picked ? 'on' : ''}} {{item.disabled ? 'disabled' : ''}}"
-        data-id="{{item.id}}"
-        bindtap="toggleFlavor"
-      >
-        <view class="zen-item-dot" style="background:radial-gradient(circle at 35% 30%, {{item.color}}, {{item.color}}88)"></view>
-        <view class="zen-item-text">
-          <text class="zen-item-name">{{item.name}}</text>
-          <text class="zen-item-sub">{{item.sub}}</text>
+      <scroll-view scroll-y class="grid-scroll">
+        <view class="grid grid-3">
+          <view wx:for="{{glassList}}" wx:key="id" class="tile {{glassType === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickGlass">
+            <view class="tile-art h52"><glass glass-type="{{item.id}}" family="{{family}}" fill-level="{{0}}" size="{{48}}" fit="{{true}}" css-height="52px"></glass></view>
+            <text class="tile-label">{{item.name}}</text>
+          </view>
         </view>
-        <icon wx:if="{{item.picked}}" name="check" size="15" color="#E3C684"></icon>
-        <icon wx:else name="plus" size="14" color="#8a7a5a"></icon>
-      </view>
-      <view wx:if="{{list.length === 0}}" class="zen-empty-list">没有找到匹配的风味</view>
-    </scroll-view>
+      </scroll-view>
+    </block>
 
-    <view class="btn zen-analyze {{busy || nodes.length === 0 ? 'disabled' : ''}}" bindtap="analyze">
-      <icon name="sparkle" size="16" color="#1A1612"></icon><text>分析风味</text>
+    <!-- build step -->
+    <block wx:elif="{{step === 'build'}}">
+      <view class="sel-head"><text class="sel-zh">调制酒液</text><text class="sel-en">Build the Body</text></view>
+      <text class="sel-hint">按顺序加入材料，未搅拌时酒液自然分层；点「搅拌」让它们融为一体。</text>
+
+      <!-- added ingredients, in pour order -->
+      <block wx:if="{{rows.length > 0}}">
+        <scroll-view scroll-y class="added">
+          <view wx:for="{{rows}}" wx:key="uid" class="brow">
+            <text class="bn">{{item.n}}</text>
+            <view class="bdot" style="background:{{item.color}}"></view>
+            <text class="bname">{{item.name}}<text wx:if="{{!item.liquid}}" class="btag">·点缀</text></text>
+            <view class="bstep">
+              <view class="bbtn" data-uid="{{item.uid}}" data-dir="-1" bindtap="bumpQty">−</view>
+              <text class="bamt">{{item.amount}}</text>
+              <view class="bbtn" data-uid="{{item.uid}}" data-dir="1" bindtap="bumpQty">＋</view>
+            </view>
+            <view class="bmv {{item.isFirst ? 'off' : ''}}" data-uid="{{item.uid}}" data-dir="-1" bindtap="move">↑</view>
+            <view class="bmv {{item.isLast ? 'off' : ''}}" data-uid="{{item.uid}}" data-dir="1" bindtap="move">↓</view>
+            <view class="bx" data-uid="{{item.uid}}" bindtap="removeItem">✕</view>
+          </view>
+        </scroll-view>
+      </block>
+      <view wx:else class="empty-hint">还没有材料 — 从下方挑选，开始你的调制</view>
+
+      <!-- stir + undo -->
+      <view class="actions">
+        <view class="act {{canStir ? '' : 'off'}} {{stirred ? 'on' : ''}}" bindtap="stir">
+          <icon name="stir" size="14"></icon><text>{{stirred ? '已搅匀' : '搅拌'}}</text>
+        </view>
+        <view class="act {{canUndo ? '' : 'off'}}" bindtap="undo">
+          <icon name="back" size="14"></icon><text>撤回</text>
+        </view>
+      </view>
+
+      <input class="search" placeholder="搜索 {{count}} 种材料…" value="{{query}}" bindinput="onQuery" />
+      <view wx:if="{{!query}}" class="pills">
+        <view wx:for="{{cats}}" wx:key="id" class="pill {{category === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickCat">
+          <view class="pdot" style="background:{{item.color}}"></view>{{item.name}}
+        </view>
+      </view>
+      <scroll-view scroll-y class="grid-scroll">
+        <view class="ilist">
+          <view wx:for="{{list}}" wx:key="id" class="irow {{items.length >= max ? 'off' : ''}}" data-id="{{item.id}}" bindtap="addFlavor">
+            <view class="idot" style="background:{{item.color}}"></view>
+            <view class="imeta"><text class="iname">{{item.name}}</text><text class="isub">{{item.sub}}</text></view>
+            <icon name="plus" size="14" color="#C8A45D"></icon>
+          </view>
+          <view wx:if="{{list.length === 0}}" class="empty-hint">没有找到匹配的材料</view>
+        </view>
+      </scroll-view>
+    </block>
+
+    <!-- ice step -->
+    <block wx:elif="{{step === 'ice'}}">
+      <view class="sel-head"><text class="sel-zh">选择冰块</text><text class="sel-en">Select Ice</text></view>
+      <text class="sel-hint">冰，决定了风味随时间舒展的节奏。</text>
+      <view class="grid grid-2 static">
+        <view wx:for="{{ices}}" wx:key="id" class="tile {{ice === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickIce">
+          <view class="tile-art h56"><image class="ice-sw" src="{{item.swatch}}" mode="aspectFit"></image></view>
+          <text class="tile-label">{{item.name}}</text>
+          <text class="tile-sub">{{item.nameEn}}</text>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- footer -->
+  <view class="footer">
+    <view class="btn ghost {{stepIndex === 0 ? 'disabled' : ''}}" bindtap="prevStep">
+      <icon name="back" size="15"></icon><text>上一步</text>
     </view>
-    <text wx:if="{{hintComplex}}" class="zen-hint">组合越复杂，越可能触发隐藏配方…</text>
+    <view wx:if="{{step !== 'ice'}}" class="btn {{step === 'build' && items.length === 0 ? 'disabled' : ''}}" bindtap="nextStep">
+      <text>下一步</text><icon name="forward" size="15" color="#1A1612"></icon>
+    </view>
+    <view wx:else class="btn {{busy || items.length === 0 ? 'disabled' : ''}}" bindtap="finish">
+      <text>{{busy ? '调制中…' : '生成酒卡'}}</text><icon name="sparkle" size="15" color="#1A1612"></icon>
+    </view>
   </view>
 </view>
 

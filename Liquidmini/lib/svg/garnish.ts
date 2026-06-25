@@ -208,9 +208,10 @@ export function garnishLayer(opts: GarnishLayerOpts): string {
 
     const surfMarkup = surf.map((g, i) => {
       const m = surf.length;
-      const gap = Math.min(surfaceHW * 0.72, sItem * 1.8);
+      // fan several floaters across the surface; stagger depth so overlaps read
+      const gap = m > 1 ? Math.min(sItem * 1.7, (surfaceHW * 1.5) / (m - 1)) : 0;
       const x = 100 + (i - (m - 1) / 2) * gap;
-      const y = liquidTop + sItem * 0.16;
+      const y = liquidTop + sItem * 0.16 + (i % 2 ? sItem * 0.22 : 0);
       const wl = liquidTop - y;
       return `<g transform="translate(${n(x)} ${n(y)})"><ellipse cx="${n(sItem * 0.16)}" cy="${n(sItem * 0.62)}" rx="${n(sItem * 0.96)}" ry="${n(sItem * 0.34)}" fill="${liquidShadow}" opacity="0.32"/>${garnishShape(g.kind, g.color, sItem)}<ellipse cx="0" cy="0" rx="${n(sItem * 1.05)}" ry="${n(sItem * 1.05)}" fill="url(#submerge-${uid})"/><ellipse cx="0" cy="${n(wl)}" rx="${n(sItem * 0.86)}" ry="${n(Math.max(1, sItem * 0.16))}" fill="none" stroke="#fff7e6" stroke-opacity="0.5" stroke-width="0.8"/><ellipse cx="0" cy="${n(wl)}" rx="${n(sItem * 0.86)}" ry="${n(Math.max(1, sItem * 0.16))}" fill="#ffffff" opacity="0.08"/></g>`;
     }).join("");
@@ -248,13 +249,18 @@ export function garnishLayer(opts: GarnishLayerOpts): string {
     : "";
 
   const tallMarkup = tall.map((g, i) => {
-    const side = i === 0 ? 1 : -1;
-    const ax = 100 + side * rim.rx * 0.4;
-    const ay = rim.cy + 1;
-    const rot = side * 12;
+    const m = tall.length;
+    // fan the sprigs/sticks across the mouth like a planted bunch
+    const off = m === 1 ? 0.16 : i / (m - 1) - 0.5; // -0.5..0.5 (single leans to a wall)
+    const ax = 100 + off * rim.rx * 1.2;
+    // plant the stalk DOWN into the drink so soft herbs like mint sit inside the
+    // glass / lean on the wall; rest on the lip only when the liquid is at the brim
+    const restOnRim = liquidTop <= rim.cy + 6;
+    const baseY = restOnRim ? rim.cy + 1 : liquidTop - 2;
+    const rot = off * 26;
     const sTall = Math.max(7, Math.min(14, surfaceHW * 0.34));
-    const grow = tallH / (sTall * 2.8) > 1.6 ? 1.4 : 1;
-    return `<g><ellipse cx="${n(ax + side * 1.5)}" cy="${n(rim.cy + 2.5)}" rx="${n(sTall * 0.8)}" ry="${n(Math.max(1.4, sTall * 0.24))}" fill="${liquidShadow}" opacity="0.3"/><g transform="translate(${n(ax)} ${n(ay)}) rotate(${n(rot)})"><g transform="scale(${n(grow)})">${garnishShape(g.kind, g.color, sTall)}</g></g></g>`;
+    const grow = (tallH / (sTall * 2.8) > 1.6 ? 1.35 : 1) * (1 - Math.abs(off) * 0.12);
+    return `<g><ellipse cx="${n(ax + 1.5)}" cy="${n(baseY + 2.5)}" rx="${n(sTall * 0.8)}" ry="${n(Math.max(1.4, sTall * 0.24))}" fill="${liquidShadow}" opacity="0.28"/><g transform="translate(${n(ax)} ${n(baseY)}) rotate(${n(rot)})"><g transform="scale(${n(grow)})">${garnishShape(g.kind, g.color, sTall)}</g></g></g>`;
   }).join("");
 
   return `<g>${rimMarkup}${tallMarkup}</g>`;

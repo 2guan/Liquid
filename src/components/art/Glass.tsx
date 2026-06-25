@@ -244,17 +244,23 @@ export default function Glass({
         </filter>
       </defs>
 
-      {/* amber halo */}
-      {glow && (
-        <ellipse
-          cx="100"
-          cy={geom.cup.top + 40}
-          rx="110"
-          ry="110"
-          fill={`url(#glow-${uid})`}
-          className={detailed ? "animate-breathe" : undefined}
-        />
-      )}
+      {/* amber halo — radius & centre clamped to the viewBox so the soft glow is
+          never clipped at the edges (the SVG viewport hard-cuts anything outside
+          0..200 × vbTop..vbTop+vbH). */}
+      {glow && (() => {
+        const gr = 98;
+        const gcy = Math.max(vbTop + gr, Math.min(vbTop + vbH - gr, geom.cup.top + 40));
+        return (
+          <ellipse
+            cx="100"
+            cy={gcy}
+            rx={gr}
+            ry={gr}
+            fill={`url(#glow-${uid})`}
+            className={detailed ? "animate-breathe" : undefined}
+          />
+        );
+      })()}
 
       {/* contact shadow on the bar — gaussian-blurred for a naturally soft edge */}
       <ellipse cx={geom.shadow.cx} cy={geom.shadow.cy + 1} rx={geom.shadow.rx + 5} ry={geom.shadow.ry + 2.5} fill="#000000" opacity="0.1" filter={`url(#softsh-${uid})`} />

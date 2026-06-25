@@ -229,25 +229,38 @@ export function aromaticForFamily(family: string | undefined): { name: string; a
   }
 }
 
-export function garnishesFor(ingredients: { name?: string; category?: string }[] | undefined | null): GarnishSpec[] {
+/** How many physical pieces an amount implies — only the builder's "份" count
+ *  multiplies (so "2 份肉桂棒" → 2 sticks); recipe measures stay a single piece. */
+function pieceCount(amount?: string): number {
+  const m = amount && amount.match(/(\d+)\s*份/);
+  if (!m) return 1;
+  return Math.max(1, Math.min(3, parseInt(m[1], 10)));
+}
+
+export function garnishesFor(ingredients: { name?: string; category?: string; amount?: string }[] | undefined | null): GarnishSpec[] {
   if (!ingredients || ingredients.length === 0) return [];
-  const seen = new Set<GarnishKind>();
+  // Honour quantity: choosing 2 份肉桂棒 should show two sticks. Cap each kind at
+  // 3 so a heavy hand reads as a little cluster, not a hedge.
   const all: GarnishSpec[] = [];
+  const kindCount = new Map<GarnishKind, number>();
   for (const ing of ingredients) {
     if (!ing?.name) continue;
     const g = garnishFor(ing.name, ing.category);
-    if (g && !seen.has(g.kind)) {
-      seen.add(g.kind);
+    if (!g) continue;
+    for (let k = 0, pieces = pieceCount(ing.amount); k < pieces; k++) {
+      const c = kindCount.get(g.kind) ?? 0;
+      if (c >= 3) break;
+      kindCount.set(g.kind, c + 1);
       all.push(g);
     }
   }
-  // keep at most: 1 rim, 1 foam, 1 dust, 2 tall, 3 surface
+  // cap each placement so the glass stays composed, not crowded
   const take = (p: GarnishPlacement, n: number) => all.filter((g) => g.placement === p).slice(0, n);
   return [
     ...take("foam", 1),
     ...take("rim", 1),
-    ...take("surface", 3),
-    ...take("tall", 2),
+    ...take("surface", 5),
+    ...take("tall", 4),
     ...take("dust", 1),
   ];
 }
