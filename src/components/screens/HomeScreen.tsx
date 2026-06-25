@@ -247,6 +247,7 @@ export default function HomeScreen({ layout }: { layout: LayoutMode }) {
               className="title-engrave font-cn"
               style={{
                 letterSpacing: "0.14em",
+                paddingLeft: "0.14em", // compensate the trailing letter-spacing so it stays centred
                 fontSize: portrait ? "2.2rem" : "3.1rem",
                 lineHeight: 1.1,
                 // drop-shadow (not text-shadow) so the gold gradient text keeps its
@@ -258,7 +259,7 @@ export default function HomeScreen({ layout }: { layout: LayoutMode }) {
             </motion.h1>
             <div
               className="-mt-0.5 font-serif italic text-gold"
-              style={{ fontSize: portrait ? "1.25rem" : "1.7rem", letterSpacing: "0.04em", textShadow: "0 1px 8px rgba(0,0,0,0.85), 0 1px 2px rgba(0,0,0,0.7)" }}
+              style={{ fontSize: portrait ? "1.25rem" : "1.7rem", letterSpacing: "0.04em", paddingLeft: "0.04em", textShadow: "0 1px 8px rgba(0,0,0,0.85), 0 1px 2px rgba(0,0,0,0.7)" }}
             >
               The Sip &amp; Sigh
             </div>

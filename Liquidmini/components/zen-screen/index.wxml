@@ -18,6 +18,24 @@
     ></glass>
   </view>
 
+  <!-- mini glass preview shown when the stage is hidden (tap to restore) -->
+  <view wx:if="{{stageMode === 'hidden' && step === 'build'}}" class="mini-stage" catchtap="restoreStage">
+    <glass
+      glass-type="{{glassType}}"
+      family="{{family}}"
+      liquid-color="{{previewColor}}"
+      layers="{{previewLayers}}"
+      ice="none"
+      fill-level="{{previewFill}}"
+      glow="{{previewFill > 0.05}}"
+      fizzy="{{fizzy}}"
+      garnishes="{{garnishes}}"
+      size="{{140}}"
+      css-width="58px"
+      css-height="76px"
+    ></glass>
+  </view>
+
   <!-- control panel -->
   <view class="panel glass-panel">
     <!-- drag handle (build step only): swipe / tap to resize the glass stage -->

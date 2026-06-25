@@ -278,6 +278,11 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
             onClick={() => setZoom(false)}
             className="fixed inset-0 z-[70] flex cursor-zoom-out flex-col items-center justify-center gap-4 bg-bg-primary px-6"
           >
+            {/* app title, same as the home page */}
+            <div className="absolute left-1/2 top-12 flex -translate-x-1/2 flex-col items-center">
+              <span className="title-engrave font-cn text-2xl md:text-3xl" style={{ letterSpacing: "0.12em" }}>微醺时刻</span>
+              <span className="-mt-0.5 font-serif text-base italic text-gold md:text-lg">The Sip &amp; Sigh</span>
+            </div>
             <motion.div
               initial={{ scale: 0.85, y: 16 }}
               animate={{ scale: 1, y: 0 }}

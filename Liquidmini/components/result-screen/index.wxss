@@ -103,10 +103,13 @@
 .zoom-mask {
   position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 60;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-  background: rgba(8,6,3,0.96);
+  background: #080603;
   animation: zoomFade 0.2s ease;
 }
 @keyframes zoomFade { from { opacity: 0 } to { opacity: 1 } }
+.zoom-app-title { position: absolute; top: calc(env(safe-area-inset-top) + 104px); left: 0; right: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.zoom-app-zh { font-family: var(--font-cinzel); font-size: 24px; letter-spacing: 0.12em; text-align: center; padding-left: 0.12em; }
+.zoom-app-en { font-family: var(--font-cormorant); font-style: italic; font-size: 15px; color: #C8A45D; text-align: center; }
 .zoom-glass { position: relative; z-index: 1; width: 86%; display: flex; justify-content: center; animation: zoomPop 0.28s cubic-bezier(0.22,1,0.36,1); }
 @keyframes zoomPop { from { transform: scale(0.85) translateY(16px) } to { transform: scale(1) translateY(0) } }
 .zoom-name { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }

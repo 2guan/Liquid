@@ -181,6 +181,7 @@ Component({
       }[mode];
       this.setData({ stageMode: mode, handleHint: hint });
     },
+    restoreStage() { this.setStageMode("normal"); },
     hStart(e: any) { this._hStartY = e.touches[0].clientY; },
     hMove() { /* tracked on end via changedTouches */ },
     hEnd(e: any) {

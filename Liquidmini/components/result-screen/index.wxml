@@ -78,6 +78,10 @@
 
 <!-- fullscreen glass zoom — tap anywhere to dismiss -->
 <view wx:if="{{zoom}}" class="zoom-mask" bindtap="closeZoom">
+  <view class="zoom-app-title">
+    <text class="zoom-app-zh title-engrave">微醺时刻</text>
+    <text class="zoom-app-en">The Sip & Sigh</text>
+  </view>
   <view class="zoom-glass">
     <glass
       glass-type="{{glassType}}"

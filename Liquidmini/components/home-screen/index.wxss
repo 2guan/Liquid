@@ -45,6 +45,8 @@
   font-family: var(--font-cinzel);
   font-size: 38px;
   letter-spacing: 0.14em;
+  padding-left: 0.14em; /* compensate trailing letter-spacing so it stays centred */
+  text-align: center;
   line-height: 1.1;
 }
 .home-sub {
@@ -53,6 +55,8 @@
   color: #C8A45D;
   font-size: 20px;
   letter-spacing: 0.04em;
+  padding-left: 0.04em;
+  text-align: center;
   text-shadow: 0 1px 8px rgba(0,0,0,0.85);
 }
 .home-flourish { display: flex; align-items: center; gap: 8px; margin-top: 8px; }

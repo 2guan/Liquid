@@ -321,6 +321,19 @@ function wittyMocktail(picks: FlavorPick[], ingredients: MixIngredient[], family
 }
 
 /**
+ * Mood Pour rarely wants busy ice. Keep small cubes / bullet ice under ~10%;
+ * otherwise calm it down to a single rock, a sphere, crushed, or simply none.
+ * Deterministic per drink so the same card stays stable.
+ */
+function tameMoodIce(r: CocktailResult): CocktailResult {
+  if (r.ice !== "cubes" && r.ice !== "bullets") return r;
+  const h = hashString(`${r.name}|${r.nameEn}`) % 100;
+  if (h < 10) return r; // ~10% keep the busy ice
+  const alts: IceType[] = ["none", "none", "none", "cube", "sphere", "crushed"];
+  return { ...r, ice: alts[h % alts.length] };
+}
+
+/**
  * RemoteCocktailAI — posts to an LLM endpoint via wx.request (the same
  * CocktailResult / MixAnalysis contract). Not used by default; provided so a
  * real backend can be wired up later without touching any screen. The endpoint
@@ -377,8 +390,9 @@ class HybridCocktailAI implements CocktailAI {
       return offline();
     }
   }
-  generateFromMood(input: MoodInput) {
-    return this.withFallback(() => this.remote.generateFromMood(input), () => this.fallback.generateFromMood(input));
+  async generateFromMood(input: MoodInput) {
+    const r = await this.withFallback(() => this.remote.generateFromMood(input), () => this.fallback.generateFromMood(input));
+    return tameMoodIce(r);
   }
   describePour(spiritId: string, glass: GlassType, ice: IceType) {
     return this.withFallback(() => this.remote.describePour(spiritId, glass, ice), () => this.fallback.describePour(spiritId, glass, ice));
