@@ -1,6 +1,6 @@
-<view class="pure">
-  <!-- stage: live preview of the drink being built (collapsible for more room) -->
-  <view class="stage {{compact ? 'collapsed' : ''}}">
+<view class="pure {{stageMode}} step-{{step}}">
+  <!-- stage: live preview (hidden ↔ normal ↔ large via the handle below) -->
+  <view class="stage">
     <view wx:if="{{layerBadge}}" class="layer-badge">{{layerBadge}}</view>
     <glass
       glass-type="{{glassType}}"
@@ -13,17 +13,17 @@
       glow="{{previewFill > 0.05}}"
       fizzy="{{fizzy}}"
       garnishes="{{garnishes}}"
-      size="{{168}}"
-      css-height="196px"
+      size="{{glassSize}}"
+      css-height="{{glassCss}}"
     ></glass>
   </view>
 
   <!-- control panel -->
   <view class="panel glass-panel">
-    <!-- drag handle: swipe up (or tap) to hide the glass and free up space -->
-    <view class="sheet-handle" bindtouchstart="hStart" bindtouchmove="hMove" bindtouchend="hEnd">
+    <!-- drag handle (build step only): swipe / tap to resize the glass stage -->
+    <view wx:if="{{step === 'build'}}" class="sheet-handle" bindtouchstart="hStart" bindtouchmove="hMove" bindtouchend="hEnd">
       <view class="grip"></view>
-      <text class="handle-hint">{{compact ? '下拉 / 点此显示酒杯' : '上拉 / 点此隐藏酒杯，腾出选择空间'}}</text>
+      <text class="handle-hint">{{handleHint}}</text>
     </view>
 
     <!-- glass step -->
@@ -48,7 +48,10 @@
     <block wx:elif="{{step === 'build'}}">
       <view class="sel-head"><text class="sel-zh">调制酒液</text><text class="sel-en">Build the Body</text></view>
       <text class="sel-hint">按顺序加入材料，未搅拌时酒液自然分层；点「搅拌」让它们融为一体。</text>
+      <view class="sep"></view>
 
+      <!-- everything below the divider is hidden when the glass is enlarged -->
+      <view class="build-picker">
       <!-- added ingredients, in pour order -->
       <block wx:if="{{rows.length > 0}}">
         <scroll-view scroll-y class="added">
@@ -93,6 +96,7 @@
           <view wx:if="{{list.length === 0}}" class="empty-hint">没有找到匹配的材料</view>
         </view>
       </scroll-view>
+      </view><!-- /build-picker -->
     </block>
 
     <!-- ice step -->

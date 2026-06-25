@@ -47,6 +47,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
   const fromJournal = useNav((s) => s.origin) === "journal";
   const [saved, setSaved] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(false);
   const isLand = layout !== "portrait";
 
   if (!last) {
@@ -132,9 +133,20 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
       </div>
 
       <div className={`relative ${isLand ? "flex items-center gap-8 px-8 py-7" : "flex flex-col items-center px-6 py-8"}`}>
-        <motion.div initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="shrink-0">
+        <motion.button
+          type="button"
+          onClick={() => setZoom(true)}
+          initial={{ y: 12, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="group relative shrink-0 cursor-zoom-in"
+          aria-label="放大酒杯"
+        >
           <Glass glassType={result.glass} family={result.family} liquidColor={result.liquidColor} layers={result.layers} ice={result.ice} fillLevel={result.fillLevel ?? servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} size={isLand ? 200 : 170} />
-        </motion.div>
+          <span className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full border border-gold/30 bg-ink/55 px-2.5 py-0.5 font-cn text-[10px] text-gold/75 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+            点击放大
+          </span>
+        </motion.button>
 
         <div className={`flex flex-col gap-1.5 ${isLand ? "items-start" : "items-center"}`}>
           {result.hidden && (
@@ -252,6 +264,36 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
             className="pointer-events-none fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-full border border-gold/40 bg-bg-secondary/95 px-5 py-2.5 font-cn text-sm text-gold-bright shadow-amber-glow"
           >
             {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* fullscreen glass zoom — tap anywhere to dismiss */}
+      <AnimatePresence>
+        {zoom && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setZoom(false)}
+            className="fixed inset-0 z-[70] flex cursor-zoom-out flex-col items-center justify-center gap-4 bg-bg-primary px-6"
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.85, y: 16 }}
+              transition={{ type: "spring", stiffness: 220, damping: 24 }}
+              className="flex h-[58vh] w-full max-w-md items-center justify-center"
+            >
+              <Glass glassType={result.glass} family={result.family} liquidColor={result.liquidColor} layers={result.layers} ice={result.ice} fillLevel={result.fillLevel ?? servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} fill />
+            </motion.div>
+            <div className="text-center">
+              <h2 className="font-cn text-3xl text-paper md:text-4xl" style={{ letterSpacing: "0.05em", textShadow: "0 2px 16px rgba(0,0,0,0.7)" }}>
+                {result.name}
+              </h2>
+              <p className="mt-1 font-serif text-lg italic text-gold-bright/90">{result.nameEn}</p>
+            </div>
+            <p className="pointer-events-none absolute bottom-8 font-cn text-xs text-paper/45">轻触任意处返回</p>
           </motion.div>
         )}
       </AnimatePresence>

@@ -51,6 +51,8 @@ Component({
     exporting: false,
     showCard: false,
     cardImage: "",
+    // fullscreen glass zoom
+    zoom: false,
   },
 
   _unsub: null as null | (() => void),
@@ -250,6 +252,8 @@ Component({
     closeCard() {
       this.setData({ showCard: false });
     },
+    openZoom() { this.setData({ zoom: true }); },
+    closeZoom() { this.setData({ zoom: false }); },
     stop() { /* swallow taps on the card image */ },
     saveToAlbum() {
       if (!this.data.cardImage) return;

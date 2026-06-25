@@ -1,8 +1,19 @@
 .pure { display: flex; flex-direction: column; height: 100%; padding: 10px 14px 14px; box-sizing: border-box; }
 
-/* stage */
+/* stage (resizable: hidden / normal / large) */
 .stage { position: relative; flex-shrink: 0; height: 196px; margin-top: -4px; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: height 0.25s ease, opacity 0.2s ease, margin 0.25s ease; }
-.stage.collapsed { height: 0; opacity: 0; margin-top: 0; }
+/* resize only on the build step — glass/ice steps stay at the normal height.
+   Concrete heights (px / calc) so the change animates via the stage transition. */
+.pure.hidden.step-build .stage { height: 0; opacity: 0; margin-top: 0; }
+/* large: the glass stage fills the space down to the title block; the panel
+   shrinks to just its header (title + divider) with no empty gap below it */
+.pure.large.step-build .stage { height: calc(100% - 188px); }
+.pure.large.step-build .panel { flex: 0 0 auto; }
+.pure.large.step-build .build-picker { display: none; }
+
+/* the build picker (everything under the first divider) */
+.build-picker { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.sep { height: 1px; margin: 8px 0; background: linear-gradient(90deg, transparent, rgba(200,164,93,0.28), transparent); }
 
 /* drag handle to collapse the stage */
 .sheet-handle { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 2px 0 8px; }

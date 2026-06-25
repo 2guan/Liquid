@@ -9,7 +9,7 @@
     <view class="hero" style="background:{{heroBg}}">
       <image class="hero-bg" src="{{heroScene}}" mode="aspectFill"></image>
       <view class="hero-scrim"></view>
-      <view class="hero-glass">
+      <view class="hero-glass" bindtap="openZoom">
         <glass
           glass-type="{{glassType}}"
           family="{{family}}"
@@ -75,6 +75,31 @@
 
   <view wx:if="{{toast}}" class="toast">{{toast}}</view>
 </scroll-view>
+
+<!-- fullscreen glass zoom — tap anywhere to dismiss -->
+<view wx:if="{{zoom}}" class="zoom-mask" bindtap="closeZoom">
+  <view class="zoom-glass">
+    <glass
+      glass-type="{{glassType}}"
+      family="{{family}}"
+      liquid-color="{{liquidColor}}"
+      layers="{{layers}}"
+      ice="{{ice}}"
+      fill-level="{{fillLevel}}"
+      fizzy="{{fizzy}}"
+      garnishes="{{garnishes}}"
+      glow="{{true}}"
+      size="{{420}}"
+      css-width="100%"
+      css-height="58vh"
+    ></glass>
+  </view>
+  <view class="zoom-name">
+    <text class="zoom-zh">{{name}}</text>
+    <text class="zoom-en">{{nameEn}}</text>
+  </view>
+  <text class="zoom-tip">轻触任意处返回</text>
+</view>
 
 <!-- offscreen canvases: full export card + the 5:4 share thumbnail -->
 <canvas type="2d" id="cardCanvas" class="card-canvas"></canvas>

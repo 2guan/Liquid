@@ -104,13 +104,20 @@ Component({
     layerBadge: "",
     canStir: false,
     canUndo: false,
-    compact: false, // glass preview hidden to give the picker more room
+    // glass stage size: 'hidden' (more room for picker) | 'normal' | 'large'
+    stageMode: "normal" as "hidden" | "normal" | "large",
+    // the glass always fills its stage; the stage height (CSS, animated) is what
+    // changes between hidden / normal / large
+    glassCss: "100%",
+    glassSize: 360,
+    handleHint: "上拉隐藏 · 下拉放大酒杯",
   },
 
   _history: [] as Snapshot[],
   _veil: null as null | number,
   _stir: null as null | number,
   _hStartY: 0,
+  _dir: 1, // tap ping-pong direction across hidden ↔ normal ↔ large
 
   lifetimes: {
     attached() {
@@ -120,6 +127,7 @@ Component({
       this._veil = null;
       this._stir = null;
       this._hStartY = 0;
+      this._dir = 1;
       this.refreshGlassList();
       this.refreshList();
       this.recompute();
@@ -164,14 +172,31 @@ Component({
       if (id !== "none") sound.play("ice");
     },
 
-    /* ── collapse / expand the glass stage (drag the handle, or tap it) ── */
+    /* ── resize the glass stage: hidden ↔ normal ↔ large (drag, or tap) ── */
+    setStageMode(mode: "hidden" | "normal" | "large") {
+      const hint = {
+        hidden: "下拉 / 点此显示酒杯",
+        normal: "上拉隐藏 · 下拉放大酒杯",
+        large: "上拉缩小酒杯 · 点此还原",
+      }[mode];
+      this.setData({ stageMode: mode, handleHint: hint });
+    },
     hStart(e: any) { this._hStartY = e.touches[0].clientY; },
     hMove() { /* tracked on end via changedTouches */ },
     hEnd(e: any) {
       const dy = e.changedTouches[0].clientY - this._hStartY;
-      if (Math.abs(dy) < 10) { this.setData({ compact: !this.data.compact }); return; } // tap
-      if (dy < -20) this.setData({ compact: true });   // swipe up → hide glass
-      else if (dy > 20) this.setData({ compact: false }); // swipe down → show glass
+      const order: ("hidden" | "normal" | "large")[] = ["hidden", "normal", "large"];
+      let i = order.indexOf(this.data.stageMode);
+      if (Math.abs(dy) < 10) { // tap → ping-pong hidden ↔ normal ↔ large ↔ normal …
+        if (i <= 0) this._dir = 1;
+        else if (i >= 2) this._dir = -1;
+        i = Math.max(0, Math.min(2, i + this._dir));
+        this.setStageMode(order[i]);
+        return;
+      }
+      if (dy < -20) i = Math.max(0, i - 1);      // swipe up → smaller
+      else if (dy > 20) i = Math.min(2, i + 1);  // swipe down → larger
+      this.setStageMode(order[i]);
     },
 
     /* ── history ── */
@@ -280,6 +305,7 @@ Component({
       const i = this.data.stepIndex - 1;
       if (i < 0) return;
       sound.play("click");
+      this.setStageMode("normal"); // resize only applies on the build step
       this.setData({ step: STEPS[i].key, stepIndex: i });
     },
     nextStep() {
@@ -287,6 +313,7 @@ Component({
       if (i >= STEPS.length) return;
       if (this.data.step === "build" && this.data.items.length === 0) return;
       sound.play("click");
+      this.setStageMode("normal");
       this.setData({ step: STEPS[i].key, stepIndex: i });
     },
 

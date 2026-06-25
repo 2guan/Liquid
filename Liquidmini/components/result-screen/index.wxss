@@ -98,3 +98,18 @@
   padding: 10px 20px;
   box-shadow: 0 0 24px -6px rgba(216,156,58,0.6);
 }
+
+/* fullscreen glass zoom */
+.zoom-mask {
+  position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 60;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  background: rgba(8,6,3,0.96);
+  animation: zoomFade 0.2s ease;
+}
+@keyframes zoomFade { from { opacity: 0 } to { opacity: 1 } }
+.zoom-glass { position: relative; z-index: 1; width: 86%; display: flex; justify-content: center; animation: zoomPop 0.28s cubic-bezier(0.22,1,0.36,1); }
+@keyframes zoomPop { from { transform: scale(0.85) translateY(16px) } to { transform: scale(1) translateY(0) } }
+.zoom-name { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.zoom-zh { font-family: var(--font-cinzel); font-size: 30px; color: #E7D6B1; letter-spacing: 0.05em; text-shadow: 0 2px 16px rgba(0,0,0,0.8); }
+.zoom-en { font-family: var(--font-cormorant); font-style: italic; font-size: 18px; color: rgba(227,198,132,0.9); }
+.zoom-tip { position: absolute; bottom: 32px; z-index: 1; font-size: 12px; color: rgba(231,214,177,0.45); }
