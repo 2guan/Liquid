@@ -101,7 +101,7 @@ export function bottleSvg(opts: BottleOpts): string {
       <clipPath id="bbody-${uid}"><path d="${outline}"/></clipPath>
     </defs>
     <g${transform}>
-    ${glow ? `<ellipse cx="60" cy="180" rx="80" ry="120" fill="url(#bglow-${uid})"/>` : ""}
+    ${glow ? `<ellipse cx="60" cy="170" rx="58" ry="130" fill="url(#bglow-${uid})"/>` : ""}
     <path d="${outline}" fill="url(#bglass-${uid})" stroke="#E7D6B1" stroke-opacity="0.3" stroke-width="1.2"/>
     <g clip-path="url(#bbody-${uid})">
       <rect x="0" y="${n(liquidTopY)}" width="120" height="${n(300 - liquidTopY)}" fill="url(#bliquid-${uid})"/>

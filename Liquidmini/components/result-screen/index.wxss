@@ -51,7 +51,7 @@
 .ing-en { font-family: var(--font-cormorant); font-style: italic; font-size: 12px; color: rgba(26,22,18,0.45); }
 .ing-amt { flex-shrink: 0; font-size: 15px; color: #9C5A33; }
 .page-divider { height: 1px; background: rgba(26,22,18,0.15); margin: 16px 0; }
-.chips { display: flex; flex-wrap: wrap; gap: 16px; }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-top: 14px; }
 .chip { display: flex; align-items: center; gap: 8px; }
 .chip-art { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(180deg, #4E3826, #281C14); }
 .chip-text { display: flex; flex-direction: column; }

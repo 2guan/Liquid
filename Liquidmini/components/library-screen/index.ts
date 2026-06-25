@@ -1,7 +1,6 @@
 /** The Cellar — browse the spirit library. Ported from LibraryScreen.tsx. */
 import { SPIRITS, SPIRIT_CATEGORIES, SPIRIT_COUNT, spiritsByCategory, searchSpirits, spiritById } from "../../lib/data/spirits";
 import { sound } from "../../lib/sound/index";
-import { store } from "../../lib/store";
 
 function toDetail(s: any) {
   return {
@@ -10,7 +9,7 @@ function toDetail(s: any) {
   };
 }
 function toTile(s: any) {
-  return { id: s.id, name: s.name.replace(/\s*\d.*$/, ""), label: s.nameEn[0], family: s.family };
+  return { id: s.id, name: s.name.replace(/\s*\d.*$/, ""), nameEn: s.nameEn, label: s.nameEn[0], family: s.family };
 }
 
 Component({
@@ -44,10 +43,6 @@ Component({
       if (!sp) return;
       sound.play("click");
       this.setData({ selectedId: id, selected: toDetail(sp) });
-    },
-    pour() {
-      sound.play("click");
-      store.enterPureWith(this.data.selectedId);
     },
   },
 });

@@ -123,7 +123,7 @@ export default function Bottle({
         </clipPath>
       </defs>
 
-      {glow && <ellipse cx="60" cy="180" rx="80" ry="120" fill={`url(#bglow-${uid})`} />}
+      {glow && <ellipse cx="60" cy="170" rx="58" ry="130" fill={`url(#bglow-${uid})`} />}
 
       {/* glass */}
       <path d={outline} fill={`url(#bglass-${uid})`} stroke="#E7D6B1" strokeOpacity="0.3" strokeWidth="1.2" />

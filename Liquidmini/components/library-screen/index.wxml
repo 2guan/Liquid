@@ -1,37 +1,15 @@
-<scroll-view scroll-y class="lb-scroll">
-  <view class="lb">
-    <view class="lb-head">
-      <view class="lb-title">
-        <text class="lb-zh title-engrave">酒库</text>
-        <text class="lb-en">The Cellar</text>
-      </view>
-      <text class="lb-count">{{count}} 款珍藏</text>
-    </view>
+<view class="lb">
+  <!-- page title (same style as Settings) -->
+  <view class="lb-head">
+    <text class="lb-zh title-engrave">酒库</text>
+    <text class="lb-en">The Cellar</text>
+    <text class="lb-count">{{count}} 款珍藏</text>
+  </view>
 
-    <view class="lb-search">
-      <icon name="search" size="15" color="#9a7b3a"></icon>
-      <input class="lb-input" placeholder="搜索基酒（名称 / 产地 / 风味）…" value="{{query}}" bindinput="onQuery" />
-      <view wx:if="{{query}}" class="lb-clear" bindtap="clearQuery"><icon name="close" size="14" color="#b89b6a"></icon></view>
-    </view>
-
-    <view wx:if="{{!query}}" class="lb-cats">
-      <view wx:for="{{cats}}" wx:key="id" class="lb-cat {{category === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickCat">{{item.name}}</view>
-    </view>
-
-    <view class="lb-divider"></view>
-
-    <view class="lb-shelf">
-      <view wx:for="{{list}}" wx:key="id" class="lb-bottle {{selectedId === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickSpirit">
-        <bottle family="{{item.family}}" label="{{item.label}}" size="{{52}}" glow="{{selectedId === item.id}}" css-height="84px"></bottle>
-        <view class="lb-shelf-bar"></view>
-        <text class="lb-bottle-name">{{item.name}}</text>
-      </view>
-      <view wx:if="{{list.length === 0}}" class="lb-empty">没有找到匹配的基酒</view>
-    </view>
-
-    <!-- detail -->
-    <view class="lb-detail glass-panel">
-      <view class="lb-detail-bottle"><bottle family="{{selected.family}}" label="{{selected.label}}" size="{{110}}" glow="{{true}}" css-height="160px"></bottle></view>
+  <!-- selected spirit info -->
+  <view class="lb-detail glass-panel">
+    <view class="lb-detail-bottle"><bottle family="{{selected.family}}" label="{{selected.label}}" size="{{100}}" glow="{{true}}" css-height="150px"></bottle></view>
+    <view class="lb-detail-info">
       <text class="lb-detail-zh title-engrave">{{selected.name}}</text>
       <text class="lb-detail-en">{{selected.nameEn}}</text>
       <view class="lb-detail-meta">
@@ -44,7 +22,30 @@
       <view class="lb-flavors">
         <view wx:for="{{selected.flavor}}" wx:key="*this" class="lb-flavor">{{item}}</view>
       </view>
-      <view class="btn lb-pour" bindtap="pour"><icon name="droplet" size="16" color="#1A1612"></icon><text>以此酒纯饮</text></view>
     </view>
   </view>
-</scroll-view>
+
+  <!-- bottom half: spirit picker -->
+  <view class="lb-pick">
+    <view class="lb-search">
+      <icon name="search" size="15" color="#9a7b3a"></icon>
+      <input class="lb-input" placeholder="搜索基酒（名称 / 产地 / 风味）…" value="{{query}}" bindinput="onQuery" />
+      <view wx:if="{{query}}" class="lb-clear" bindtap="clearQuery"><icon name="close" size="14" color="#b89b6a"></icon></view>
+    </view>
+
+    <view wx:if="{{!query}}" class="lb-cats">
+      <view wx:for="{{cats}}" wx:key="id" class="lb-cat {{category === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickCat">{{item.name}}</view>
+    </view>
+
+    <scroll-view scroll-y class="lb-shelf-scroll">
+      <view class="lb-shelf">
+        <view wx:for="{{list}}" wx:key="id" class="lb-tile {{selectedId === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickSpirit">
+          <view class="lb-tile-art"><bottle family="{{item.family}}" label="{{item.label}}" size="{{42}}" glow="{{selectedId === item.id}}" css-height="68px"></bottle></view>
+          <text class="lb-tile-name">{{item.name}}</text>
+          <text class="lb-tile-sub">{{item.nameEn}}</text>
+        </view>
+        <view wx:if="{{list.length === 0}}" class="lb-empty">没有找到匹配的基酒</view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

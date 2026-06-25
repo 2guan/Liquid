@@ -12,17 +12,14 @@ import {
   type SpiritCategory,
 } from "@/lib/data/spirits";
 import Bottle from "@/components/art/Bottle";
-import Button from "@/components/ui/Button";
 import { BilingualTitle, Chip, Divider } from "@/components/ui/atoms";
 import { Icon } from "@/components/art/icons";
-import { useNav } from "@/store/useNav";
 
 export default function LibraryScreen({ layout }: { layout: LayoutMode }) {
   const [selectedId, setSelectedId] = useState(SPIRITS[0].id);
   const [category, setCategory] = useState<SpiritCategory>("whisky");
   const [query, setQuery] = useState("");
   const selected = SPIRITS.find((s) => s.id === selectedId) ?? SPIRITS[0];
-  const enterPureWith = useNav((s) => s.enterPureWith);
 
   const list = useMemo(
     () => (query.trim() ? searchSpirits(query) : spiritsByCategory(category)),
@@ -31,13 +28,8 @@ export default function LibraryScreen({ layout }: { layout: LayoutMode }) {
 
   const shelf = (
     <div className="relative">
-      <div className="mb-1 flex items-end justify-between">
-        <BilingualTitle zh="酒库" en="Library" />
-        <span className="font-cn text-xs text-paper/45">{SPIRIT_COUNT} 款珍藏</span>
-      </div>
-
       {/* search */}
-      <div className="relative mt-3">
+      <div className="relative">
         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gold/50">
           <Icon name="search" size={15} />
         </span>
@@ -77,18 +69,24 @@ export default function LibraryScreen({ layout }: { layout: LayoutMode }) {
       <Divider className="my-3" />
 
       {/* shelves of bottles */}
-      <div className="grid grid-cols-3 gap-x-2 gap-y-6 sm:grid-cols-4 xl:grid-cols-6">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-6">
         {list.map((s) => {
           const active = s.id === selectedId;
           return (
-            <button key={s.id} onClick={() => setSelectedId(s.id)} className="group relative flex flex-col items-center">
-              <motion.div whileHover={{ y: -4 }} className={`grid place-items-center rounded-lg px-1 pt-2 transition-colors ${active ? "bg-gold/10" : ""}`}>
-                <Bottle family={s.family} label={s.nameEn[0]} size={layout === "portrait" ? 52 : 62} glow={active} />
-              </motion.div>
-              <span className="mt-1 h-1.5 w-full rounded-full bg-gradient-to-b from-wood-light to-wood-dark shadow-plate" />
-              <span className={`mt-1.5 max-w-[84px] truncate font-cn text-[11px] ${active ? "text-gold-bright" : "text-paper/65"}`}>
+            <button
+              key={s.id}
+              onClick={() => setSelectedId(s.id)}
+              className={`flex flex-col items-center gap-0.5 rounded-lg border p-2 text-center transition-all ${
+                active ? "border-gold/60 bg-gold/12" : "border-gold/15 hover:border-gold/35"
+              }`}
+            >
+              <span className="grid h-[72px] place-items-center">
+                <Bottle family={s.family} label={s.nameEn[0]} size={layout === "portrait" ? 46 : 56} glow={active} />
+              </span>
+              <span className={`max-w-full truncate font-cn text-[11px] ${active ? "text-gold-bright" : "text-paper/75"}`}>
                 {s.name.replace(/\s*\d.*$/, "")}
               </span>
+              <span className="max-w-full truncate font-title text-[8px] uppercase tracking-wide text-gold/50">{s.nameEn}</span>
             </button>
           );
         })}
@@ -124,25 +122,34 @@ export default function LibraryScreen({ layout }: { layout: LayoutMode }) {
           ))}
         </div>
       </div>
-      <Button className="mt-6" onClick={() => enterPureWith(selected.id)}>
-        <Icon name="droplet" size={16} /> 以此酒纯饮
-      </Button>
     </motion.div>
   );
 
+  const head = (
+    <div className="flex items-end justify-between">
+      <BilingualTitle zh="酒库" en="The Cellar" size="lg" />
+      <span className="font-cn text-xs text-paper/45">{SPIRIT_COUNT} 款珍藏</span>
+    </div>
+  );
+
   if (layout === "portrait") {
+    // title on top, then detail (half), then the spirit picker
     return (
-      <div className="flex flex-col gap-5 px-4 py-5">
-        {shelf}
-        {detail}
+      <div className="flex h-full flex-col gap-3 px-4 py-4">
+        {head}
+        <div className="min-h-0 max-h-[50%] shrink-0 overflow-y-auto">{detail}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto">{shelf}</div>
       </div>
     );
   }
 
   return (
-    <div className="grid h-full grid-cols-[1.5fr_1fr] gap-6 overflow-y-auto px-8 py-6">
-      <div className="overflow-y-auto pr-2">{shelf}</div>
-      <div className="self-start">{detail}</div>
+    <div className="flex h-full flex-col gap-4 overflow-hidden px-8 py-6">
+      {head}
+      <div className="grid min-h-0 flex-1 grid-cols-[1fr_1.4fr] gap-6">
+        <div className="self-start overflow-y-auto">{detail}</div>
+        <div className="min-h-0 overflow-y-auto pr-2">{shelf}</div>
+      </div>
     </div>
   );
 }

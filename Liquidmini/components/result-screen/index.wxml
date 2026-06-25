@@ -52,7 +52,6 @@
             <text class="ing-amt">{{item.amount}}</text>
           </view>
         </view>
-        <view class="page-divider"></view>
         <view class="chips">
           <view class="chip"><image class="chip-art" src="{{glassChip}}" mode="aspectFit"></image><view class="chip-text"><text class="chip-label">{{glassName}}</text><text class="chip-sub">Glassware</text></view></view>
           <view class="chip"><image class="chip-art" src="{{iceChip}}" mode="aspectFit"></image><view class="chip-text"><text class="chip-label">{{iceName}}</text><text class="chip-sub">Ice</text></view></view>
