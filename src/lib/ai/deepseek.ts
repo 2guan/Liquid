@@ -14,6 +14,7 @@ import { spiritById } from "@/lib/data/spirits";
 import { aromaticForFamily } from "@/lib/data/garnish";
 import { randomSignature, withSignature } from "./lexicon";
 import { assembleMixResult } from "./composer";
+import { classifyMix, type AmountedPick } from "./magicMix";
 import type { MixAnalysis } from "./cocktailAI";
 
 const API_KEY = process.env.DEEPSEEK_API_KEY;
@@ -227,15 +228,30 @@ export async function dsPurePour(spiritId: string, glass: GlassType, ice: IceTyp
 
 /* ── 3. Zen Atelier (free-mix flavour analysis) ── */
 export async function dsZenMix(picks: FlavorPick[]): Promise<MixAnalysis> {
-  const list = picks.map((p) => `${p.name}${p.family ? `(${p.family})` : ""}：${p.flavor.join("、")}`).join("\n");
-  const baseIngredients: Ingredient[] = picks.map((p) => ({ name: p.name, nameEn: p.nameEn, amount: "30ml", parts: 1, family: p.family }));
+  const list = picks
+    .map((p) => {
+      const amt = (p as AmountedPick).amount;
+      return `${p.name}${p.family ? `(${p.family})` : ""}${amt ? `，${amt}` : ""}：${p.flavor.join("、")}`;
+    })
+    .join("\n");
+  const baseIngredients: Ingredient[] = picks.map((p) => ({ name: p.name, nameEn: p.nameEn, amount: (p as AmountedPick).amount ?? "30ml", parts: 1, family: p.family }));
   const dominant = picks.find((p) => p.family)?.family ?? "default";
+
+  // Honest-but-witty framing when the "drink" isn't actually a cocktail.
+  const klass = classifyMix(picks);
+  let honesty = "";
+  if (klass.onlyGarnish) {
+    honesty = `\n特别注意：用户没有倒入任何酒液，只选了点缀/装饰/香料。这其实是一只「空杯加点缀」——并不是一杯酒。请用风趣自嘲、会心一笑的口吻写 taste_profile 与 story，**明确点出这并不是一杯酒**（如「皇帝的新酒」「空杯协奏曲」式的调侃），name 取一个俏皮的非酒名字，emotion_mapping 也要呼应这份留白。hidden 必须为 false。`;
+  } else if (klass.mocktail) {
+    honesty = `\n特别注意：用户没有加入任何酒精，只用了果汁/鲜果/糖浆/气泡软饮等。这是一杯【无酒精】特调（mocktail）。请在 taste_profile 与 story 里**明确说明它不含酒精、是清醒之选**，语气风趣轻盈；name 要体现无酒精/零度主题。hidden 必须为 false。`;
+  }
+
   const user = `用户在自由创作画布上组合了以下风味原料：
 ${list}
 请以风味化学家和诗人的视角分析这个组合，并产出一杯成品。额外要求：
 - 在 JSON 中再加两个字段："harmony"（0~1 的数字，表示风味和谐度），"verdict"（一句中文点评）。
 - 若该组合恰好构成某款知名经典鸡尾酒（如金酒+金巴利+红味美思=尼格罗尼），把 "hidden" 设为 true，并用该经典之名命名。
-- ingredients 使用上面列出的原料。`;
+- ingredients 使用上面列出的原料。${honesty}`;
   const raw = await callDeepSeek(
     [
       { role: "system", content: SYSTEM },

@@ -377,31 +377,34 @@ export default function ZenScreen({ layout }: { layout: LayoutMode }) {
                     <SearchBox value={query} onChange={setQuery} placeholder={`搜索 ${FLAVOR_COUNT} 种材料…`} />
                     {!query && (
                       <CatPills
-                        items={FLAVOR_CATEGORIES.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
+                        items={FLAVOR_CATEGORIES.map((c) => ({ id: c.id, name: c.name }))}
                         active={category}
                         onPick={(id) => setCategory(id as FlavorCategory)}
                       />
                     )}
-                    <div className="mt-2 grid min-h-0 flex-1 auto-rows-min content-start gap-1.5 overflow-y-auto pr-1">
+                    <div className="mt-2 grid min-h-0 flex-1 auto-rows-min content-start grid-cols-2 gap-1.5 overflow-y-auto pr-1">
                       {list.map((f) => {
                         const disabled = items.length >= MAX_ITEMS;
+                        const picked = items.some((it) => it.flavorId === f.id);
                         return (
                           <button
                             key={f.id}
                             onClick={() => addFlavor(f.id)}
                             disabled={disabled}
-                            className="flex items-center gap-2.5 rounded-lg border border-gold/12 p-2 text-left transition-all hover:border-gold/35 hover:bg-gold/5 disabled:opacity-30"
+                            className={`flex items-center gap-1.5 rounded-lg border p-1.5 text-left transition-all hover:bg-gold/5 disabled:opacity-30 ${
+                              picked ? "border-gold/55 bg-gold/12 shadow-amber-soft" : "border-black/40 hover:border-gold/35"
+                            }`}
                           >
-                            <span className="h-7 w-7 shrink-0 rounded-full border border-paper/20" style={{ background: `radial-gradient(circle at 35% 30%, ${f.color}, ${f.color}88)` }} />
+                            <span className="h-5 w-5 shrink-0 rounded-full border border-paper/20" style={{ background: `radial-gradient(circle at 35% 30%, ${f.color}, ${f.color}88)` }} />
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate font-cn text-[13px] text-paper/90">{f.name}</span>
-                              <span className="block truncate font-serif text-[10px] italic text-gold/55">{f.nameEn} · {f.flavor.slice(0, 2).join("·")}</span>
+                              <span className={`block truncate font-cn text-[12px] ${picked ? "text-gold-bright" : "text-paper/90"}`}>{f.name}</span>
+                              <span className="block truncate font-serif text-[9px] italic text-gold/55">{f.nameEn}</span>
                             </span>
-                            <Icon name="plus" size={14} className="shrink-0 text-gold/55" />
+                            <Icon name={picked ? "check" : "plus"} size={12} className={`shrink-0 ${picked ? "text-gold-bright" : "text-gold/55"}`} />
                           </button>
                         );
                       })}
-                      {list.length === 0 && <p className="py-6 text-center font-cn text-sm text-paper/40">没有找到匹配的材料</p>}
+                      {list.length === 0 && <p className="col-span-full py-6 text-center font-cn text-sm text-paper/40">没有找到匹配的材料</p>}
                     </div>
                   </Selector>
                 )}
@@ -547,18 +550,17 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
   );
 }
 
-function CatPills({ items, active, onPick }: { items: { id: string; name: string; color?: string }[]; active: string; onPick: (id: string) => void }) {
+function CatPills({ items, active, onPick }: { items: { id: string; name: string }[]; active: string; onPick: (id: string) => void }) {
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
+    <div className="mt-2 flex flex-wrap gap-1">
       {items.map((c) => (
         <button
           key={c.id}
           onClick={() => onPick(c.id)}
-          className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-cn text-[11px] transition-all ${
-            active === c.id ? "border-gold/60 bg-gold/12 text-gold-bright" : "border-gold/15 text-paper/65 hover:border-gold/35"
+          className={`rounded-full border px-2 py-0.5 font-cn text-[10px] leading-tight transition-all ${
+            active === c.id ? "border-gold/60 bg-gold/12 text-gold-bright" : "border-black/40 text-paper/65 hover:border-gold/35"
           }`}
         >
-          {c.color && <span className="h-2 w-2 rounded-full" style={{ background: c.color }} />}
           {c.name}
         </button>
       ))}
@@ -571,7 +573,7 @@ function PickTile({ active, onClick, label, sub, children, mediaH = 48 }: { acti
     <button
       onClick={onClick}
       className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-all ${
-        active ? "border-gold/60 bg-gold/12 shadow-amber-soft" : "border-gold/15 hover:border-gold/35 hover:bg-gold/5"
+        active ? "border-gold/60 bg-gold/12 shadow-amber-soft" : "border-black/40 hover:border-gold/35 hover:bg-gold/5"
       }`}
     >
       <span className="flex items-center justify-center" style={{ height: mediaH }}>{children}</span>

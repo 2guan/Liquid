@@ -1,6 +1,6 @@
 <view class="pure">
-  <!-- stage: live preview of the drink being built -->
-  <view class="stage">
+  <!-- stage: live preview of the drink being built (collapsible for more room) -->
+  <view class="stage {{compact ? 'collapsed' : ''}}">
     <view wx:if="{{layerBadge}}" class="layer-badge">{{layerBadge}}</view>
     <glass
       glass-type="{{glassType}}"
@@ -20,6 +20,12 @@
 
   <!-- control panel -->
   <view class="panel glass-panel">
+    <!-- drag handle: swipe up (or tap) to hide the glass and free up space -->
+    <view class="sheet-handle" bindtouchstart="hStart" bindtouchmove="hMove" bindtouchend="hEnd">
+      <view class="grip"></view>
+      <text class="handle-hint">{{compact ? '下拉 / 点此显示酒杯' : '上拉 / 点此隐藏酒杯，腾出选择空间'}}</text>
+    </view>
+
     <!-- glass step -->
     <block wx:if="{{step === 'glass'}}">
       <view class="sel-head"><text class="sel-zh">选择杯型</text><text class="sel-en">Select Glass</text></view>
@@ -75,16 +81,14 @@
 
       <input class="search" placeholder="搜索 {{count}} 种材料…" value="{{query}}" bindinput="onQuery" />
       <view wx:if="{{!query}}" class="pills">
-        <view wx:for="{{cats}}" wx:key="id" class="pill {{category === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickCat">
-          <view class="pdot" style="background:{{item.color}}"></view>{{item.name}}
-        </view>
+        <view wx:for="{{cats}}" wx:key="id" class="pill {{category === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="pickCat">{{item.name}}</view>
       </view>
       <scroll-view scroll-y class="grid-scroll">
         <view class="ilist">
-          <view wx:for="{{list}}" wx:key="id" class="irow {{items.length >= max ? 'off' : ''}}" data-id="{{item.id}}" bindtap="addFlavor">
+          <view wx:for="{{list}}" wx:key="id" class="irow {{item.picked ? 'on' : ''}} {{items.length >= max ? 'off' : ''}}" data-id="{{item.id}}" bindtap="addFlavor">
             <view class="idot" style="background:{{item.color}}"></view>
             <view class="imeta"><text class="iname">{{item.name}}</text><text class="isub">{{item.sub}}</text></view>
-            <icon name="plus" size="14" color="#C8A45D"></icon>
+            <view class="iplus"><icon name="{{item.picked ? 'check' : 'plus'}}" size="13" color="{{item.picked ? '#E3C684' : '#C8A45D'}}"></icon></view>
           </view>
           <view wx:if="{{list.length === 0}}" class="empty-hint">没有找到匹配的材料</view>
         </view>

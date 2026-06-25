@@ -384,9 +384,9 @@ class HybridCocktailAI implements CocktailAI {
     return this.withFallback(() => this.remote.describePour(spiritId, glass, ice), () => this.fallback.describePour(spiritId, glass, ice));
   }
   analyzeFlavorMix(picks: FlavorPick[]) {
-    // garnish-only / zero-proof creations must get the honest, witty card
-    const klass = classifyMix(picks);
-    if (klass.onlyGarnish || klass.mocktail) return this.fallback.analyzeFlavorMix(picks);
+    // Garnish-only / zero-proof creations still go to the LLM (the deployed
+    // /zen-mix prompt makes it write a witty card that's honest about being
+    // non-alcoholic / not-a-drink); the offline poet stays as the fallback.
     return this.withFallback(() => this.remote.analyzeFlavorMix(picks), () => this.fallback.analyzeFlavorMix(picks));
   }
   describeMix(recipe: Recipe, success: boolean, accuracy: number) {

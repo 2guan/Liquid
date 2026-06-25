@@ -104,14 +104,22 @@ Component({
     layerBadge: "",
     canStir: false,
     canUndo: false,
+    compact: false, // glass preview hidden to give the picker more room
   },
 
   _history: [] as Snapshot[],
   _veil: null as null | number,
   _stir: null as null | number,
+  _hStartY: 0,
 
   lifetimes: {
     attached() {
+      // WeChat Component doesn't copy top-level custom fields onto the instance,
+      // so the array must be created here before pushHistory() reads it.
+      this._history = [];
+      this._veil = null;
+      this._stir = null;
+      this._hStartY = 0;
       this.refreshGlassList();
       this.refreshList();
       this.recompute();
@@ -131,12 +139,14 @@ Component({
     },
     refreshList() {
       const q = this.data.query.trim();
+      const picked = new Set(this.data.items.map((it) => it.flavorId));
       const list = (q ? searchFlavors(q) : flavorsByCategory(this.data.category as any)).map((f) => ({
         id: f.id,
         name: f.name,
         nameEn: f.nameEn,
         color: f.color,
         sub: `${f.nameEn} · ${f.flavor.slice(0, 2).join("·")}`,
+        picked: picked.has(f.id),
       }));
       this.setData({ list });
     },
@@ -152,6 +162,16 @@ Component({
       const id = e.currentTarget.dataset.id as IceType;
       this.setData({ ice: id }, () => this.recompute());
       if (id !== "none") sound.play("ice");
+    },
+
+    /* ── collapse / expand the glass stage (drag the handle, or tap it) ── */
+    hStart(e: any) { this._hStartY = e.touches[0].clientY; },
+    hMove() { /* tracked on end via changedTouches */ },
+    hEnd(e: any) {
+      const dy = e.changedTouches[0].clientY - this._hStartY;
+      if (Math.abs(dy) < 10) { this.setData({ compact: !this.data.compact }); return; } // tap
+      if (dy < -20) this.setData({ compact: true });   // swipe up → hide glass
+      else if (dy > 20) this.setData({ compact: false }); // swipe down → show glass
     },
 
     /* ── history ── */
@@ -252,6 +272,7 @@ Component({
         rows, family, previewColor, previewLayers, previewFill, garnishes, fizzy, layerBadge,
         canStir: liquidItems.length >= 2,
       });
+      this.refreshList(); // keep the picker's selected highlights in sync
     },
 
     /* ── steps ── */
