@@ -4,7 +4,7 @@
   <!-- contextual top bar (hidden on home, which has its own header) — back only -->
   <view wx:if="{{view !== 'home'}}" class="topbar" style="padding-top:{{statusBarHeight}}px">
     <view class="topbar-row">
-      <view class="icon-btn" bindtap="goHome">
+      <view class="icon-btn" bindtap="goBack">
         <icon name="back" size="20"></icon>
       </view>
     </view>

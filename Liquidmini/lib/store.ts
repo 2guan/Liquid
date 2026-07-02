@@ -29,6 +29,8 @@ export interface AtelierState {
   // ── routing ──
   view: View;
   origin: View;
+  /** back-stack of previously-visited views (does NOT include the current one) */
+  history: View[];
   pureSeed: string | null;
 
   // ── progression ──
@@ -93,6 +95,7 @@ function loadPersisted(): Partial<AtelierState> {
 const defaults: AtelierState = {
   view: "home",
   origin: "home",
+  history: [],
   pureSeed: null,
   xp: 200, // a fresh barback, just past the first sip
   journal: [],
@@ -198,22 +201,34 @@ export const store = {
 
   // ── routing ──
   go(view: View) {
-    set({ view });
+    if (view === state.view) return;
+    set({ history: [...state.history, state.view], origin: state.view, view });
   },
   enterMode(mode: ModeId) {
-    set({ view: mode, origin: "home" });
+    set({ history: [...state.history, state.view], origin: state.view, view: mode });
   },
   enterPureWith(spiritId: string) {
-    set({ view: "pure", origin: "library", pureSeed: spiritId });
+    set({ history: [...state.history, state.view], origin: state.view, view: "pure", pureSeed: spiritId });
   },
   consumePureSeed() {
     set({ pureSeed: null });
   },
   showResult() {
-    set({ origin: state.view, view: "result" });
+    set({ history: [...state.history, state.view], origin: state.view, view: "result" });
+  },
+  /** go back to the previous view (or home when the stack is empty) */
+  back() {
+    if (!state.history.length) {
+      set({ view: "home", origin: "home" });
+      return;
+    }
+    const history = state.history.slice(0, -1);
+    const view = state.history[state.history.length - 1];
+    const origin = history.length ? history[history.length - 1] : "home";
+    set({ history, view, origin });
   },
   home() {
-    set({ view: "home", origin: "home" });
+    set({ view: "home", origin: "home", history: [] });
   },
 
   // ── progression ──

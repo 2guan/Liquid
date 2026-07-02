@@ -9,16 +9,18 @@ const nextConfig = {
   // webview — that requires Access-Control-Allow-Origin or the fetch is blocked
   // ("loadFontFace:fail A network error occurred."). Long-cache them too.
   async headers() {
+    const longCache = [
+      { key: "Access-Control-Allow-Origin", value: "*" },
+      { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
+      { key: "Cross-Origin-Resource-Policy", value: "cross-origin" },
+      { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+    ];
     return [
-      {
-        source: "/fonts/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
-          { key: "Cross-Origin-Resource-Policy", value: "cross-origin" },
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
+      // self-hosted fonts (see note above) + scene backdrops: both are static and
+      // versioned by filename, so long-cache them — the mini-program and web then
+      // don't re-download them on every visit / cold launch.
+      { source: "/fonts/:path*", headers: longCache },
+      { source: "/art/:path*", headers: longCache },
     ];
   },
 };

@@ -32,6 +32,15 @@ Page({
   },
 
   _unsub: null as null | (() => void),
+  // ── hardware/system back support ──
+  // The app is a single dynamic page, so the system back button would exit it.
+  // We mirror the store's nav back-stack (history depth) into a REAL WeChat page
+  // stack: navigating forward pushes an identical page, and popping one (system
+  // back, gesture, or our own navigateBack) walks the store back one step. Only
+  // the active (top) page drives navigation. It's best-effort (wrapped in
+  // try/catch) — the view itself always renders from the store regardless.
+  _active: false,
+  _depth: 0,
 
   onLoad() {
     try {
@@ -39,6 +48,7 @@ Page({
       this.setData({ statusBarHeight: info.statusBarHeight || 20 });
     } catch (e) { /* default */ }
 
+    this._depth = store.get().history.length;
     this._unsub = store.subscribe((s) => {
       const rank = store.rank();
       this.setData({
@@ -47,19 +57,39 @@ Page({
         rankName: rank.meta.name,
         rankProgress: Math.round(rank.progress * 100),
       });
+      // mirror the back-stack depth into the real page stack (best-effort)
+      try {
+        const depth = s.history.length;
+        if (this._active) {
+          if (depth > this._depth) {
+            wx.navigateTo({ url: "/pages/index/index", fail: () => {} });
+          } else if (depth < this._depth) {
+            wx.navigateBack({ delta: this._depth - depth, fail: () => {} });
+          }
+        }
+        this._depth = depth;
+      } catch (e) { /* mirror is best-effort */ }
     });
+  },
+
+  onShow() {
+    this._active = true;
+    this._depth = store.get().history.length;
+  },
+  onHide() {
+    this._active = false;
   },
 
   onReady() {
     // Load display fonts AFTER the first render — a global wx.loadFontFace called
     // earlier (app.onLaunch) fails on-device with "A network error occurred."
-    if (fontsLoaded) return;
-    fontsLoaded = true;
-    loadServerFont("Maoken Fengyasong", FONT_MAOKEN);
-    if (FONT_CINZEL) loadServerFont("Cinzel", FONT_CINZEL);
-    if (FONT_CORMORANT) loadServerFont("Cormorant Garamond", FONT_CORMORANT);
-
-    // make the 转发 / 分享到朋友圈 menu entries available from the capsule
+    if (!fontsLoaded) {
+      fontsLoaded = true;
+      loadServerFont("Maoken Fengyasong", FONT_MAOKEN);
+      if (FONT_CINZEL) loadServerFont("Cinzel", FONT_CINZEL);
+      if (FONT_CORMORANT) loadServerFont("Cormorant Garamond", FONT_CORMORANT);
+    }
+    // enable 转发 / 分享到朋友圈 on every page instance (not just the first)
     try {
       wx.showShareMenu({ withShareTicket: false, menus: ["shareAppMessage", "shareTimeline"] });
     } catch (e) { /* older base lib */ }
@@ -93,8 +123,17 @@ Page({
 
   onUnload() {
     if (this._unsub) this._unsub();
+    // this page was popped (system/hardware back, gesture, or our navigateBack) →
+    // walk the app back-stack in sync. Guard the app-exit case (already at home).
+    try {
+      if (store.get().history.length > 0) store.back();
+    } catch (e) { /* ignore */ }
   },
 
+  /** top-bar back arrow — pop a real page so it shares the system-back path. */
+  goBack() {
+    wx.navigateBack({ fail: () => { try { store.back(); } catch (e) { /* ignore */ } } });
+  },
   goHome() {
     store.home();
   },

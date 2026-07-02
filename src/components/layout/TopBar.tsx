@@ -22,7 +22,7 @@ const SECTION: Record<string, { zh: string; en: string }> = {
 export default function TopBar() {
   const view = useNav((s) => s.view);
   const go = useNav((s) => s.go);
-  const home = useNav((s) => s.home);
+  const back = useNav((s) => s.back);
   const musicOn = useAtelier((s) => s.musicOn);
   const sfxOn = useAtelier((s) => s.sfxOn);
   const setMusic = useAtelier((s) => s.setMusic);
@@ -40,7 +40,7 @@ export default function TopBar() {
     <header className="relative flex h-16 items-center justify-between gap-4 px-6">
       <span className="pointer-events-none absolute inset-x-6 bottom-0 h-px bg-gold-line" aria-hidden />
       <div className="flex items-center gap-3">
-        {view !== "home" && <IconButton icon="back" label="返回首页" onClick={home} />}
+        {view !== "home" && <IconButton icon="back" label="返回" onClick={back} />}
         {section && (
           <span className="flex items-baseline gap-2">
             <span className="title-engrave font-cn text-lg" style={{ letterSpacing: "0.08em" }}>

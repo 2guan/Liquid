@@ -23,8 +23,56 @@ export const FONT_CORMORANT = `${SERVER}/fonts/cormorant-garamond.ttf`;
 
 /** Scene backdrops, keyed the same way as the web build's SceneBackdrop. */
 export const SCENE_BASE = `${SERVER}/art`;
+
+/* ── persistent local cache for remote images ──
+ * Scene .webp files are downloaded once, saved to the user file system, and
+ * served from the local path thereafter — so they don't re-download on every
+ * cold launch. `<image>` renders local (wxfile://) paths reliably. */
+const IMG_CACHE_KEY = "img-cache-v1";
+let imgCache: Record<string, string> | null = null;
+function imgCacheMap(): Record<string, string> {
+  if (imgCache) return imgCache;
+  let map: Record<string, string> = {};
+  try {
+    map = wx.getStorageSync(IMG_CACHE_KEY) || {};
+    // drop entries whose saved file no longer exists
+    const fs = wx.getFileSystemManager();
+    let changed = false;
+    for (const k of Object.keys(map)) {
+      try { fs.accessSync(map[k]); } catch (e) { delete map[k]; changed = true; }
+    }
+    if (changed) wx.setStorageSync(IMG_CACHE_KEY, map);
+  } catch (e) {
+    map = {};
+  }
+  imgCache = map;
+  return map;
+}
+export function cachedImage(url: string): string {
+  const map = imgCacheMap();
+  if (map[url]) return map[url];
+  // return the network URL for now; fetch + save for the next launch
+  try {
+    wx.downloadFile({
+      url,
+      success: (res: any) => {
+        if (res.statusCode !== 200) return;
+        wx.getFileSystemManager().saveFile({
+          tempFilePath: res.tempFilePath,
+          success: (s: any) => {
+            map[url] = s.savedFilePath;
+            try { wx.setStorageSync(IMG_CACHE_KEY, map); } catch (e) { /* quota */ }
+          },
+          fail: () => { /* quota — refetch next time */ },
+        });
+      },
+    });
+  } catch (e) { /* ignore */ }
+  return url;
+}
+
 export function sceneUrl(key: string): string {
-  return `${SCENE_BASE}/scene-${key}.webp`;
+  return cachedImage(`${SCENE_BASE}/scene-${key}.webp`);
 }
 
 /** Spirit family → scene key (mirrors the web SceneBackdrop; "amber" is reserved

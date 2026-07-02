@@ -9,8 +9,8 @@ import type { ModeId } from "@/types";
 
 /** Portrait top header — back + brand on the left, journal + achievements right. */
 export function MobileHeader() {
-  const home = useNav((s) => s.home);
   const go = useNav((s) => s.go);
+  const back = useNav((s) => s.back);
 
   return (
     <header className="relative flex h-14 items-center justify-between gap-2 px-4">
@@ -18,7 +18,7 @@ export function MobileHeader() {
       <span className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gold-line" aria-hidden />
 
       <div className="flex items-center gap-2.5">
-        <IconButton icon="back" label="返回首页" onClick={home} />
+        <IconButton icon="back" label="返回" onClick={back} />
         <span className="title-engrave font-cn text-lg" style={{ letterSpacing: "0.08em" }}>
           微醺时刻
         </span>
