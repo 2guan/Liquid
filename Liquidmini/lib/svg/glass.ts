@@ -231,8 +231,12 @@ export function glassSvg(opts: GlassOpts): string {
     ? `<g clip-path="url(#cup-${uid})">${iceGroup({ type: ice, cx: 100, cy: iceY, r: iceR, waterY: liquidTop, liquidColor: body, fillTop: liquidTop, fillBottom: geom.cup.bottom, fillHW: interiorHW })}</g>`
     : "";
 
-  const backGarnish = hasLiquid && garnishes && garnishes.length > 0
-    ? garnishLayer({ layer: "back", clipId: `cup-${uid}`, specs: garnishes, rim, cupTop: geom.cup.top, liquidTop, surfaceHW, liquidColor: body, liquidShadow: shadow })
+  // render even with no liquid so floating/leaf botanicals still rest in the glass
+  const gDry = !hasLiquid;
+  const gTop = gDry ? geom.cup.bottom - (geom.cup.bottom - geom.cup.top) * 0.22 : liquidTop;
+  const gHW = gDry ? Math.max(3, halfWidthAt(geom, gTop) - 3) : surfaceHW;
+  const backGarnish = garnishes && garnishes.length > 0
+    ? garnishLayer({ layer: "back", clipId: `cup-${uid}`, specs: garnishes, rim, cupTop: geom.cup.top, liquidTop: gTop, surfaceHW: gHW, liquidColor: body, liquidShadow: shadow, dry: gDry })
     : "";
   const frontGarnish = garnishes && garnishes.length > 0
     ? garnishLayer({ layer: "front", specs: garnishes, rim, cupTop: geom.cup.top, liquidTop, surfaceHW, liquidColor: body, liquidShadow: shadow })

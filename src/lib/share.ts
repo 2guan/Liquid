@@ -250,6 +250,10 @@ function drawGlass(
   const cupH = geom.cup.bottom - geom.cup.top;
   const cb = geom.cup.bottom;
   const interiorHW = Math.max(halfWidthAt(geom, cb - 5), halfWidthAt(geom, geom.cup.top + cupH * 0.62)) - 4;
+  // dry (garnish-only) glass: skip the liquid and rest botanicals low in the cup
+  const dry = level <= 0.005;
+  const gTop = dry ? geom.cup.bottom - cupH * 0.22 : liquidTop;
+  const gHW = dry ? Math.max(3, halfWidthAt(geom, gTop) - 3) : surfHW;
 
   // ice sizing & buoyancy — mirrors <Glass>
   const ice = result.ice;
@@ -311,6 +315,8 @@ function drawGlass(
     aT = 0.97; aM = 0.97; aB = 1;
   }
   // colour-layered drinks (B-52…) fill as discrete bands; others as a gradient.
+  // skip all liquid drawing when the glass is dry (garnish-only)
+  if (!dry) {
   const bands = result.layers && result.layers.length > 1 ? layerBands(result.layers, liquidTop, fillBottom) : null;
   if (bands) {
     // one continuous gradient over the whole liquid (no abutting band rects → no
@@ -369,6 +375,7 @@ function drawGlass(
       ctx.fill();
     }
   }
+  }
   ctx.restore();
 
   // ── ice, clipped to the bowl ──
@@ -383,7 +390,7 @@ function drawGlass(
   if (garnishes.length) {
     ctx.save();
     ctx.clip(outline);
-    drawGarnishLayer(ctx, garnishes, "back", rim, geom.cup.top, liquidTop, surfHW, body, shadow);
+    drawGarnishLayer(ctx, garnishes, "back", rim, geom.cup.top, gTop, gHW, body, shadow, dry);
     ctx.restore();
   }
 
@@ -457,7 +464,7 @@ function drawGlass(
 
   // ── on-rim garnishes: salt/sugar crust + sprigs resting on the lip ──
   if (garnishes.length) {
-    drawGarnishLayer(ctx, garnishes, "front", rim, geom.cup.top, liquidTop, surfHW, body, shadow);
+    drawGarnishLayer(ctx, garnishes, "front", rim, geom.cup.top, liquidTop, surfHW, body, shadow, dry);
   }
 
   ctx.restore();
@@ -997,6 +1004,7 @@ function drawGarnishLayer(
   surfHW: number,
   liquidColor: string,
   liquidShadow: string,
+  dry = false,
 ): void {
   const surf = specs.filter((g) => g.placement === "surface");
   const tall = specs.filter((g) => g.placement === "tall");
@@ -1017,9 +1025,10 @@ function drawGarnishLayer(
     }
     surf.forEach((g, i) => {
       const m = surf.length;
-      const gap = Math.min(surfHW * 0.72, sItem * 1.8);
+      // fan floaters across the surface, stagger depth (mirrors <GarnishLayer>)
+      const gap = m > 1 ? Math.min(sItem * 1.7, (surfHW * 1.5) / (m - 1)) : 0;
       const x = 100 + (i - (m - 1) / 2) * gap;
-      const y = liquidTop + sItem * 0.16;
+      const y = liquidTop + sItem * 0.16 + (i % 2 ? sItem * 0.22 : 0);
       const wl = liquidTop - y;
       ctx.save();
       ctx.translate(x, y);
@@ -1028,17 +1037,18 @@ function drawGarnishLayer(
       ctx.beginPath(); ctx.ellipse(sItem * 0.16, sItem * 0.62, sItem * 0.96, sItem * 0.34, 0, 0, TAU); ctx.fill();
       // the garnish
       drawGarnishShape(ctx, g.kind, g.color, sItem);
-      // the drink colours its submerged lower half
-      const sub = ctx.createLinearGradient(0, -sItem, 0, sItem);
-      sub.addColorStop(0, withAlpha(liquidColor, 0));
-      sub.addColorStop(0.42, withAlpha(liquidColor, 0));
-      sub.addColorStop(0.78, withAlpha(liquidColor, 0.42));
-      sub.addColorStop(1, withAlpha(liquidShadow, 0.55));
-      ctx.fillStyle = sub;
-      ctx.beginPath(); ctx.ellipse(0, 0, sItem * 1.05, sItem * 1.05, 0, 0, TAU); ctx.fill();
-      // bright meniscus where it breaks the surface
-      ctx.strokeStyle = "rgba(255,247,230,0.5)"; ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.ellipse(0, wl, sItem * 0.86, Math.max(1, sItem * 0.16), 0, 0, TAU); ctx.stroke();
+      // liquid-only finishing: submerge wash + waterline meniscus
+      if (!dry) {
+        const sub = ctx.createLinearGradient(0, -sItem, 0, sItem);
+        sub.addColorStop(0, withAlpha(liquidColor, 0));
+        sub.addColorStop(0.42, withAlpha(liquidColor, 0));
+        sub.addColorStop(0.78, withAlpha(liquidColor, 0.42));
+        sub.addColorStop(1, withAlpha(liquidShadow, 0.55));
+        ctx.fillStyle = sub;
+        ctx.beginPath(); ctx.ellipse(0, 0, sItem * 1.05, sItem * 1.05, 0, 0, TAU); ctx.fill();
+        ctx.strokeStyle = "rgba(255,247,230,0.5)"; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.ellipse(0, wl, sItem * 0.86, Math.max(1, sItem * 0.16), 0, 0, TAU); ctx.stroke();
+      }
       ctx.restore();
     });
     if (dust) {
@@ -1064,15 +1074,19 @@ function drawGarnishLayer(
     }
   }
   tall.forEach((g, i) => {
-    const side = i === 0 ? 1 : -1;
-    const ax = 100 + side * rim.rx * 0.4;
-    const ay = rim.cy + 1;
+    const m = tall.length;
+    // fan the sprigs across the mouth and plant them into the drink (mirrors <GarnishLayer>)
+    const off = m === 1 ? 0.16 : i / (m - 1) - 0.5;
+    const ax = 100 + off * rim.rx * 1.2;
+    const restOnRim = liquidTop <= rim.cy + 6;
+    const baseY = restOnRim ? rim.cy + 1 : liquidTop - 2;
+    const rot = off * 26;
     const sTall = Math.max(7, Math.min(14, surfHW * 0.34));
-    const grow = tallH / (sTall * 2.8) > 1.6 ? 1.4 : 1;
-    // shadow where the stalk rests on the lip
-    ctx.fillStyle = withAlpha(liquidShadow, 0.3);
-    ctx.beginPath(); ctx.ellipse(ax + side * 1.5, rim.cy + 2.5, sTall * 0.8, Math.max(1.4, sTall * 0.24), 0, 0, TAU); ctx.fill();
-    ctx.save(); ctx.translate(ax, ay); ctx.rotate(deg(side * 12)); ctx.scale(grow, grow); drawGarnishShape(ctx, g.kind, g.color, sTall); ctx.restore();
+    const grow = (tallH / (sTall * 2.8) > 1.6 ? 1.35 : 1) * (1 - Math.abs(off) * 0.12);
+    // shadow where the stalk meets the surface / lip
+    ctx.fillStyle = withAlpha(liquidShadow, 0.28);
+    ctx.beginPath(); ctx.ellipse(ax + 1.5, baseY + 2.5, sTall * 0.8, Math.max(1.4, sTall * 0.24), 0, 0, TAU); ctx.fill();
+    ctx.save(); ctx.translate(ax, baseY); ctx.rotate(deg(rot)); ctx.scale(grow, grow); drawGarnishShape(ctx, g.kind, g.color, sTall); ctx.restore();
   });
 }
 

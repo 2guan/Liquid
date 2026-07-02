@@ -178,6 +178,8 @@ export interface GarnishLayerOpts {
   clipId?: string;
   liquidColor?: string;
   liquidShadow?: string;
+  /** no liquid — skip the waterline / submerge wash so botanicals just rest in the glass */
+  dry?: boolean;
 }
 
 /**
@@ -189,6 +191,7 @@ export function garnishLayer(opts: GarnishLayerOpts): string {
   const { specs, rim, cupTop, liquidTop, surfaceHW, layer, clipId } = opts;
   const liquidColor = opts.liquidColor ?? "#9A5826";
   const liquidShadow = opts.liquidShadow ?? "#3A1E0C";
+  const dry = opts.dry ?? false;
   if (!specs.length) return "";
   const uid = nextUid();
   const surf = specs.filter((g) => g.placement === "surface");
@@ -213,7 +216,10 @@ export function garnishLayer(opts: GarnishLayerOpts): string {
       const x = 100 + (i - (m - 1) / 2) * gap;
       const y = liquidTop + sItem * 0.16 + (i % 2 ? sItem * 0.22 : 0);
       const wl = liquidTop - y;
-      return `<g transform="translate(${n(x)} ${n(y)})"><ellipse cx="${n(sItem * 0.16)}" cy="${n(sItem * 0.62)}" rx="${n(sItem * 0.96)}" ry="${n(sItem * 0.34)}" fill="${liquidShadow}" opacity="0.32"/>${garnishShape(g.kind, g.color, sItem)}<ellipse cx="0" cy="0" rx="${n(sItem * 1.05)}" ry="${n(sItem * 1.05)}" fill="url(#submerge-${uid})"/><ellipse cx="0" cy="${n(wl)}" rx="${n(sItem * 0.86)}" ry="${n(Math.max(1, sItem * 0.16))}" fill="none" stroke="#fff7e6" stroke-opacity="0.5" stroke-width="0.8"/><ellipse cx="0" cy="${n(wl)}" rx="${n(sItem * 0.86)}" ry="${n(Math.max(1, sItem * 0.16))}" fill="#ffffff" opacity="0.08"/></g>`;
+      const wet = dry
+        ? ""
+        : `<ellipse cx="0" cy="0" rx="${n(sItem * 1.05)}" ry="${n(sItem * 1.05)}" fill="url(#submerge-${uid})"/><ellipse cx="0" cy="${n(wl)}" rx="${n(sItem * 0.86)}" ry="${n(Math.max(1, sItem * 0.16))}" fill="none" stroke="#fff7e6" stroke-opacity="0.5" stroke-width="0.8"/><ellipse cx="0" cy="${n(wl)}" rx="${n(sItem * 0.86)}" ry="${n(Math.max(1, sItem * 0.16))}" fill="#ffffff" opacity="0.08"/>`;
+      return `<g transform="translate(${n(x)} ${n(y)})"><ellipse cx="${n(sItem * 0.16)}" cy="${n(sItem * 0.62)}" rx="${n(sItem * 0.96)}" ry="${n(sItem * 0.34)}" fill="${liquidShadow}" opacity="0.32"/>${garnishShape(g.kind, g.color, sItem)}${wet}</g>`;
     }).join("");
 
     const dustMarkup = dust

@@ -384,10 +384,17 @@ export default function Glass({
         </g>
       )}
 
-      {/* in-drink garnishes (clipped inside the glass, behind the front wall) */}
-      {hasLiquid && garnishes && garnishes.length > 0 && (
-        <GarnishLayer layer="back" clipId={`cup-${uid}`} specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} liquidColor={body} liquidShadow={shadow} />
-      )}
+      {/* in-drink garnishes (clipped inside the glass, behind the front wall).
+          Rendered even with no liquid so floating/leaf botanicals (jasmine, rose
+          petals, aloe…) still rest in an empty or barely-filled garnished glass. */}
+      {garnishes && garnishes.length > 0 && (() => {
+        const dry = !hasLiquid;
+        const gTop = dry ? geom.cup.bottom - (geom.cup.bottom - geom.cup.top) * 0.22 : liquidTop;
+        const gHW = dry ? Math.max(3, halfWidthAt(geom, gTop) - 3) : surfaceHW;
+        return (
+          <GarnishLayer layer="back" clipId={`cup-${uid}`} specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={gTop} surfaceHW={gHW} liquidColor={body} liquidShadow={shadow} dry={dry} />
+        );
+      })()}
 
       {/* ── glass optics: smooth window sheen + specular streaks (clipped) ── */}
       <g clipPath={`url(#cup-${uid})`}>

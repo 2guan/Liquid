@@ -396,6 +396,9 @@ interface GarnishLayerProps {
   /** the drink's body / shadow colours — tint the submerged part of floaters */
   liquidColor?: string;
   liquidShadow?: string;
+  /** no liquid in the glass — skip the waterline / submerge wash so botanicals
+   *  just rest in the glass rather than reading as floating on nothing */
+  dry?: boolean;
 }
 
 /**
@@ -404,7 +407,7 @@ interface GarnishLayerProps {
  *    drawn before the front glass wall, so you see them through the glass.
  *  - front: salt/sugar rim crust and tall sprigs/sticks resting on the lip.
  */
-export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, clipId, liquidColor = "#9A5826", liquidShadow = "#3A1E0C" }: GarnishLayerProps) {
+export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, clipId, liquidColor = "#9A5826", liquidShadow = "#3A1E0C", dry = false }: GarnishLayerProps) {
   const uid = useId().replace(/:/g, "");
   if (!specs.length) return null;
   const surf = specs.filter((g) => g.placement === "surface");
@@ -456,11 +459,10 @@ export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, 
               <ellipse cx={sItem * 0.16} cy={sItem * 0.62} rx={sItem * 0.96} ry={sItem * 0.34} fill={liquidShadow} opacity="0.32" />
               {/* the garnish itself */}
               <Shape kind={g.kind} color={g.color} s={sItem} />
-              {/* the drink colours its submerged lower half */}
-              <ellipse cx="0" cy="0" rx={sItem * 1.05} ry={sItem * 1.05} fill={`url(#submerge-${uid})`} />
-              {/* bright meniscus where it breaks the surface */}
-              <ellipse cx="0" cy={wl} rx={sItem * 0.86} ry={Math.max(1, sItem * 0.16)} fill="none" stroke="#fff7e6" strokeOpacity="0.5" strokeWidth="0.8" />
-              <ellipse cx="0" cy={wl} rx={sItem * 0.86} ry={Math.max(1, sItem * 0.16)} fill="#ffffff" opacity="0.08" />
+              {/* liquid-only finishing: submerge wash + waterline meniscus */}
+              {!dry && <ellipse cx="0" cy="0" rx={sItem * 1.05} ry={sItem * 1.05} fill={`url(#submerge-${uid})`} />}
+              {!dry && <ellipse cx="0" cy={wl} rx={sItem * 0.86} ry={Math.max(1, sItem * 0.16)} fill="none" stroke="#fff7e6" strokeOpacity="0.5" strokeWidth="0.8" />}
+              {!dry && <ellipse cx="0" cy={wl} rx={sItem * 0.86} ry={Math.max(1, sItem * 0.16)} fill="#ffffff" opacity="0.08" />}
             </g>
           );
         })}
