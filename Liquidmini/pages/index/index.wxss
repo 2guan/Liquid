@@ -46,3 +46,6 @@
 .rank-fill { height: 100%; background: linear-gradient(90deg, #D89C3A, #E3C684); border-radius: 4px; }
 
 .screen-host { position: relative; flex: 1; min-height: 0; }
+/* fast fade-in whenever a screen mounts (view change) — no page-stack slide */
+.screen-anim { animation: viewfade 0.13s ease-out; }
+@keyframes viewfade { from { opacity: 0 } to { opacity: 1 } }

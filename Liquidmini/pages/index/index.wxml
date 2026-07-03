@@ -2,7 +2,7 @@
 
 <view class="app-root">
   <!-- contextual top bar (hidden on home, which has its own header) — back only -->
-  <view wx:if="{{view !== 'home'}}" class="topbar" style="padding-top:{{statusBarHeight}}px">
+  <view wx:if="{{view && view !== 'home'}}" class="topbar" style="padding-top:{{statusBarHeight}}px">
     <view class="topbar-row">
       <view class="icon-btn" bindtap="goBack">
         <icon name="back" size="20"></icon>
@@ -10,17 +10,17 @@
     </view>
   </view>
 
-  <!-- the active view -->
+  <!-- the active view — each screen fades in fast on mount (no page-stack slide) -->
   <view class="screen-host">
-    <home-screen wx:if="{{view === 'home'}}" status-bar-height="{{statusBarHeight}}"></home-screen>
-    <pure-pour-screen wx:elif="{{view === 'pure'}}"></pure-pour-screen>
-    <mixology-screen wx:elif="{{view === 'mixology'}}"></mixology-screen>
-    <mood-screen wx:elif="{{view === 'mood'}}"></mood-screen>
-    <zen-screen wx:elif="{{view === 'zen'}}"></zen-screen>
-    <result-screen wx:elif="{{view === 'result'}}"></result-screen>
-    <library-screen wx:elif="{{view === 'library'}}"></library-screen>
-    <journal-screen wx:elif="{{view === 'journal'}}"></journal-screen>
-    <achievements-screen wx:elif="{{view === 'achievements'}}"></achievements-screen>
-    <settings-screen wx:elif="{{view === 'settings'}}"></settings-screen>
+    <home-screen class="screen-anim" wx:if="{{view === 'home'}}" status-bar-height="{{statusBarHeight}}"></home-screen>
+    <pure-pour-screen class="screen-anim" wx:elif="{{view === 'pure'}}"></pure-pour-screen>
+    <mixology-screen class="screen-anim" wx:elif="{{view === 'mixology'}}"></mixology-screen>
+    <mood-screen class="screen-anim" wx:elif="{{view === 'mood'}}"></mood-screen>
+    <zen-screen class="screen-anim" wx:elif="{{view === 'zen'}}"></zen-screen>
+    <result-screen class="screen-anim" wx:elif="{{view === 'result'}}"></result-screen>
+    <library-screen class="screen-anim" wx:elif="{{view === 'library'}}"></library-screen>
+    <journal-screen class="screen-anim" wx:elif="{{view === 'journal'}}"></journal-screen>
+    <achievements-screen class="screen-anim" wx:elif="{{view === 'achievements'}}"></achievements-screen>
+    <settings-screen class="screen-anim" wx:elif="{{view === 'settings'}}"></settings-screen>
   </view>
 </view>

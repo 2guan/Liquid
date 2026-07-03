@@ -1,8 +1,13 @@
 /**
- * Single dynamic page — the SPA router. Holds the current `view` from the global
- * store and renders the matching screen component, plus the contextual top bar.
- * This keeps the procedural background music running uninterrupted (no page
- * navigation) and mirrors the web build's view-switching AppShell.
+ * The app's router. Each page instance renders ONE fixed view (passed via the
+ * `?v=` query), and navigating deeper pushes another real page. That gives the
+ * phone's system/hardware back button natural level-by-level behaviour (it pops a
+ * page → the previous view). The global store still holds the shared data
+ * (journal, xp, last result) and its history depth drives the page stack.
+ *
+ * NOTE: the left-right slide between pages is WeChat's built-in navigateTo/Back
+ * animation — there is no API to disable it or swap it for a fade. We soften it
+ * by fading each screen's content in on mount (see the .screen-anim rule).
  */
 import { store, type View } from "../../lib/store";
 import { loadServerFont } from "../../lib/fonts";
@@ -10,65 +15,53 @@ import { FONT_MAOKEN, FONT_CINZEL, FONT_CORMORANT } from "../../lib/config";
 
 let fontsLoaded = false;
 
-const SECTION: Record<string, { zh: string; en: string }> = {
-  pure: { zh: "纯饮", en: "The Pure Pour" },
-  mixology: { zh: "酒谱", en: "The Liquid Codex" },
-  mood: { zh: "心事", en: "Whisper of Mood" },
-  zen: { zh: "魔法", en: "The Alchemy Atelier" },
-  library: { zh: "酒库", en: "The Cellar" },
-  journal: { zh: "日记", en: "Journal" },
-  achievements: { zh: "成就", en: "The Ledger" },
-  settings: { zh: "设置", en: "Settings" },
-  result: { zh: "酒卡", en: "The Tasting Card" },
-};
-
 Page({
   data: {
-    view: "home" as View,
-    section: null as null | { zh: string; en: string },
+    // start blank (not "home") so a freshly-pushed page never flashes the home
+    // screen before onLoad sets its real view — no screen matches "".
+    view: "" as View,
     statusBarHeight: 20,
-    rankName: "",
-    rankProgress: 0,
   },
 
   _unsub: null as null | (() => void),
-  // ── hardware/system back support ──
-  // The app is a single dynamic page, so the system back button would exit it.
-  // We mirror the store's nav back-stack (history depth) into a REAL WeChat page
-  // stack: navigating forward pushes an identical page, and popping one (system
-  // back, gesture, or our own navigateBack) walks the store back one step. Only
-  // the active (top) page drives navigation. It's best-effort (wrapped in
-  // try/catch) — the view itself always renders from the store regardless.
+  // is this page the active (top) one, and the nav-depth it last saw — used to
+  // mirror the store back-stack into the real WeChat page stack (see onLoad).
   _active: false,
   _depth: 0,
 
-  onLoad() {
+  onLoad(query: Record<string, string>) {
+    // this page renders its OWN fixed view — no flash, no following the global
+    // view. The base (launch) page is whatever the store says (home). Set the
+    // view + status bar in ONE setData up front so the first paint is correct.
+    const view = ((query && query.v) as View) || store.get().view || "home";
+    let statusBarHeight = 20;
     try {
       const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
-      this.setData({ statusBarHeight: info.statusBarHeight || 20 });
+      statusBarHeight = info.statusBarHeight || 20;
     } catch (e) { /* default */ }
+    this.setData({ view, statusBarHeight });
 
     this._depth = store.get().history.length;
     this._unsub = store.subscribe((s) => {
-      const rank = store.rank();
-      this.setData({
-        view: s.view,
-        section: SECTION[s.view] || null,
-        rankName: rank.meta.name,
-        rankProgress: Math.round(rank.progress * 100),
-      });
-      // mirror the back-stack depth into the real page stack (best-effort)
+      // Only the active (top) page drives navigation. A forward push opens a new
+      // page for the new view; a home() reset (multi-step decrease) pops back.
+      const depth = s.history.length;
+      if (!this._active) {
+        this._depth = depth;
+        return;
+      }
       try {
-        const depth = s.history.length;
-        if (this._active) {
-          if (depth > this._depth) {
-            wx.navigateTo({ url: "/pages/index/index", fail: () => {} });
-          } else if (depth < this._depth) {
-            wx.navigateBack({ delta: this._depth - depth, fail: () => {} });
-          }
+        if (depth > this._depth) {
+          wx.navigateTo({
+            url: `/pages/index/index?v=${s.view}`,
+            // couldn't push (e.g. the 10-page limit) → switch this page in place
+            fail: () => this.setData({ view: s.view }),
+          });
+        } else if (depth < this._depth) {
+          wx.navigateBack({ delta: this._depth - depth, fail: () => {} });
         }
         this._depth = depth;
-      } catch (e) { /* mirror is best-effort */ }
+      } catch (e) { /* best-effort */ }
     });
   },
 
@@ -98,7 +91,7 @@ Page({
   /** 分享给朋友. On the result page → 酒名+酒杯 image; elsewhere → the app. */
   onShareAppMessage() {
     const s = store.get();
-    if (s.view === "result" && s.lastResult) {
+    if (this.data.view === "result" && s.lastResult) {
       store.recordShare();
       return {
         title: s.shareTitle || s.lastResult.result.name,
@@ -115,7 +108,7 @@ Page({
   /** 分享到朋友圈 (must be synchronous — uses the pre-rendered image if present). */
   onShareTimeline() {
     const s = store.get();
-    if (s.view === "result" && s.lastResult) {
+    if (this.data.view === "result" && s.lastResult) {
       return { title: s.shareTitle || s.lastResult.result.name, imageUrl: s.shareImage || undefined };
     }
     return { title: "微醺时刻 · The Sip & Sigh" };
@@ -124,7 +117,7 @@ Page({
   onUnload() {
     if (this._unsub) this._unsub();
     // this page was popped (system/hardware back, gesture, or our navigateBack) →
-    // walk the app back-stack in sync. Guard the app-exit case (already at home).
+    // walk the store back-stack in sync. Guard the app-exit case (already home).
     try {
       if (store.get().history.length > 0) store.back();
     } catch (e) { /* ignore */ }
