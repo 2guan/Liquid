@@ -10,6 +10,7 @@
 import type { CocktailResult, FlavorPick, GlassType, IceType, MoodInput, Recipe } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
 import { inferLiquidFamily, blendColors } from "@/lib/tokens";
+import { makePrepSteps } from "@/lib/prepSteps";
 import { MOOD_SEEDS } from "@/lib/data/moods";
 import { composeFromMood, composePour, assembleMixResult } from "./composer";
 import { randomSignature, withSignature } from "./lexicon";
@@ -171,7 +172,7 @@ export class MockCocktailAI implements CocktailAI {
     if (klass.mocktail) return this.think(wittyMocktail(picks, ingredients, family, harmony));
 
     if (hidden) {
-      return this.think({
+      const result: MixAnalysis = {
         name: hidden.name,
         nameEn: hidden.nameEn,
         ingredients,
@@ -185,7 +186,9 @@ export class MockCocktailAI implements CocktailAI {
         hidden: true,
         harmony: Math.max(harmony, 0.9),
         verdict: "隐藏配方解锁——这是大师才懂的平衡。",
-      });
+      };
+      result.steps = makePrepSteps(result);
+      return this.think(result);
     }
 
     const base = composeFromMood({
@@ -201,7 +204,7 @@ export class MockCocktailAI implements CocktailAI {
           : "组合大胆——勇敢者的实验，未必失败。";
     // colour the free mix by blending the picked ingredients' own colours
     const blended = blendColors(picks.map((p) => p.color));
-    return this.think({
+    const result: MixAnalysis = {
       ...base,
       ingredients,
       ratio: ingredients.map(() => 1),
@@ -210,7 +213,9 @@ export class MockCocktailAI implements CocktailAI {
       liquidColor: blended ?? undefined,
       harmony,
       verdict,
-    });
+    };
+    result.steps = makePrepSteps(result);
+    return this.think(result);
   }
 }
 
@@ -246,6 +251,7 @@ type MixIngredient = { name: string; nameEn?: string; amount: string; parts?: nu
 function wittyGarnishOnly(picks: FlavorPick[], ingredients: MixIngredient[], harmony: number): MixAnalysis {
   const rng = makeRng(hashString(picks.map((p) => p.id).join("|")) || 1);
   const adorn = picks.map((p) => p.name).slice(0, 3).join("、");
+  const garnishIngredients = ingredients.map((i) => ({ ...i, parts: 0 }));
   const cards = [
     {
       name: "皇帝的新酒",
@@ -270,11 +276,11 @@ function wittyGarnishOnly(picks: FlavorPick[], ingredients: MixIngredient[], har
     },
   ];
   const c = rng.pick(cards);
-  return {
+  const result: MixAnalysis = {
     name: c.name,
     nameEn: c.nameEn,
-    ingredients,
-    ratio: ingredients.map(() => 1),
+    ingredients: garnishIngredients,
+    ratio: garnishIngredients.map(() => 0),
     glass: "coupe",
     ice: "none",
     family: "default",
@@ -284,6 +290,8 @@ function wittyGarnishOnly(picks: FlavorPick[], ingredients: MixIngredient[], har
     harmony: Math.max(harmony, 0.8),
     verdict: "这是一只非常体面的空杯——严格来说，并不是酒。",
   };
+  result.steps = makePrepSteps(result);
+  return result;
 }
 
 /** Witty card for a zero-proof creation — honest that there's no alcohol. */
@@ -302,7 +310,7 @@ function wittyMocktail(picks: FlavorPick[], ingredients: MixIngredient[], family
     `没有一滴酒精，却装满了诚意。${lead}在杯中各自发声，谁也没醉，谁也不吵。\n` +
     `这是一杯无酒精特调——清醒，正是它最大的秘密。`;
   const taste = `入口是${firstNote}的明亮，中段顺滑饱满，尾韵干净利落，不留半分宿醉。`;
-  return {
+  const result: MixAnalysis = {
     name: n.name,
     nameEn: n.nameEn,
     ingredients,
@@ -317,6 +325,8 @@ function wittyMocktail(picks: FlavorPick[], ingredients: MixIngredient[], family
     harmony: Math.max(harmony, 0.7),
     verdict: "零酒精，满分真诚——这是一杯无酒精特调。",
   };
+  result.steps = makePrepSteps(result);
+  return result;
 }
 
 /**

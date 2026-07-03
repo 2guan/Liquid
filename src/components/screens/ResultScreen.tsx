@@ -8,6 +8,7 @@ import { useNav } from "@/store/useNav";
 import { modeById, glassById, iceById } from "@/lib/data/catalog";
 import { servedFill } from "@/lib/data/glasses";
 import { liquidRamp, isFizzy } from "@/lib/tokens";
+import { makePrepSteps } from "@/lib/prepSteps";
 import { garnishesFor } from "@/lib/data/garnish";
 import Glass from "@/components/art/Glass";
 import { Ice } from "@/components/art/Ice";
@@ -65,6 +66,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
 
   const { result, mode } = last;
   const modeMeta = modeById(mode);
+  const prepSteps = result.steps?.length ? result.steps : makePrepSteps(result);
 
   // Split the witty sign-off (落款) off the poem so it can be right-aligned,
   // book-inscription style, under the body of the narrative.
@@ -97,6 +99,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
       fillLevel: result.fillLevel,
       hidden: result.hidden,
       layers: result.layers,
+      steps: prepSteps,
     });
     addXp(20);
     setSaved(true);
@@ -189,7 +192,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
   /* ── open recipe book ── */
   const book = (
     <div className="relative overflow-hidden rounded-2xl border border-gold/25 paper-texture">
-      <div className="grid gap-0 md:grid-cols-2">
+      <div className="grid gap-0 lg:grid-cols-3">
         {/* left page — recipe */}
         <div className="relative p-5 md:p-7">
           <div className="flex items-center gap-2 text-copper">
@@ -223,11 +226,26 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
           </div>
         </div>
 
-        {/* gutter */}
-        <div className="pointer-events-none absolute inset-y-5 left-1/2 hidden w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-ink/25 to-transparent md:block" />
+        {/* middle page — method */}
+        <div className="relative border-t border-ink/10 p-5 lg:border-l lg:border-t-0 lg:p-7">
+          <div className="flex items-center gap-2 text-copper">
+            <Icon name="stir" size={18} />
+            <BilingualTitle zh="操作指导" en="Method" size="sm" tone="ink" />
+          </div>
+          <ol className="mt-4 space-y-3">
+            {prepSteps.map((step, i) => (
+              <li key={`${i}-${step}`} className="flex gap-3">
+                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-copper/30 bg-copper/10 font-ui text-[11px] text-copper">
+                  {i + 1}
+                </span>
+                <span className="font-cn text-[15px] leading-loose text-ink/82">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
 
         {/* right page — tasting */}
-        <div className="relative border-t border-ink/10 p-5 md:border-l md:border-t-0 md:p-7">
+        <div className="relative border-t border-ink/10 p-5 lg:border-l lg:border-t-0 lg:p-7">
           <div className="flex items-center gap-2 text-copper">
             <Icon name="sparkle" size={18} />
             <BilingualTitle zh="品酒指南" en="Tasting Notes" size="sm" tone="ink" />

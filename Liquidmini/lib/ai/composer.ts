@@ -7,6 +7,7 @@ import type { CocktailResult, GlassType, IceType, Ingredient, Recipe } from "../
 import type { SpiritFamily } from "../tokens";
 import { spiritById, SPIRITS } from "../data/spirits";
 import { aromaticForFamily } from "../data/garnish";
+import { makePrepSteps } from "../prepSteps";
 import { VOICE, SIGNATURES, EMOTION_BRIDGES, randomSignature } from "./lexicon";
 import { makeRng, hashString, type Rng } from "./rng";
 
@@ -213,7 +214,7 @@ export function composeFromMood(input: MoodComposeInput): CocktailResult {
   const rng = makeRng(seed || 1);
   const { ingredients, ratio } = buildIngredients(input.family, rng, input.keywords);
   const { name, nameEn } = composeName(input.family, rng, input.keywords[0]);
-  return {
+  const result: CocktailResult = {
     name,
     nameEn,
     ingredients,
@@ -225,6 +226,8 @@ export function composeFromMood(input: MoodComposeInput): CocktailResult {
     story: composeStory(input.family, rng),
     emotion_mapping: composeEmotion(input.family, rng, input.moodText.slice(0, 16)),
   };
+  result.steps = makePrepSteps(result);
+  return result;
 }
 
 /** Pure Pour — describe a single spirit served in a chosen glass/ice. */
@@ -244,7 +247,7 @@ export function composePour(spiritId: string, glass: GlassType, ice: IceType): C
     }[ice] ?? "老式方冰沉稳冷却，结构清晰";
   // a classic aromatic twist only finishes ~30% of pours, not every time
   const aromatic = rng.chance(0.3) ? aromaticForFamily(spirit.family) : null;
-  return {
+  const result: CocktailResult = {
     name,
     nameEn,
     ingredients: [
@@ -259,6 +262,8 @@ export function composePour(spiritId: string, glass: GlassType, ice: IceType): C
     story: `${spirit.origin}的风土被封进这一杯。${iceNote}。${composeStory(spirit.family, rng)}`,
     emotion_mapping: `专注于本味，是对${spirit.nameEn}最坦诚的致敬。`,
   };
+  result.steps = makePrepSteps(result);
+  return result;
 }
 
 /**
@@ -271,7 +276,7 @@ export function assembleMixResult(
   recipe: Recipe,
   success: boolean,
   accuracy: number,
-  prose?: { story?: string; taste_profile?: string; signature?: string },
+  prose?: { story?: string; taste_profile?: string; signature?: string; steps?: string[] },
 ): CocktailResult {
   // a deterministic offline draft, seeded by the recipe, used to fill any gaps
   const composed = composeFromMood({
@@ -298,7 +303,7 @@ export function assembleMixResult(
     ? `你以 ${Math.round(accuracy * 100)}% 的精准复刻了这杯${recipe.alcoholFree ? "特调" : "经典"}。`
     : "比例偏离了经典的轨道，却也调出了独属于你的版本——失败，有时是另一种配方的开始。";
 
-  return {
+  const result: CocktailResult = {
     name: success ? recipe.name : `${recipe.name}（即兴版）`,
     nameEn: recipe.nameEn,
     ingredients: recipe.ingredients,
@@ -310,5 +315,8 @@ export function assembleMixResult(
     story: `${baseStory}\n${tail}\n—— ${sig}`,
     emotion_mapping: success ? "对经典的敬意，藏在每一毫升的精确里。" : "偏差也是风格，干杯。",
     layers: recipe.layers,
+    steps: prose && prose.steps && prose.steps.length ? prose.steps : recipe.steps && recipe.steps.length ? recipe.steps : undefined,
   };
+  result.steps = result.steps && result.steps.length ? result.steps : makePrepSteps(result);
+  return result;
 }

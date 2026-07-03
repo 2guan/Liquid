@@ -92,6 +92,8 @@ export interface CocktailResult {
   hidden?: boolean;
   /** colour-layered drinks: bands bottom → top (overrides the single fill) */
   layers?: LiquidLayer[];
+  /** step-by-step making guide shown between recipe and tasting notes */
+  steps?: string[];
 }
 
 export interface JournalEntry {
@@ -111,6 +113,7 @@ export interface JournalEntry {
   fillLevel?: number;
   hidden?: boolean;
   layers?: LiquidLayer[];
+  steps?: string[];
 }
 
 export interface MoodInput {

@@ -40,7 +40,7 @@
 /* recipe book */
 .book { border-radius: 18px; border: 1px solid rgba(200,164,93,0.25); overflow: hidden; }
 .page { position: relative; padding: 20px; }
-.page-right { border-top: 1px solid rgba(26,22,18,0.1); }
+.page-method, .page-right { border-top: 1px solid rgba(26,22,18,0.1); }
 .page-head { display: flex; align-items: baseline; gap: 6px; color: #9C5A33; }
 .page-zh { font-family: var(--font-cinzel); font-size: 17px; color: #2A231B; }
 .page-en { font-family: var(--font-cormorant); font-style: italic; font-size: 12px; color: rgba(42,35,27,0.5); }
@@ -57,6 +57,16 @@
 .chip-text { display: flex; flex-direction: column; }
 .chip-label { font-size: 14px; color: #1A1612; }
 .chip-sub { font-size: 8px; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(26,22,18,0.45); }
+.step-list { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.step-row { display: flex; align-items: flex-start; gap: 10px; }
+.step-num {
+  width: 24px; height: 24px; line-height: 24px; flex-shrink: 0;
+  text-align: center; border-radius: 50%;
+  border: 1px solid rgba(156,90,51,0.3);
+  background: rgba(156,90,51,0.1);
+  color: #9C5A33; font-size: 11px;
+}
+.step-text { flex: 1; font-size: 15px; line-height: 1.85; color: rgba(26,22,18,0.82); }
 .taste { display: block; margin-top: 12px; font-size: 15px; line-height: 1.9; color: rgba(26,22,18,0.8); }
 .story { display: block; white-space: pre-line; font-size: 15px; line-height: 1.9; color: rgba(26,22,18,0.85); }
 .story-sig { display: block; margin-top: 10px; text-align: right; font-style: italic; font-size: 13px; color: rgba(26,22,18,0.6); }

@@ -58,6 +58,16 @@
         </view>
       </view>
 
+      <view class="page page-method">
+        <view class="page-head"><icon name="stir" size="17" color="#9C5A33"></icon><text class="page-zh">操作指导</text><text class="page-en">Method</text></view>
+        <view class="step-list">
+          <view wx:for="{{steps}}" wx:key="*this" class="step-row">
+            <view class="step-num">{{index + 1}}</view>
+            <text class="step-text">{{item}}</text>
+          </view>
+        </view>
+      </view>
+
       <view class="page page-right">
         <view class="page-head"><icon name="sparkle" size="17" color="#9C5A33"></icon><text class="page-zh">品酒指南</text><text class="page-en">Tasting Notes</text></view>
         <text class="taste">{{taste}}</text>

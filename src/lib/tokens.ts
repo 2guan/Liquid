@@ -175,13 +175,14 @@ export function layerGradientStops(bands: LayerBand[], top: number, bottom: numb
  * (an explicitly-layered recipe) or single-colour. Mutates the result in place.
  */
 export function maybeGradientPour(result: {
-  ingredients?: { name?: string; nameEn?: string; family?: string }[];
+  ingredients?: { name?: string; nameEn?: string; family?: string; parts?: number }[];
   family: string;
   layers?: LiquidLayer[];
 }): void {
   if (result.layers && result.layers.length > 1) return;
   const cols: string[] = [];
   for (const ing of result.ingredients ?? []) {
+    if ((ing.parts ?? 1) <= 0) continue;
     // use the tagged family, else read the colour from the ingredient's name
     // (remote LLM results carry names but no family field)
     const fam = (ing.family as SpiritFamily | undefined) || familyFromName(ing.name, ing.nameEn);
@@ -251,6 +252,8 @@ export function inferLiquidFamily(
   const greenLiq = has("蜜瓜利口", "蜜多丽", "密多丽", "midori", "绿查特", "green chartreuse", "绿薄荷");
   const blue = has("蓝橙", "蓝柑", "蓝库拉索", "blue cura", "blue curacao");
   const oj = has("橙汁", "柳橙汁", "鲜橙汁", "血橙汁", "orange juice");
+  const lemonJuice = has("柠檬汁", "鮮柠檬汁", "鲜柠檬汁", "lemon juice");
+  const limeJuice = has("青柠汁", "青檸汁", "lime juice");
   const pineapple = has("菠萝", "凤梨", "鳳梨", "pineapple");
   const grenadine = has("红石榴", "石榴糖浆", "grenadine");
   const cranberry = has("蔓越莓", "蔓越橘", "cranberry");
@@ -279,6 +282,8 @@ export function inferLiquidFamily(
   if (oj && grenadine) return "sunrise";
   if (grenadine) return "grenadine";
   if (oj) return "orange";
+  if (lemonJuice) return "pineapple";
+  if (limeJuice) return "green";
   if (pineapple && cream) return "pinacolada";
   if (pineapple) return "pineapple";
   if (peach) return "peach";

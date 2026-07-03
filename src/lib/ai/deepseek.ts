@@ -9,6 +9,7 @@
 import type { CocktailResult, FlavorPick, GlassType, IceType, Ingredient, MoodInput, Recipe } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
 import { liquidRamp, inferLiquidFamily, blendColors, familyFromName } from "@/lib/tokens";
+import { makePrepSteps } from "@/lib/prepSteps";
 import { GLASSES, isGlassId } from "@/lib/data/glasses";
 import { spiritById } from "@/lib/data/spirits";
 import { aromaticForFamily } from "@/lib/data/garnish";
@@ -24,10 +25,7 @@ const MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-chat";
 export const deepseekConfigured = Boolean(API_KEY);
 
 /* ── allowed enum values handed to the model & used to normalise its reply ── */
-const FAMILIES: SpiritFamily[] = [
-  "whisky", "whiskyPeat", "gin", "rum", "tequila", "vodka", "brandy",
-  "absinthe", "campari", "vermouth", "wine", "cream",
-];
+const FAMILIES = Object.keys(liquidRamp) as SpiritFamily[];
 const ICES: IceType[] = ["none", "sphere", "cube", "cubes", "bullets", "crushed"];
 // a curated glass shortlist for the prompt (the model may use any; we coerce)
 const GLASS_HINT = [
@@ -96,6 +94,11 @@ function coerceFamily(v: unknown): SpiritFamily {
   const hit = FAMILIES.find((f) => f.toLowerCase() === s.toLowerCase());
   return hit ?? "default";
 }
+function coerceIngredientFamily(v: unknown): SpiritFamily | undefined {
+  const s = str(v).replace(/\s+/g, "");
+  if (!s) return undefined;
+  return FAMILIES.find((f) => f !== "default" && f.toLowerCase() === s.toLowerCase());
+}
 function coerceIce(v: unknown): IceType {
   const s = str(v).toLowerCase();
   return (ICES as string[]).includes(s) ? (s as IceType) : "none";
@@ -124,20 +127,31 @@ function coerceIngredients(v: unknown, fallback: Ingredient[]): Ingredient[] {
         const name = str(o.name);
         if (!name) return null;
         const amount = str(o.amount, "适量");
+        const nameEn = str(o.nameEn) || undefined;
+        const nameFamily = familyFromName(name, nameEn);
+        const modelFamily = o.family ? coerceIngredientFamily(o.family) : undefined;
         return {
           name,
-          nameEn: str(o.nameEn) || undefined,
+          nameEn,
           amount,
           parts: partsForAmount(amount),
-          // tag the colour: model-provided family, else read it from the name so
-          // the pour gradient can be built from the recipe's real colours
-          family: o.family ? coerceFamily(o.family) : familyFromName(name, str(o.nameEn) || undefined),
+          // Names are more reliable than the model's colour guess: it may label
+          // lemon juice as "night" or blue curacao as green, so correct obvious
+          // ingredients first and only use model family as a fallback.
+          family: nameFamily ?? modelFamily,
         };
       }
       return null;
     })
     .filter((x): x is Ingredient => x !== null);
   return out.length ? out : fallback;
+}
+function coerceSteps(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((x) => (typeof x === "string" ? x.trim() : ""))
+    .filter(Boolean)
+    .slice(0, 6);
 }
 function normalizeResult(
   raw: Record<string, unknown>,
@@ -148,7 +162,7 @@ function normalizeResult(
   const sig = str(raw.signature ?? raw.signoff) || randomSignature();
   // Colour the glass by the actual mix, not just the model's chosen base family.
   const baseFamily = raw.family ? coerceFamily(raw.family) : defaults.family;
-  return {
+  const result: CocktailResult = {
     name: str(raw.name, "无名之作"),
     nameEn: str(raw.nameEn ?? raw.name_en, "Untitled"),
     ingredients,
@@ -161,6 +175,9 @@ function normalizeResult(
     emotion_mapping: str(raw.emotion_mapping ?? raw.emotion, ""),
     hidden: Boolean(raw.hidden),
   };
+  const steps = coerceSteps(raw.steps);
+  result.steps = steps.length ? steps : makePrepSteps(result);
+  return result;
 }
 
 /* ── shared system persona ── */
@@ -174,6 +191,7 @@ const SYSTEM = `你是「微醺时刻 The Sip & Sigh」的 AI 调酒师，同时
   "ice": "none | sphere(大冰球) | cube(老式大方冰) | cubes(多颗小方冰填满杯) | bullets(子弹冰粒填满杯) | crushed(碎冰)，长饮/气泡类多用 cubes，休闲清爽可用 bullets",
   "family": "酒液主色，从给定列表中选：${FAMILIES.join(" | ")}",
   "taste_profile": "中文品酒笔记，3-4句、约90-130字，依次描写香气、入口、中段口感与尾韵，细腻具体、富有画面感",
+  "steps": ["中文制作步骤，3-6步，按真实调酒顺序写，每步一句，包含备杯/加冰/量取/摇合或搅拌/过滤或补满/装饰等必要动作"],
   "story": "中文散文式叙事，4-6句、约90-140字，铺陈意象与情绪的起承转合，画面层层展开、有呼吸感与留白（不要在结尾署名）",
   "emotion_mapping": "中文一句，把用户的心情/选择映射到这杯酒",
   "signature": "一个风趣俏皮的酒评人化名/落款，自带人设与梗，6-14字，最好与这杯酒或用户心情呼应。风格参考（请勿照抄）：千杯不醉的白领酒评师 / 深夜便利店哲学家 / 把周一调成周五的魔法师。每次都要原创、新鲜、有反差萌"
@@ -222,6 +240,7 @@ export async function dsPurePour(spiritId: string, glass: GlassType, ice: IceTyp
   const aromatic = Math.random() < 0.3 ? aromaticForFamily(sp?.family) : null;
   if (aromatic && !result.ingredients.some((i) => /皮|柠檬|青柠|橙|肉豆蔻|薄荷|樱桃/.test(i.name))) {
     result.ingredients = [...result.ingredients, { name: aromatic.name, amount: aromatic.amount, parts: 0 }];
+    result.steps = makePrepSteps(result);
   }
   return result;
 }
@@ -282,8 +301,9 @@ export async function dsMixology(recipe: Recipe, success: boolean, accuracy: num
   const user = `这是一杯经典鸡尾酒「${recipe.name} ${recipe.nameEn}」。
 配方：${ing}。
 盛具：${recipe.glass}；冰：${recipe.ice}。
-请为这杯酒撰写品鉴文字，只输出 JSON：{"taste_profile":"…","story":"…","signature":"…"}
+请为这杯酒撰写品鉴文字与制作步骤，只输出 JSON：{"taste_profile":"…","steps":["…","…","…"],"story":"…","signature":"…"}
 - taste_profile：中文品酒笔记，3-4句、约90-140字，依次描写香气、入口、中段口感与尾韵，细腻具体；
+- steps：中文制作步骤，3-6步，每步一句，按真实调酒顺序写，必须适配这杯酒的杯型、冰型和配方；
 - story：中文散文式叙事，4-6句、约90-140字，富有画面与情绪，不要署名、不要提及百分比或“复刻/精准”等字眼；
 - signature：风趣俏皮的酒评人化名/落款，6-14字，自带人设与反差萌。`;
   const raw = await callDeepSeek([
@@ -294,5 +314,6 @@ export async function dsMixology(recipe: Recipe, success: boolean, accuracy: num
     story: str(raw.story),
     taste_profile: str(raw.taste_profile ?? raw.tasting),
     signature: str(raw.signature ?? raw.signoff),
+    steps: coerceSteps(raw.steps),
   });
 }

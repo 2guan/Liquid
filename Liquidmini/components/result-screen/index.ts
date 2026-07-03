@@ -2,6 +2,7 @@
 import { modeById, glassById, iceById } from "../../lib/data/catalog";
 import { servedFill } from "../../lib/data/glasses";
 import { liquidRamp, isFizzy, rampFromColor } from "../../lib/tokens";
+import { makePrepSteps } from "../../lib/prepSteps";
 import { garnishesFor } from "../../lib/data/garnish";
 import { iceSwatch } from "../../lib/svg/ice";
 import { glassDataUri } from "../../lib/svg/glass";
@@ -28,6 +29,7 @@ Component({
     nameEn: "",
     emotion: "",
     ingredients: [] as any[],
+    steps: [] as string[],
     glassName: "",
     iceName: "",
     taste: "",
@@ -107,6 +109,7 @@ Component({
           amount: ing.amount,
           dot: dotColor(ing.family || result.family),
         })),
+        steps: result.steps && result.steps.length ? result.steps : makePrepSteps(result),
         glassName: glassById(result.glass).name,
         iceName: iceById(result.ice).name,
         taste: result.taste_profile,
@@ -196,6 +199,7 @@ Component({
         fillLevel: r.fillLevel,
         hidden: r.hidden,
         layers: r.layers,
+        steps: r.steps,
       });
       store.addXp(20);
       this.setData({ saved: true });

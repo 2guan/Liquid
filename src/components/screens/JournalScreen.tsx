@@ -31,6 +31,7 @@ function entryToResult(e: JournalEntry): CocktailResult {
     fillLevel: e.fillLevel,
     hidden: e.hidden,
     layers: e.layers,
+    steps: e.steps,
   };
 }
 
