@@ -2,7 +2,7 @@
 import { modeById, glassById, iceById } from "../../lib/data/catalog";
 import { servedFill } from "../../lib/data/glasses";
 import { liquidRamp, isFizzy, rampFromColor } from "../../lib/tokens";
-import { makePrepSteps } from "../../lib/prepSteps";
+import { makePrepSteps, normalizePrepStepsGlass } from "../../lib/prepSteps";
 import { garnishesFor } from "../../lib/data/garnish";
 import { iceSwatch } from "../../lib/svg/ice";
 import { glassDataUri } from "../../lib/svg/glass";
@@ -93,6 +93,8 @@ Component({
       const fill = result.fillLevel != null ? result.fillLevel : servedFill(result.glass);
       const garnishes = garnishesFor(result.ingredients);
       const fizzy = isFizzy(result.ingredients);
+      const normalizedSteps = normalizePrepStepsGlass(result, result.steps);
+      const steps = normalizedSteps.length ? normalizedSteps : makePrepSteps(result);
 
       this.setData({
         has: true,
@@ -109,7 +111,7 @@ Component({
           amount: ing.amount,
           dot: dotColor(ing.family || result.family),
         })),
-        steps: result.steps && result.steps.length ? result.steps : makePrepSteps(result),
+        steps,
         glassName: glassById(result.glass).name,
         iceName: iceById(result.ice).name,
         taste: result.taste_profile,

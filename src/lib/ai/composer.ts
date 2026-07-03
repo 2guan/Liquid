@@ -7,7 +7,7 @@ import type { CocktailResult, GlassType, IceType, Ingredient, Recipe } from "@/t
 import type { SpiritFamily } from "@/lib/tokens";
 import { spiritById, SPIRITS } from "@/lib/data/spirits";
 import { aromaticForFamily } from "@/lib/data/garnish";
-import { makePrepSteps } from "@/lib/prepSteps";
+import { makePrepSteps, normalizePrepStepsGlass } from "@/lib/prepSteps";
 import { VOICE, SIGNATURES, EMOTION_BRIDGES, randomSignature } from "./lexicon";
 import { makeRng, hashString, type Rng } from "./rng";
 
@@ -318,6 +318,6 @@ export function assembleMixResult(
     layers: recipe.layers,
     steps: prose?.steps?.length ? prose.steps : recipe.steps?.length ? recipe.steps : undefined,
   };
-  result.steps = result.steps?.length ? result.steps : makePrepSteps(result);
+  result.steps = result.steps?.length ? normalizePrepStepsGlass(result, result.steps) : makePrepSteps(result);
   return result;
 }

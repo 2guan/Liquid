@@ -8,7 +8,7 @@ import { useNav } from "@/store/useNav";
 import { modeById, glassById, iceById } from "@/lib/data/catalog";
 import { servedFill } from "@/lib/data/glasses";
 import { liquidRamp, isFizzy } from "@/lib/tokens";
-import { makePrepSteps } from "@/lib/prepSteps";
+import { makePrepSteps, normalizePrepStepsGlass } from "@/lib/prepSteps";
 import { garnishesFor } from "@/lib/data/garnish";
 import Glass from "@/components/art/Glass";
 import { Ice } from "@/components/art/Ice";
@@ -66,7 +66,8 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
 
   const { result, mode } = last;
   const modeMeta = modeById(mode);
-  const prepSteps = result.steps?.length ? result.steps : makePrepSteps(result);
+  const modelSteps = normalizePrepStepsGlass(result, result.steps);
+  const prepSteps = modelSteps.length ? modelSteps : makePrepSteps(result);
 
   // Split the witty sign-off (落款) off the poem so it can be right-aligned,
   // book-inscription style, under the body of the narrative.

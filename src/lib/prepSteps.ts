@@ -1,5 +1,6 @@
 import type { CocktailResult, Ingredient } from "@/types";
 import { isFizzy } from "@/lib/tokens";
+import { GLASSES, glassById } from "@/lib/data/catalog";
 
 const measured = (ingredients: Ingredient[]) =>
   ingredients
@@ -13,6 +14,34 @@ const garnishNames = (ingredients: Ingredient[]) =>
     .map((i) => i.name)
     .filter(Boolean);
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const GLASS_NAME_RE = new RegExp(
+  [
+    ...GLASSES.map((g) => g.name),
+    ...GLASSES.map((g) => g.nameEn),
+    "老式杯",
+    "香槟杯",
+    "高脚杯",
+    "闻香杯",
+    "鸡尾酒杯",
+  ]
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRe)
+    .join("|"),
+  "gi",
+);
+
+export function normalizePrepStepsGlass(
+  result: Pick<CocktailResult, "glass">,
+  steps: string[] | undefined,
+): string[] {
+  if (!steps || steps.length === 0) return [];
+  const glassName = glassById(result.glass).name;
+  return steps.map((step) => step.replace(GLASS_NAME_RE, glassName));
+}
+
 export function makePrepSteps(result: Pick<CocktailResult, "ingredients" | "ice" | "glass">): string[] {
   const ingredients = result.ingredients ?? [];
   const liquids = measured(ingredients);
@@ -23,15 +52,15 @@ export function makePrepSteps(result: Pick<CocktailResult, "ingredients" | "ice"
 
   if (hasOnlyGarnish) {
     return [
-      "将杯具擦净并冷却片刻，让空杯保持清透。",
+      `将${glassById(result.glass).name}擦净并冷却片刻，让空杯保持清透。`,
       `把${garnishes.slice(0, 3).join("、") || "点缀"}轻放在杯口或杯底。`,
       "不加入酒液，保留这只杯子的留白与仪式感。",
     ];
   }
 
   const steps = [
-    hasIce ? "先准备杯具与冰块，让杯壁和冰面都保持干净。"
-      : "先冷却杯具，倒掉融水，让杯壁保持清爽。",
+    hasIce ? `先准备${glassById(result.glass).name}与冰块，让杯壁和冰面都保持干净。`
+      : `先冷却${glassById(result.glass).name}，倒掉融水，让杯壁保持清爽。`,
     liquids ? `按配方量取：${liquids}。` : "按配方备齐所有材料。",
   ];
 
@@ -48,5 +77,5 @@ export function makePrepSteps(result: Pick<CocktailResult, "ingredients" | "ice"
     ? `以${garnishes.slice(0, 2).join("、")}完成装饰，出杯前轻嗅香气。`
     : "确认酒液清亮、杯沿干净，即可出杯。");
 
-  return steps;
+  return normalizePrepStepsGlass(result, steps);
 }

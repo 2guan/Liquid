@@ -9,7 +9,7 @@
 import type { CocktailResult, FlavorPick, GlassType, IceType, Ingredient, MoodInput, Recipe } from "@/types";
 import type { SpiritFamily } from "@/lib/tokens";
 import { liquidRamp, inferLiquidFamily, blendColors, familyFromName } from "@/lib/tokens";
-import { makePrepSteps } from "@/lib/prepSteps";
+import { makePrepSteps, normalizePrepStepsGlass } from "@/lib/prepSteps";
 import { GLASSES, isGlassId } from "@/lib/data/glasses";
 import { spiritById } from "@/lib/data/spirits";
 import { aromaticForFamily } from "@/lib/data/garnish";
@@ -176,8 +176,48 @@ function normalizeResult(
     hidden: Boolean(raw.hidden),
   };
   const steps = coerceSteps(raw.steps);
-  result.steps = steps.length ? steps : makePrepSteps(result);
+  result.steps = steps.length ? normalizePrepStepsGlass(result, steps) : makePrepSteps(result);
   return result;
+}
+
+async function generatePrepSteps(result: CocktailResult, context: string): Promise<string[]> {
+  const glass = GLASSES.find((g) => g.id === result.glass);
+  const iceText = result.ice;
+  const ingredients = result.ingredients
+    .map((i) => `${i.name}${i.nameEn ? ` (${i.nameEn})` : ""} ${i.amount}`)
+    .join("、");
+  try {
+    const raw = await callDeepSeek(
+      [
+        {
+          role: "system",
+          content:
+            "你是专业调酒师。只输出 JSON：{\"steps\":[\"...\",\"...\"]}。steps 为中文制作步骤，3-6步，每步一句，必须按真实调酒顺序。",
+        },
+        {
+          role: "user",
+          content: `为这杯酒生成操作指导。
+场景：${context}
+酒名：${result.name} / ${result.nameEn}
+最终杯型：${result.glass}（${glass?.name ?? result.glass} / ${glass?.nameEn ?? result.glass}）
+最终冰型：${iceText}
+配方：${ingredients}
+
+重要要求：
+- 步骤里的杯型必须使用「${glass?.name ?? result.glass}」，不要写成其他杯型。
+- 不要改变配方、杯型、冰型。
+- 如果有气泡材料，最后补入并轻柔混合。
+- 只输出 JSON。`,
+        },
+      ],
+      700,
+    );
+    const steps = normalizePrepStepsGlass(result, coerceSteps(raw.steps));
+    return steps.length ? steps : makePrepSteps(result);
+  } catch (err) {
+    if (typeof console !== "undefined") console.warn("[DeepSeek steps] failed, using local method:", err);
+    return makePrepSteps(result);
+  }
 }
 
 /* ── shared system persona ── */
@@ -191,7 +231,6 @@ const SYSTEM = `你是「微醺时刻 The Sip & Sigh」的 AI 调酒师，同时
   "ice": "none | sphere(大冰球) | cube(老式大方冰) | cubes(多颗小方冰填满杯) | bullets(子弹冰粒填满杯) | crushed(碎冰)，长饮/气泡类多用 cubes，休闲清爽可用 bullets",
   "family": "酒液主色，从给定列表中选：${FAMILIES.join(" | ")}",
   "taste_profile": "中文品酒笔记，3-4句、约90-130字，依次描写香气、入口、中段口感与尾韵，细腻具体、富有画面感",
-  "steps": ["中文制作步骤，3-6步，按真实调酒顺序写，每步一句，包含备杯/加冰/量取/摇合或搅拌/过滤或补满/装饰等必要动作"],
   "story": "中文散文式叙事，4-6句、约90-140字，铺陈意象与情绪的起承转合，画面层层展开、有呼吸感与留白（不要在结尾署名）",
   "emotion_mapping": "中文一句，把用户的心情/选择映射到这杯酒",
   "signature": "一个风趣俏皮的酒评人化名/落款，自带人设与梗，6-14字，最好与这杯酒或用户心情呼应。风格参考（请勿照抄）：千杯不醉的白领酒评师 / 深夜便利店哲学家 / 把周一调成周五的魔法师。每次都要原创、新鲜、有反差萌"
@@ -209,7 +248,9 @@ ${input.tags.length ? `心绪标签：${input.tags.join("、")}` : ""}
     { role: "system", content: SYSTEM },
     { role: "user", content: user },
   ]);
-  return normalizeResult(raw, { glass: "coupe", ice: "none", family: "default", ingredients: [] });
+  const result = normalizeResult(raw, { glass: "coupe", ice: "none", family: "default", ingredients: [] });
+  result.steps = await generatePrepSteps(result, "心事模式");
+  return result;
 }
 
 /* ── 2. Pure Pour (single spirit, fixed glass + ice) ── */
@@ -240,8 +281,8 @@ export async function dsPurePour(spiritId: string, glass: GlassType, ice: IceTyp
   const aromatic = Math.random() < 0.3 ? aromaticForFamily(sp?.family) : null;
   if (aromatic && !result.ingredients.some((i) => /皮|柠檬|青柠|橙|肉豆蔻|薄荷|樱桃/.test(i.name))) {
     result.ingredients = [...result.ingredients, { name: aromatic.name, amount: aromatic.amount, parts: 0 }];
-    result.steps = makePrepSteps(result);
   }
+  result.steps = await generatePrepSteps(result, "纯饮模式：用户已选择杯型和冰型");
   return result;
 }
 
@@ -283,13 +324,15 @@ ${list}
   const harmony = Number.isFinite(harmonyRaw) ? Math.min(1, Math.max(0, harmonyRaw)) : 0.7;
   // colour a free mix by blending its ingredients (classics keep their family hue)
   const blended = blendColors(picks.map((p) => p.color));
-  return {
+  const analysis: MixAnalysis = {
     ...result,
     ingredients: result.ingredients.length ? result.ingredients : baseIngredients,
     liquidColor: result.hidden ? undefined : blended ?? undefined,
     harmony,
     verdict: str(raw.verdict, harmony > 0.7 ? "结构和谐，风味彼此成全。" : "大胆的实验，自有其风格。"),
   };
+  analysis.steps = await generatePrepSteps(analysis, "魔法模式：自由创作结果");
+  return analysis;
 }
 
 /* ── 4. Mixology (write prose for a recreated classic) ── */
@@ -301,19 +344,19 @@ export async function dsMixology(recipe: Recipe, success: boolean, accuracy: num
   const user = `这是一杯经典鸡尾酒「${recipe.name} ${recipe.nameEn}」。
 配方：${ing}。
 盛具：${recipe.glass}；冰：${recipe.ice}。
-请为这杯酒撰写品鉴文字与制作步骤，只输出 JSON：{"taste_profile":"…","steps":["…","…","…"],"story":"…","signature":"…"}
+请为这杯酒撰写品鉴文字，只输出 JSON：{"taste_profile":"…","story":"…","signature":"…"}
 - taste_profile：中文品酒笔记，3-4句、约90-140字，依次描写香气、入口、中段口感与尾韵，细腻具体；
-- steps：中文制作步骤，3-6步，每步一句，按真实调酒顺序写，必须适配这杯酒的杯型、冰型和配方；
 - story：中文散文式叙事，4-6句、约90-140字，富有画面与情绪，不要署名、不要提及百分比或“复刻/精准”等字眼；
 - signature：风趣俏皮的酒评人化名/落款，6-14字，自带人设与反差萌。`;
   const raw = await callDeepSeek([
     { role: "system", content: MIX_SYSTEM },
     { role: "user", content: user },
   ]);
-  return assembleMixResult(recipe, success, accuracy, {
+  const result = assembleMixResult(recipe, success, accuracy, {
     story: str(raw.story),
     taste_profile: str(raw.taste_profile ?? raw.tasting),
     signature: str(raw.signature ?? raw.signoff),
-    steps: coerceSteps(raw.steps),
   });
+  result.steps = await generatePrepSteps(result, "酒谱模式：经典配方固定杯型");
+  return result;
 }

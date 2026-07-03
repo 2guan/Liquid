@@ -4,7 +4,6 @@ import { liquidRamp, rampFromColor, isFizzy, layerBands, layerGradientStops } fr
 import { glassById, iceById } from "@/lib/data/catalog";
 import { geomFor, halfWidthAt, servedFill } from "@/lib/data/glasses";
 import { garnishesFor, type GarnishSpec, type GarnishKind } from "@/lib/data/garnish";
-import { makePrepSteps } from "@/lib/prepSteps";
 
 /** The site the card's QR links back to (env-overridable, else the live origin). */
 function siteUrl(): string {
@@ -79,21 +78,6 @@ function layout(result: CocktailResult): Layout {
   y += 6;
   ops.push({ t: "text", x: CX, y, size: 17, color: "rgba(231,214,177,0.7)", stack: CN, align: "center", spacing: 1, text: `${glassById(result.glass).name}　·　${iceById(result.ice).name}` });
   y += 48;
-
-  const steps = result.steps?.length ? result.steps : makePrepSteps(result);
-  if (steps.length) {
-    divider(ops, y, "操作指导 · METHOD");
-    y += 40;
-    steps.slice(0, 5).forEach((step, i) => {
-      const lines = wrapCJK(`${i + 1}. ${step}`, 28).slice(0, 2);
-      for (const line of lines) {
-        ops.push({ t: "text", x: PAD, y, size: 18, color: "rgba(231,214,177,0.82)", stack: CN, align: "left", text: line });
-        y += 30;
-      }
-      y += 4;
-    });
-    y += 16;
-  }
 
   // story
   const storyBody = result.story.replace(/\n[\s\S]*$/, "").trim();
