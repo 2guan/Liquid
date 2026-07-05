@@ -233,8 +233,8 @@ body {
   animation: specularBreathe 5.5s ease-in-out infinite;
 }
 @keyframes specularBreathe {
-  0%, 100% { opacity: 0.1; }
-  50% { opacity: 0.28; }
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
 }
 .rim-glint {
   transform-box: fill-box;

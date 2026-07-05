@@ -50,6 +50,37 @@ const BUBBLES: { dx: number; f: number; r: number; d: number; dur: number }[] = 
   { dx: -0.04, f: 0.78, r: 1.2, d: 0.9, dur: 3.3 },
 ];
 
+type GlassGeom = ReturnType<typeof geomFor>;
+
+function cupHighlightPath(
+  geom: GlassGeom,
+  side: "left" | "right",
+  startT: number,
+  endT: number,
+  centerK: number,
+  widthK: number,
+  minWidth: number,
+): string {
+  const sign = side === "left" ? -1 : 1;
+  const cupH = geom.cup.bottom - geom.cup.top;
+  const samples = [0, 0.14, 0.32, 0.52, 0.74, 1];
+  const outer: { x: number; y: number }[] = [];
+  const inner: { x: number; y: number }[] = [];
+
+  for (const p of samples) {
+    const y = geom.cup.top + cupH * (startT + (endT - startT) * p);
+    const hw = Math.max(3, halfWidthAt(geom, y) - 2);
+    const taper = 0.38 + Math.sin(Math.PI * p) * 0.62;
+    const w = Math.max(minWidth, hw * widthK * taper);
+    const cx = 100 + sign * hw * centerK;
+    outer.push({ x: cx + sign * w, y });
+    inner.push({ x: cx - sign * w, y });
+  }
+
+  const points = [...outer, ...inner.reverse()];
+  return points.map((p, i) => `${i === 0 ? "M" : "L"}${n(p.x)},${n(p.y)}`).join(" ") + " Z";
+}
+
 /** Build the full <svg> string for a glass. */
 export function glassSvg(opts: GlassOpts): string {
   const {
@@ -139,6 +170,10 @@ export function glassSvg(opts: GlassOpts): string {
 
   const rim = geom.rim;
   const inkFilter = detailed ? `filter="url(#ink-${uid})"` : "";
+  const windowSheenPath = cupHighlightPath(geom, "left", 0.1, 0.72, 0.42, 0.34, 8);
+  const leftBloomPath = cupHighlightPath(geom, "left", 0.16, 0.88, 0.74, 0.11, 3.4);
+  const leftCorePath = cupHighlightPath(geom, "left", 0.22, 0.82, 0.77, 0.04, 1.5);
+  const rightBloomPath = cupHighlightPath(geom, "right", 0.18, 0.78, 0.83, 0.08, 2.4);
 
   // ── defs ──
   const defs = `<defs>
@@ -169,6 +204,22 @@ export function glassSvg(opts: GlassOpts): string {
     <radialGradient id="sheen-${uid}" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.16"/>
       <stop offset="60%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="specBloom-${uid}" cx="42%" cy="36%" r="64%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="38%" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="78%" stop-color="#ffffff" stop-opacity="0.035"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="specCore-${uid}" cx="50%" cy="44%" r="58%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.38"/>
+      <stop offset="52%" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="edgeBloom-${uid}" cx="58%" cy="34%" r="68%">
+      <stop offset="0%" stop-color="#fff7df" stop-opacity="0.22"/>
+      <stop offset="56%" stop-color="#ffffff" stop-opacity="0.07"/>
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="liqEdge-${uid}" x1="0" y1="0" x2="1" y2="0">
@@ -244,11 +295,12 @@ export function glassSvg(opts: GlassOpts): string {
 
   const optics = `<g clip-path="url(#cup-${uid})">
     <rect x="0" y="${n(geom.cup.top - 6)}" width="200" height="${n(cupH + 12)}" fill="url(#wallAO-${uid})"/>
-    <ellipse cx="${n(100 - interiorHW * 0.34)}" cy="${n(geom.cup.top + cupH * 0.3)}" rx="${n(Math.max(12, interiorHW * 0.52))}" ry="${n(cupH * 0.44)}" fill="url(#sheen-${uid})"/>
-    <ellipse cx="${n(100 + interiorHW * 0.46)}" cy="${n(geom.cup.top + cupH * 0.16)}" rx="${n(Math.max(2.5, interiorHW * 0.12))}" ry="${n(cupH * 0.1)}" fill="#ffffff" opacity="0.12"/>
-    <path d="M${n(rim.cx - rim.rx * 0.72)},${n(rim.cy + 6)} C${n(rim.cx - rim.rx * 0.92)},${n((rim.cy + geom.cup.bottom) / 2)} ${n(rim.cx - rim.rx * 0.82)},${n(geom.cup.bottom - 18)} ${n(rim.cx - rim.rx * 0.5)},${n(geom.cup.bottom - 9)}" fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="4.2" stroke-linecap="round"${detailed ? ` class="specular-breathe"` : ""}/>
-    <path d="M${n(rim.cx - rim.rx * 0.68)},${n(rim.cy + 9)} C${n(rim.cx - rim.rx * 0.86)},${n((rim.cy + geom.cup.bottom) / 2)} ${n(rim.cx - rim.rx * 0.78)},${n(geom.cup.bottom - 20)} ${n(rim.cx - rim.rx * 0.5)},${n(geom.cup.bottom - 12)}" fill="none" stroke="#ffffff" stroke-opacity="0.4" stroke-width="1" stroke-linecap="round"/>
-    <path d="M${n(rim.cx + rim.rx * 0.84)},${n(rim.cy + 10)} C${n(rim.cx + rim.rx * 0.92)},${n((rim.cy + geom.cup.bottom) / 2)} ${n(rim.cx + rim.rx * 0.86)},${n(geom.cup.bottom - 24)} ${n(rim.cx + rim.rx * 0.6)},${n(geom.cup.bottom - 12)}" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="${windowSheenPath}" fill="url(#sheen-${uid})" filter="url(#soft-${uid})"/>
+    <g${detailed ? ` class="specular-breathe"` : ""}>
+      <path d="${leftBloomPath}" fill="url(#specBloom-${uid})" filter="url(#soft-${uid})"/>
+      <path d="${leftCorePath}" fill="url(#specCore-${uid})" filter="url(#soft-${uid})"/>
+      <path d="${rightBloomPath}" fill="url(#edgeBloom-${uid})" filter="url(#soft-${uid})"/>
+    </g>
   </g>`;
 
   const baseHWb = Math.max(4, halfWidthAt(geom, geom.cup.bottom) - 5);

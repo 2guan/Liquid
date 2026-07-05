@@ -45,7 +45,7 @@ export const MOTION_STYLE = `<style>
 .surface-shimmer{transform-box:fill-box;transform-origin:center;animation:surfaceShimmer 4.6s ease-in-out infinite}
 @keyframes surfaceShimmer{0%,100%{opacity:.45;transform:scaleX(.95)}50%{opacity:.85;transform:scaleX(1.05)}}
 .specular-breathe{animation:specularBreathe 5.5s ease-in-out infinite}
-@keyframes specularBreathe{0%,100%{opacity:.1}50%{opacity:.28}}
+@keyframes specularBreathe{0%,100%{opacity:.72}50%{opacity:1}}
 .rim-glint{transform-box:fill-box;transform-origin:center;animation:rimGlint 7s ease-in-out infinite}
 @keyframes rimGlint{0%,100%{opacity:.3}45%{opacity:.85}}
 .animate-breathe{animation:breathe 6s ease-in-out infinite}

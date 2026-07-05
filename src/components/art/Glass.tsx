@@ -51,6 +51,43 @@ const BUBBLES: { dx: number; f: number; r: number; d: number; dur: number }[] = 
   { dx: -0.04, f: 0.78, r: 1.2, d: 0.9, dur: 3.3 },
 ];
 
+type GlassGeom = ReturnType<typeof geomFor>;
+
+function svgNum(v: number): string {
+  return String(Math.round(v * 1000) / 1000);
+}
+
+function cupHighlightPath(
+  geom: GlassGeom,
+  side: "left" | "right",
+  startT: number,
+  endT: number,
+  centerK: number,
+  widthK: number,
+  minWidth: number,
+): string {
+  const sign = side === "left" ? -1 : 1;
+  const cupH = geom.cup.bottom - geom.cup.top;
+  const samples = [0, 0.14, 0.32, 0.52, 0.74, 1];
+  const outer: { x: number; y: number }[] = [];
+  const inner: { x: number; y: number }[] = [];
+
+  for (const p of samples) {
+    const y = geom.cup.top + cupH * (startT + (endT - startT) * p);
+    const hw = Math.max(3, halfWidthAt(geom, y) - 2);
+    const taper = 0.38 + Math.sin(Math.PI * p) * 0.62;
+    const w = Math.max(minWidth, hw * widthK * taper);
+    const cx = 100 + sign * hw * centerK;
+    outer.push({ x: cx + sign * w, y });
+    inner.push({ x: cx - sign * w, y });
+  }
+
+  const points = [...outer, ...inner.reverse()];
+  return points
+    .map((p, i) => `${i === 0 ? "M" : "L"}${svgNum(p.x)},${svgNum(p.y)}`)
+    .join(" ") + " Z";
+}
+
 /**
  * The Glass — a parametric SVG render styled as a refined vintage hand-drawn
  * illustration: loose ink linework over watercolour-flat fills, refractive
@@ -160,6 +197,10 @@ export default function Glass({
 
   const rim = geom.rim;
   const inkFilter = detailed ? `url(#ink-${uid})` : undefined;
+  const windowSheenPath = cupHighlightPath(geom, "left", 0.1, 0.72, 0.42, 0.34, 8);
+  const leftBloomPath = cupHighlightPath(geom, "left", 0.16, 0.88, 0.74, 0.11, 3.4);
+  const leftCorePath = cupHighlightPath(geom, "left", 0.22, 0.82, 0.77, 0.04, 1.5);
+  const rightBloomPath = cupHighlightPath(geom, "right", 0.18, 0.78, 0.83, 0.08, 2.4);
 
   return (
     <svg
@@ -205,6 +246,22 @@ export default function Glass({
         <radialGradient id={`sheen-${uid}`} cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.16" />
           <stop offset="60%" stopColor="#ffffff" stopOpacity="0.05" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={`specBloom-${uid}`} cx="42%" cy="36%" r="64%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.34" />
+          <stop offset="38%" stopColor="#ffffff" stopOpacity="0.14" />
+          <stop offset="78%" stopColor="#ffffff" stopOpacity="0.035" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={`specCore-${uid}`} cx="50%" cy="44%" r="58%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.38" />
+          <stop offset="52%" stopColor="#ffffff" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={`edgeBloom-${uid}`} cx="58%" cy="34%" r="68%">
+          <stop offset="0%" stopColor="#fff7df" stopOpacity="0.22" />
+          <stop offset="56%" stopColor="#ffffff" stopOpacity="0.07" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </radialGradient>
         {/* liquid column shading — the body darkens toward the glass walls so the
@@ -396,54 +453,34 @@ export default function Glass({
         );
       })()}
 
-      {/* ── glass optics: smooth window sheen + specular streaks (clipped) ── */}
+      {/* ── glass optics: shape-following window bloom + specular sheen (clipped) ── */}
       <g clipPath={`url(#cup-${uid})`}>
         {/* inner-wall ambient occlusion (glass thickness) — sheen paints over it */}
         <rect x="0" y={geom.cup.top - 6} width="200" height={cupH + 12} fill={`url(#wallAO-${uid})`} />
-        {/* broad soft window reflection, upper-left */}
-        <ellipse
-          cx={100 - interiorHW * 0.34}
-          cy={geom.cup.top + cupH * 0.3}
-          rx={Math.max(12, interiorHW * 0.52)}
-          ry={cupH * 0.44}
+        {/* broad soft window reflection, shaped by the current cup profile */}
+        <path
+          d={windowSheenPath}
           fill={`url(#sheen-${uid})`}
+          filter={`url(#soft-${uid})`}
         />
-        {/* tight secondary catch-light, upper-right */}
-        <ellipse
-          cx={100 + interiorHW * 0.46}
-          cy={geom.cup.top + cupH * 0.16}
-          rx={Math.max(2.5, interiorHW * 0.12)}
-          ry={cupH * 0.1}
-          fill="#ffffff"
-          opacity="0.12"
-        />
-        {/* crisp vertical specular — soft halo + bright core */}
-        <path
-          d={`M${rim.cx - rim.rx * 0.72},${rim.cy + 6} C${rim.cx - rim.rx * 0.92},${(rim.cy + geom.cup.bottom) / 2} ${rim.cx - rim.rx * 0.82},${geom.cup.bottom - 18} ${rim.cx - rim.rx * 0.5},${geom.cup.bottom - 9}`}
-          fill="none"
-          stroke="#ffffff"
-          strokeOpacity="0.15"
-          strokeWidth="4.2"
-          strokeLinecap="round"
-          className={detailed ? "specular-breathe" : undefined}
-        />
-        <path
-          d={`M${rim.cx - rim.rx * 0.68},${rim.cy + 9} C${rim.cx - rim.rx * 0.86},${(rim.cy + geom.cup.bottom) / 2} ${rim.cx - rim.rx * 0.78},${geom.cup.bottom - 20} ${rim.cx - rim.rx * 0.5},${geom.cup.bottom - 12}`}
-          fill="none"
-          stroke="#ffffff"
-          strokeOpacity="0.4"
-          strokeWidth="1"
-          strokeLinecap="round"
-        />
-        {/* thin right-edge highlight */}
-        <path
-          d={`M${rim.cx + rim.rx * 0.84},${rim.cy + 10} C${rim.cx + rim.rx * 0.92},${(rim.cy + geom.cup.bottom) / 2} ${rim.cx + rim.rx * 0.86},${geom.cup.bottom - 24} ${rim.cx + rim.rx * 0.6},${geom.cup.bottom - 12}`}
-          fill="none"
-          stroke="#ffffff"
-          strokeOpacity="0.14"
-          strokeWidth="1.3"
-          strokeLinecap="round"
-        />
+        {/* feathered specular bloom in the old linework area */}
+        <g className={detailed ? "specular-breathe" : undefined}>
+          <path
+            d={leftBloomPath}
+            fill={`url(#specBloom-${uid})`}
+            filter={`url(#soft-${uid})`}
+          />
+          <path
+            d={leftCorePath}
+            fill={`url(#specCore-${uid})`}
+            filter={`url(#soft-${uid})`}
+          />
+          <path
+            d={rightBloomPath}
+            fill={`url(#edgeBloom-${uid})`}
+            filter={`url(#soft-${uid})`}
+          />
+        </g>
       </g>
 
       {/* ── front linework (hand-drawn ink) ── */}
