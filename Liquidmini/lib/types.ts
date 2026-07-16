@@ -94,6 +94,8 @@ export interface CocktailResult {
   layers?: LiquidLayer[];
   /** step-by-step making guide shown between recipe and tasting notes */
   steps?: string[];
+  /** stable visual seed for generated ice layout */
+  iceSeed?: number;
 }
 
 export interface JournalEntry {
@@ -114,6 +116,7 @@ export interface JournalEntry {
   hidden?: boolean;
   layers?: LiquidLayer[];
   steps?: string[];
+  iceSeed?: number;
 }
 
 export interface MoodInput {

@@ -57,6 +57,9 @@ interface AtelierState {
 
 let idCounter = 0;
 const makeId = () => `j_${Date.now().toString(36)}_${(idCounter++).toString(36)}`;
+const makeIceSeed = () => Math.floor(Math.random() * 0x7fffffff);
+const withIceSeed = (result: CocktailResult): CocktailResult =>
+  result.iceSeed != null ? result : { ...result, iceSeed: makeIceSeed() };
 
 const uniq = (arr: string[], v: string | undefined): string[] =>
   !v || arr.includes(v) ? arr : [...arr, v];
@@ -88,7 +91,8 @@ export const useAtelier = create<AtelierState>()(
 
         journal: [],
         saveToJournal: (entry) => {
-          const full: JournalEntry = { ...entry, id: makeId(), createdAt: Date.now() };
+          const createdAt = Date.now();
+          const full: JournalEntry = { ...entry, iceSeed: entry.iceSeed ?? makeIceSeed(), id: makeId(), createdAt };
           set((s) => ({ journal: [full, ...s.journal] }));
           get().syncAchievements();
           return full;
@@ -97,7 +101,7 @@ export const useAtelier = create<AtelierState>()(
           set((s) => ({ journal: s.journal.filter((e) => e.id !== id) })),
 
         lastResult: null,
-        setLastResult: (result, mode) => set({ lastResult: { result, mode } }),
+        setLastResult: (result, mode) => set({ lastResult: { result: withIceSeed(result), mode } }),
 
         musicOn: false,
         sfxOn: false,

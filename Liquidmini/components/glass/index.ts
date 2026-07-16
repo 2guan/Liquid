@@ -15,6 +15,7 @@ Component({
     family: { type: String, value: "whisky" },
     liquidColor: { type: String, value: "" },
     ice: { type: String, value: "none" },
+    iceSeed: { type: Number, value: 0 },
     state: { type: String, value: "still" },
     glow: { type: Boolean, value: false },
     size: { type: Number, value: 240 },
@@ -36,7 +37,7 @@ Component({
     },
   },
   observers: {
-    "glassType, fillLevel, family, liquidColor, ice, state, glow, size, fit, fizzy, garnishes, layers": function () {
+    "glassType, fillLevel, family, liquidColor, ice, iceSeed, state, glow, size, fit, fizzy, garnishes, layers": function () {
       this.rebuild();
     },
   },
@@ -49,6 +50,7 @@ Component({
         family: p.family as SpiritFamily,
         liquidColor: p.liquidColor || undefined,
         ice: p.ice as IceType,
+        iceSeed: p.iceSeed || undefined,
         state: p.state as LiquidState,
         glow: p.glow,
         size: p.size,

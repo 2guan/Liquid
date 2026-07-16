@@ -125,6 +125,7 @@ Component({
         family: result.family,
         liquidColor: result.liquidColor || "",
         ice: result.ice,
+        iceSeed: result.iceSeed || 0,
         fillLevel: fill,
         fizzy,
         garnishes,
@@ -140,7 +141,7 @@ Component({
 
     /** Render the 5:4 share thumbnail to a temp file and stash it in the store. */
     genShareThumb(result: any) {
-      const key = `${result.name}|${result.nameEn}|${result.glass}|${result.ice}`;
+      const key = `${result.name}|${result.nameEn}|${result.glass}|${result.ice}|${result.iceSeed || 0}`;
       if (key === this._shareKey) return;
       this._shareKey = key;
       const title = `${result.name} · ${result.nameEn}`;
@@ -202,6 +203,7 @@ Component({
         hidden: r.hidden,
         layers: r.layers,
         steps: r.steps,
+        iceSeed: r.iceSeed,
       });
       store.addXp(20);
       this.setData({ saved: true });

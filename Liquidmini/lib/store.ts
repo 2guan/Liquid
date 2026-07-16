@@ -136,6 +136,9 @@ const listeners = new Set<Listener>();
 let idCounter = 0;
 const makeId = () =>
   `j_${Date.now().toString(36)}_${(idCounter++).toString(36)}`;
+const makeIceSeed = () => Math.floor(Math.random() * 0x7fffffff);
+const withIceSeed = (result: CocktailResult): CocktailResult =>
+  result.iceSeed != null ? result : { ...result, iceSeed: makeIceSeed() };
 
 const uniq = (arr: string[], v: string | undefined): string[] =>
   !v || arr.indexOf(v) > -1 ? arr : [...arr, v];
@@ -242,7 +245,7 @@ export const store = {
 
   // ── journal ──
   saveToJournal(entry: Omit<JournalEntry, "id" | "createdAt">): JournalEntry {
-    const full: JournalEntry = { ...entry, id: makeId(), createdAt: Date.now() };
+    const full: JournalEntry = { ...entry, iceSeed: entry.iceSeed ?? makeIceSeed(), id: makeId(), createdAt: Date.now() };
     set({ journal: [full, ...state.journal] });
     syncAchievements();
     return full;
@@ -253,7 +256,7 @@ export const store = {
 
   // ── result carry-over ──
   setLastResult(result: CocktailResult, mode: ModeId) {
-    set({ lastResult: { result, mode }, shareImage: "", shareTitle: "" });
+    set({ lastResult: { result: withIceSeed(result), mode }, shareImage: "", shareTitle: "" });
   },
 
   // ── share thumbnail (set by the result screen once rendered) ──

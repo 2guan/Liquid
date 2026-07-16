@@ -101,6 +101,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
       hidden: result.hidden,
       layers: result.layers,
       steps: prepSteps,
+      iceSeed: result.iceSeed,
     });
     addXp(20);
     setSaved(true);
@@ -146,7 +147,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
           className="group relative shrink-0 cursor-zoom-in"
           aria-label="放大酒杯"
         >
-          <Glass glassType={result.glass} family={result.family} liquidColor={result.liquidColor} layers={result.layers} ice={result.ice} fillLevel={result.fillLevel ?? servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} size={isLand ? 200 : 170} />
+          <Glass glassType={result.glass} family={result.family} liquidColor={result.liquidColor} layers={result.layers} ice={result.ice} iceSeed={result.iceSeed} fillLevel={result.fillLevel ?? servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} size={isLand ? 200 : 170} />
           <span className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full border border-gold/30 bg-ink/55 px-2.5 py-0.5 font-cn text-[10px] text-gold/75 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
             点击放大
           </span>
@@ -309,7 +310,7 @@ export default function ResultScreen({ layout }: { layout: LayoutMode }) {
               transition={{ type: "spring", stiffness: 220, damping: 24 }}
               className="flex h-[58vh] w-full max-w-md items-center justify-center"
             >
-              <Glass glassType={result.glass} family={result.family} liquidColor={result.liquidColor} layers={result.layers} ice={result.ice} fillLevel={result.fillLevel ?? servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} fill />
+              <Glass glassType={result.glass} family={result.family} liquidColor={result.liquidColor} layers={result.layers} ice={result.ice} iceSeed={result.iceSeed} fillLevel={result.fillLevel ?? servedFill(result.glass)} glow fizzy={isFizzy(result.ingredients)} garnishes={garnishesFor(result.ingredients)} fill />
             </motion.div>
             <div className="text-center">
               <h2 className="font-cn text-3xl text-paper md:text-4xl" style={{ letterSpacing: "0.05em", textShadow: "0 2px 16px rgba(0,0,0,0.7)" }}>

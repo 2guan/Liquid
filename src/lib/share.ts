@@ -382,7 +382,7 @@ function drawGlass(
   if (ice !== "none") {
     ctx.save();
     ctx.clip(outline);
-    drawIce(ctx, ice, 100, iceY, iceR, liquidTop, body, liquidTop, geom.cup.bottom, interiorHW);
+    drawIce(ctx, ice, 100, iceY, iceR, liquidTop, body, liquidTop, geom.cup.bottom, interiorHW, result.iceSeed);
     ctx.restore();
   }
 
@@ -472,16 +472,16 @@ function drawGlass(
 
 /** Crushed-ice shards (same field as <IceGroup>), authored on a ±34 canvas. */
 const SHARDS: [string, number][] = [
-  ["M-30,12 L-12,-6 L0,6 L-16,24 Z", 0.5],
-  ["M-6,-8 L12,-18 L26,-4 L8,8 Z", 0.62],
-  ["M2,2 L20,-6 L30,10 L12,18 Z", 0.46],
-  ["M-18,18 L0,10 L12,24 L-6,32 Z", 0.55],
-  ["M-34,22 L-18,16 L-10,30 L-26,36 Z", 0.42],
-  ["M14,12 L30,8 L34,24 L18,28 Z", 0.5],
-  ["M-12,28 L6,22 L16,36 L-2,42 Z", 0.4],
-  ["M-2,-16 L12,-24 L22,-12 L8,-4 Z", 0.7],
-  ["M20,20 L34,18 L32,34 L18,34 Z", 0.36],
-  ["M-26,4 L-14,-2 L-6,10 L-20,16 Z", 0.58],
+  ["M-30,12 Q-20,-4 0,6 Q-8,22 -16,24 Z", 0.5],
+  ["M-6,-8 Q10,-22 26,-4 Q17,7 8,8 Z", 0.62],
+  ["M2,2 Q20,-8 30,10 Q19,20 12,18 Z", 0.46],
+  ["M-18,18 Q0,8 12,24 Q2,34 -6,32 Z", 0.55],
+  ["M-34,22 Q-18,14 -10,30 Q-22,38 -26,36 Z", 0.42],
+  ["M14,12 Q30,6 34,24 Q24,30 18,28 Z", 0.5],
+  ["M-12,28 Q6,20 16,36 Q4,44 -2,42 Z", 0.4],
+  ["M-2,-16 Q12,-26 22,-12 Q13,-2 8,-4 Z", 0.7],
+  ["M20,20 Q34,16 32,34 Q22,36 18,34 Z", 0.36],
+  ["M-26,4 Q-14,-4 -6,10 Q-16,18 -20,16 Z", 0.58],
 ];
 
 /** Canvas port of <IceGroup> — clear refractive sphere / cube / crushed with a
@@ -497,10 +497,11 @@ function drawIce(
   fillTop?: number,
   fillBottom?: number,
   fillHW?: number,
+  iceSeed = 0,
 ): void {
   const tint = "#e3edf2";
   if (type === "cubes" || type === "bullets") {
-    drawIceFill(ctx, type, cx, waterY, liquidColor, fillTop ?? cy - r, fillBottom ?? cy + r, fillHW ?? r);
+    drawIceFill(ctx, type, cx, waterY, liquidColor, fillTop ?? cy - r, fillBottom ?? cy + r, fillHW ?? r, iceSeed);
     return;
   }
   const wl = waterY - cy;
@@ -823,24 +824,37 @@ function drawIce(
     // crushed
     const k = r / 34;
     ctx.scale(k, k);
-    ctx.fillStyle = withAlpha(tint, 0.12);
+    ctx.save();
+    if ("filter" in ctx) ctx.filter = "blur(1.8px)";
+    ctx.fillStyle = withAlpha(tint, 0.07);
     ellipse(ctx, 0, 14, 36, 26);
     ctx.fill();
+    ctx.restore();
     const grad = ctx.createLinearGradient(-20, -20, 20, 40);
-    grad.addColorStop(0, "rgba(255,255,255,0.55)");
-    grad.addColorStop(1, withAlpha(tint, 0.22));
+    grad.addColorStop(0, "rgba(255,255,255,0.38)");
+    grad.addColorStop(0.58, "rgba(244,251,252,0.22)");
+    grad.addColorStop(1, withAlpha(tint, 0.1));
     for (const [d, op] of SHARDS) {
       const p = new Path2D(d);
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(0.75px)";
+      ctx.globalAlpha = 0.52 + op * 0.1;
       ctx.fillStyle = grad;
       ctx.fill(p);
-      ctx.strokeStyle = "rgba(255,255,255,0.32)";
-      ctx.lineWidth = 0.7;
+      ctx.restore();
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(0.8px)";
+      ctx.strokeStyle = "rgba(255,255,255,0.1)";
+      ctx.lineWidth = 0.55;
       ctx.stroke(p);
-      const edge = new Path2D(d.split(" ").slice(0, 2).join(" "));
-      ctx.strokeStyle = `rgba(255,255,255,${op * 0.5})`;
-      ctx.lineWidth = 0.8;
-      ctx.stroke(edge);
+      ctx.restore();
     }
+    ctx.save();
+    if ("filter" in ctx) ctx.filter = "blur(1.8px)";
+    ctx.fillStyle = "rgba(255,255,255,0.055)";
+    ellipse(ctx, -4, 18, 28, 14);
+    ctx.fill();
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -855,12 +869,13 @@ function drawIceFill(
   top: number,
   bot: number,
   hw: number,
+  iceSeed = 0,
 ): void {
   const isBullet = type === "bullets";
   const piece = isBullet ? 26 : 42;
-  const stepX = piece * (isBullet ? 0.84 : 0.72);
-  const stepY = piece * (isBullet ? 0.65 : 0.58);
-  const topInset = isBullet ? piece * 0.68 : piece * 0.88;
+  const stepX = piece * (isBullet ? 0.84 : 0.62);
+  const stepY = piece * (isBullet ? 0.65 : 0.5);
+  const topInset = isBullet ? piece * 0.68 : piece * 0.62;
 
   const getCubeTopGrad = (sub: boolean) => {
     const g = ctx.createLinearGradient(-12.5, -15.5, 12.5, 0);
@@ -934,32 +949,41 @@ function drawIceFill(
     return g;
   };
 
-  const pCubeRight = new Path2D("M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,13.0 Q 0,14.5 0,12.0 Z");
-  const pCubeLeft = new Path2D("M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,13.0 Q 0,14.5 0,12.0 Z");
-  const pCubeTop = new Path2D("M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8 Q 14.7,-8.5 12.5,-7.2 L 0,0 L -12.5,-7.2 Q -14.7,-8.5 -12.5,-9.8 Z");
-  const pCubeBottomCap = new Path2D("M 0,12.0 L -2.5,13.0 Q 0,14.5 2.5,13.0 Z");
-  const pCubeRightTopCap = new Path2D("M 12.5,-9.8 L 14.7,-8.5 L 12.5,-7.2 Z");
-  const pCubeLeftTopCap = new Path2D("M -12.5,-9.8 L -14.7,-8.5 L -12.5,-7.2 Z");
-  const pCubeCoreTop = new Path2D("M -4.4,-3.4 L -0.9,-5.5 Q 0,-6.0 0.9,-5.5 L 4.4,-3.4 Q 5.2,-3.0 4.4,-2.5 L 0,0 L -4.4,-2.5 Q -5.2,-3.0 -4.4,-3.4 Z");
-  const pCubeCoreLeft = new Path2D("M 0,0 L -4.4,-2.5 Q -5.2,-3.0 -5.2,-2.0 L -5.2,2.0 Q -5.2,3.0 -4.4,2.5 L -0.9,5.5 Q 0,6.0 0,5.1 Z");
-  const pCubeCoreRight = new Path2D("M 0,0 L 4.4,-2.5 Q 5.2,-3.0 5.2,-2.0 L 5.2,2.0 Q 5.2,3.0 4.4,2.5 L 0.9,5.5 Q 0,6.0 0,5.1 Z");
+  const pCubeRight = new Path2D("M 0,-1 L 10.9,-7.3 Q 12.5,-8.2 12.5,-6.4 L 12.5,4.4 Q 12.5,6.2 10.9,7.1 L 1.6,12.5 Q 0,13.4 0,11.6 Z");
+  const pCubeLeft = new Path2D("M 0,-1 L -10.9,-7.3 Q -12.5,-8.2 -12.5,-6.4 L -12.5,4.4 Q -12.5,6.2 -10.9,7.1 L -1.6,12.5 Q 0,13.4 0,11.6 Z");
+  const pCubeTop = new Path2D("M -12.5,-8.2 L -1.6,-14.5 Q 0,-15.4 1.6,-14.5 L 12.5,-8.2 L 1.6,-1.9 Q 0,-1 -1.6,-1.9 Z");
+  const pCubeCoreTop = new Path2D("M -4.5,-3.9 L -0.7,-6.1 Q 0,-6.5 0.7,-6.1 L 4.5,-3.9 L 0.7,-1.7 Q 0,-1.3 -0.7,-1.7 Z");
+  const pCubeCoreLeft = new Path2D("M 0,-1.3 L -3.9,-3.6 Q -4.5,-3.9 -4.5,-3.2 L -4.5,1.3 Q -4.5,2 -3.9,2.4 L -0.7,4.2 Q 0,4.6 0,3.9 Z");
+  const pCubeCoreRight = new Path2D("M 0,-1.3 L 3.9,-3.6 Q 4.5,-3.9 4.5,-3.2 L 4.5,1.3 Q 4.5,2 3.9,2.4 L 0.7,4.2 Q 0,4.6 0,3.9 Z");
 
   const pBulletOuter = new Path2D("M -13,-4 A 13,11 0 0 1 13,-4 L 13,11 A 13,3.5 0 0 1 -13,11 Z");
   const pBulletCavity = new Path2D("M -6,11 L -6,-3 A 6,6 0 0 1 6,-3 L 6,11 A 6,1.6 0 0 1 -6,11 Z");
 
   ctx.save();
   let idx = 0;
-  for (let y = bot - piece * 0.5; y >= top + topInset; y -= stepY) {
+  const seed = Math.abs(Math.floor(iceSeed || 0));
+  const seeded = seed > 0;
+  const rnd = (salt: number) => {
+    const x = Math.sin((seed + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  const bottomInset = isBullet ? piece * 0.5 : piece * 0.36;
+  for (let y = bot - bottomInset; y >= top + topInset; y -= stepY) {
     const rowI = Math.round((bot - y) / stepY);
-    const stagger = rowI % 2 ? stepX * 0.5 : 0;
+    const rowDrift = seeded ? (rnd(rowI + 0.17) - 0.5) * stepX * (isBullet ? 0.16 : 0.12) : 0;
+    const stagger = (rowI % 2 ? stepX * 0.5 : 0) + rowDrift;
     const startOffset = piece * (isBullet ? 0.55 : 0.44);
     const endOffset = piece * (isBullet ? 0.45 : 0.34);
     for (let x = cx - hw + startOffset + stagger; x <= cx + hw - endOffset; x += stepX) {
-      const jx = (((idx * 13) % 7) - 3) * piece * 0.05;
-      const jy = (((idx * 7) % 5) - 2) * piece * 0.05;
-      const rot = (((idx * 11) % 9) - 4) * (isBullet ? 11 : 7);
+      const baseJx = (((idx * 13) % 7) - 3) * piece * 0.05;
+      const baseJy = (((idx * 7) % 5) - 2) * piece * 0.05;
+      const baseRot = (((idx * 11) % 9) - 4) * (isBullet ? 8 : 5);
+      const jx = baseJx + (seeded ? (rnd(idx * 5 + 1.3) - 0.5) * piece * (isBullet ? 0.1 : 0.08) : 0);
+      const jy = baseJy + (seeded ? (rnd(idx * 5 + 2.7) - 0.5) * piece * (isBullet ? 0.1 : 0.07) : 0);
+      const rot = baseRot + (seeded ? (rnd(idx * 5 + 4.1) - 0.5) * (isBullet ? 8 : 5) : 0);
       const px = x + jx;
-      const py = y + jy;
+      const rawPy = y + jy;
+      const py = isBullet ? rawPy : Math.max(rawPy, top + piece * 0.62);
 
       const localWaterY = waterY - py;
       const scale = isBullet ? piece / 26 : piece / 34;
@@ -1004,29 +1028,33 @@ function drawIceFill(
           ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeRight);
           ctx.fillStyle = getCubeLeftGrad(sub); ctx.fill(pCubeLeft);
           ctx.fillStyle = getCubeTopGrad(sub); ctx.fill(pCubeTop);
-          ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeBottomCap);
-          ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeRightTopCap);
-          ctx.fillStyle = getCubeLeftGrad(sub); ctx.fill(pCubeLeftTopCap);
 
           if ("filter" in ctx) ctx.filter = "blur(0.8px)";
+          ctx.fillStyle = `rgba(255,255,255,${sub ? 0.08 : 0.22})`;
+          ctx.beginPath(); ctx.ellipse(0, -1.2, 2.4, 1.2, 0, 0, Math.PI * 2); ctx.fill();
           ctx.lineCap = "round";
 
           ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.16 : 0.35})`;
           ctx.lineWidth = 1.6;
-          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 12.0); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, -1); ctx.lineTo(0, 13.4); ctx.stroke();
 
-          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.12 : 0.25})`;
+          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.08 : 0.18})`;
+          ctx.lineWidth = 0.9;
+          ctx.beginPath(); ctx.moveTo(-0.8, -1.4); ctx.quadraticCurveTo(-5.2, -4.1, -10.4, -7.1); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0.8, -1.4); ctx.quadraticCurveTo(5.2, -4.1, 10.4, -7.1); ctx.stroke();
+
+          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.06 : 0.12})`;
+          ctx.lineWidth = 0.7;
+          ctx.beginPath(); ctx.moveTo(-12.2, -5.7); ctx.quadraticCurveTo(-12.5, -0.4, -12.1, 4.6); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(12.2, -5.7); ctx.quadraticCurveTo(12.5, -0.4, 12.1, 4.6); ctx.stroke();
+
+          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.09 : 0.22})`;
           ctx.lineWidth = 1.0;
-          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-12.5, -7.2); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(12.5, -7.2); ctx.stroke();
-
-          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.15 : 0.38})`;
-          ctx.lineWidth = 1.2;
           ctx.beginPath();
-          ctx.moveTo(-12.5, -9.8);
-          ctx.lineTo(-2.5, -15.5);
-          ctx.quadraticCurveTo(0, -17, 2.5, -15.5);
-          ctx.lineTo(12.5, -9.8);
+          ctx.moveTo(-10.2, -7.3);
+          ctx.quadraticCurveTo(-5.2, -10.4, -1.8, -13.1);
+          ctx.moveTo(1.8, -13.1);
+          ctx.quadraticCurveTo(5.2, -10.4, 10.2, -7.3);
           ctx.stroke();
 
           if ("filter" in ctx) ctx.filter = "blur(1.6px)";
@@ -1124,29 +1152,33 @@ function drawIceFill(
         ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeRight);
         ctx.fillStyle = getCubeLeftGrad(sub); ctx.fill(pCubeLeft);
         ctx.fillStyle = getCubeTopGrad(sub); ctx.fill(pCubeTop);
-        ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeBottomCap);
-        ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeRightTopCap);
-        ctx.fillStyle = getCubeLeftGrad(sub); ctx.fill(pCubeLeftTopCap);
 
         if ("filter" in ctx) ctx.filter = "blur(0.8px)";
+        ctx.fillStyle = `rgba(255,255,255,${sub ? 0.08 : 0.22})`;
+        ctx.beginPath(); ctx.ellipse(0, -1.2, 2.4, 1.2, 0, 0, Math.PI * 2); ctx.fill();
         ctx.lineCap = "round";
 
         ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.16 : 0.35})`;
         ctx.lineWidth = 1.6;
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 12.0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -1); ctx.lineTo(0, 13.4); ctx.stroke();
 
-        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.12 : 0.25})`;
+        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.08 : 0.18})`;
+        ctx.lineWidth = 0.9;
+        ctx.beginPath(); ctx.moveTo(-0.8, -1.4); ctx.quadraticCurveTo(-5.2, -4.1, -10.4, -7.1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0.8, -1.4); ctx.quadraticCurveTo(5.2, -4.1, 10.4, -7.1); ctx.stroke();
+
+        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.06 : 0.12})`;
+        ctx.lineWidth = 0.7;
+        ctx.beginPath(); ctx.moveTo(-12.2, -5.7); ctx.quadraticCurveTo(-12.5, -0.4, -12.1, 4.6); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(12.2, -5.7); ctx.quadraticCurveTo(12.5, -0.4, 12.1, 4.6); ctx.stroke();
+
+        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.09 : 0.22})`;
         ctx.lineWidth = 1.0;
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-12.5, -7.2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(12.5, -7.2); ctx.stroke();
-
-        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.15 : 0.38})`;
-        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.moveTo(-12.5, -9.8);
-        ctx.lineTo(-2.5, -15.5);
-        ctx.quadraticCurveTo(0, -17, 2.5, -15.5);
-        ctx.lineTo(12.5, -9.8);
+        ctx.moveTo(-10.2, -7.3);
+        ctx.quadraticCurveTo(-5.2, -10.4, -1.8, -13.1);
+        ctx.moveTo(1.8, -13.1);
+        ctx.quadraticCurveTo(5.2, -10.4, 10.2, -7.3);
         ctx.stroke();
 
         if ("filter" in ctx) ctx.filter = "blur(1.6px)";

@@ -321,7 +321,7 @@ export default function PurePourScreen({ layout }: { layout: LayoutMode }) {
                           sub={i.nameEn}
                           mediaH={56}
                         >
-                          <Ice type={i.id} size={56} />
+                          <Ice type={i.id} size={56} selector />
                         </PickTile>
                       ))}
                     </div>

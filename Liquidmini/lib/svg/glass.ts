@@ -23,6 +23,7 @@ export interface GlassOpts {
   /** colour-layered drink (B-52…): bands bottom → top, overrides the single fill */
   layers?: LiquidLayer[];
   ice?: IceType;
+  iceSeed?: number;
   state?: LiquidState;
   /** amber halo behind the glass for hero placements */
   glow?: boolean;
@@ -279,7 +280,7 @@ export function glassSvg(opts: GlassOpts): string {
   }
 
   const iceMarkup = ice !== "none" && hasLiquid
-    ? `<g clip-path="url(#cup-${uid})">${iceGroup({ type: ice, cx: 100, cy: iceY, r: iceR, waterY: liquidTop, liquidColor: body, fillTop: liquidTop, fillBottom: geom.cup.bottom, fillHW: interiorHW })}</g>`
+    ? `<g clip-path="url(#cup-${uid})">${iceGroup({ type: ice, cx: 100, cy: iceY, r: iceR, waterY: liquidTop, liquidColor: body, fillTop: liquidTop, fillBottom: geom.cup.bottom, fillHW: interiorHW, iceSeed: opts.iceSeed })}</g>`
     : "";
 
   // render even with no liquid so floating/leaf botanicals still rest in the glass

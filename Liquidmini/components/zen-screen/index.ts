@@ -92,7 +92,7 @@ Component({
     list: [] as any[],
     max: MAX_ITEMS,
 
-    ices: ICES.map((i) => ({ id: i.id, name: i.name, nameEn: i.nameEn, swatch: svgToDataUri(iceSwatch(i.id, 56)) })),
+    ices: ICES.map((i) => ({ id: i.id, name: i.name, nameEn: i.nameEn, swatch: svgToDataUri(iceSwatch(i.id, 56, true)) })),
 
     // preview (live glass)
     family: "absinthe",

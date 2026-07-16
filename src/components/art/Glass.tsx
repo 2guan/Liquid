@@ -19,6 +19,7 @@ export interface GlassProps {
   /** colour-layered drink (B-52…): bands bottom → top, overrides the single fill */
   layers?: LiquidLayer[];
   ice?: IceType;
+  iceSeed?: number;
   state?: LiquidState;
   /** amber halo behind the glass for hero placements */
   glow?: boolean;
@@ -102,6 +103,7 @@ export default function Glass({
   liquidColor,
   layers,
   ice = "none",
+  iceSeed,
   state = "still",
   glow = false,
   size = 240,
@@ -437,7 +439,7 @@ export default function Glass({
       {/* ice, clipped so it never spills past the rim */}
       {ice !== "none" && hasLiquid && (
         <g clipPath={`url(#cup-${uid})`}>
-          <IceGroup type={ice} cx={100} cy={iceY} r={iceR} waterY={liquidTop} liquidColor={body} fillTop={liquidTop} fillBottom={geom.cup.bottom} fillHW={interiorHW} />
+          <IceGroup type={ice} cx={100} cy={iceY} r={iceR} waterY={liquidTop} liquidColor={body} fillTop={liquidTop} fillBottom={geom.cup.bottom} fillHW={interiorHW} iceSeed={iceSeed} />
         </g>
       )}
 

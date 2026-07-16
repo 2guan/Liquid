@@ -42,7 +42,7 @@ function streamGradient(family: string): string {
 }
 
 function iceList() {
-  return ICES.map((i) => ({ ...i, swatch: svgToDataUri(iceSwatch(i.id, 56)) }));
+  return ICES.map((i) => ({ ...i, swatch: svgToDataUri(iceSwatch(i.id, 56, true)) }));
 }
 
 Component({

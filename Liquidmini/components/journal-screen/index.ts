@@ -24,6 +24,7 @@ function entryToResult(e: JournalEntry): CocktailResult {
     hidden: e.hidden,
     layers: e.layers,
     steps: e.steps,
+    iceSeed: e.iceSeed || e.createdAt,
   };
 }
 
@@ -66,6 +67,7 @@ Component({
         family: e.family,
         liquidColor: e.liquidColor || "",
         ice: e.ice,
+        iceSeed: e.iceSeed || e.createdAt,
         fill: e.fillLevel != null ? e.fillLevel : servedFill(e.glass),
         fizzy: isFizzy(e.recipe),
         garnishes: garnishesFor(e.recipe),
