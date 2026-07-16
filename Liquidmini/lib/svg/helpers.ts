@@ -41,9 +41,9 @@ export function nextUid(): string {
  */
 export const MOTION_STYLE = `<style>
 .glint-drift{transform-box:fill-box;transform-origin:center;animation:glintDrift 6.5s ease-in-out infinite}
-@keyframes glintDrift{0%,100%{opacity:.22;transform:translateX(-3px)}50%{opacity:.6;transform:translateX(3px)}}
+@keyframes glintDrift{0%,100%{opacity:.78;transform:translateX(-2px) scaleX(.97)}50%{opacity:1;transform:translateX(2px) scaleX(1.03)}}
 .surface-shimmer{transform-box:fill-box;transform-origin:center;animation:surfaceShimmer 4.6s ease-in-out infinite}
-@keyframes surfaceShimmer{0%,100%{opacity:.45;transform:scaleX(.95)}50%{opacity:.85;transform:scaleX(1.05)}}
+@keyframes surfaceShimmer{0%,100%{opacity:.34;transform:scaleX(.96)}50%{opacity:.62;transform:scaleX(1.04)}}
 .specular-breathe{animation:specularBreathe 5.5s ease-in-out infinite}
 @keyframes specularBreathe{0%,100%{opacity:.72}50%{opacity:1}}
 .rim-glint{transform-box:fill-box;transform-origin:center;animation:rimGlint 7s ease-in-out infinite}

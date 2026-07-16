@@ -217,8 +217,8 @@ body {
   animation: glintDrift 6.5s ease-in-out infinite;
 }
 @keyframes glintDrift {
-  0%, 100% { opacity: 0.22; transform: translateX(-3px); }
-  50% { opacity: 0.6; transform: translateX(3px); }
+  0%, 100% { opacity: 0.78; transform: translateX(-2px) scaleX(0.97); }
+  50% { opacity: 1; transform: translateX(2px) scaleX(1.03); }
 }
 .surface-shimmer {
   transform-box: fill-box;
@@ -226,8 +226,8 @@ body {
   animation: surfaceShimmer 4.6s ease-in-out infinite;
 }
 @keyframes surfaceShimmer {
-  0%, 100% { opacity: 0.45; transform: scaleX(0.95); }
-  50% { opacity: 0.85; transform: scaleX(1.05); }
+  0%, 100% { opacity: 0.34; transform: scaleX(0.96); }
+  50% { opacity: 0.62; transform: scaleX(1.04); }
 }
 .specular-breathe {
   animation: specularBreathe 5.5s ease-in-out infinite;

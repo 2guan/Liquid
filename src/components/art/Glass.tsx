@@ -58,6 +58,16 @@ function svgNum(v: number): string {
   return String(Math.round(v * 1000) / 1000);
 }
 
+function tintHex(hex: string, amount: number): string {
+  const m = hex.replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(m)) return hex;
+  const mix = (i: number) => {
+    const c = parseInt(m.slice(i, i + 2), 16);
+    return Math.round(c + (255 - c) * amount).toString(16).padStart(2, "0");
+  };
+  return `#${mix(0)}${mix(2)}${mix(4)}`;
+}
+
 function cupHighlightPath(
   geom: GlassGeom,
   side: "left" | "right",
@@ -87,6 +97,31 @@ function cupHighlightPath(
   return points
     .map((p, i) => `${i === 0 ? "M" : "L"}${svgNum(p.x)},${svgNum(p.y)}`)
     .join(" ") + " Z";
+}
+
+function liquidBodyPath(liquidTop: number, surfaceHW: number, surfaceRy: number, bottom: number): string {
+  const left = 100 - surfaceHW;
+  const right = 100 + surfaceHW;
+  const spillY = liquidTop + surfaceRy * 0.96;
+  return [
+    `M0,${svgNum(spillY)}`,
+    `L${svgNum(left)},${svgNum(liquidTop)}`,
+    `C${svgNum(left + surfaceHW * 0.34)},${svgNum(liquidTop + surfaceRy * 0.78)}`,
+    `${svgNum(right - surfaceHW * 0.34)},${svgNum(liquidTop + surfaceRy * 0.78)}`,
+    `${svgNum(right)},${svgNum(liquidTop)}`,
+    `L200,${svgNum(spillY)}`,
+    `L200,${svgNum(bottom)}`,
+    `L0,${svgNum(bottom)} Z`,
+  ].join(" ");
+}
+
+function surfaceBackArcPath(liquidTop: number, surfaceHW: number, surfaceRy: number): string {
+  return [
+    `M${svgNum(100 - surfaceHW * 0.68)},${svgNum(liquidTop - surfaceRy * 0.18)}`,
+    `C${svgNum(100 - surfaceHW * 0.34)},${svgNum(liquidTop - surfaceRy * 0.62)}`,
+    `${svgNum(100 + surfaceHW * 0.28)},${svgNum(liquidTop - surfaceRy * 0.58)}`,
+    `${svgNum(100 + surfaceHW * 0.54)},${svgNum(liquidTop - surfaceRy * 0.12)}`,
+  ].join(" ");
 }
 
 /**
@@ -159,14 +194,24 @@ export default function Glass({
 
   const level = Math.max(0, Math.min(1, fillLevel));
   const liquidTop = geom.cup.bottom - level * (geom.cup.bottom - geom.cup.top);
-  const surfaceHW = Math.max(2, halfWidthAt(geom, liquidTop) - 2);
+  const surfaceHW = Math.max(2, halfWidthAt(geom, liquidTop));
+  const innerSurfaceHW = Math.max(2, surfaceHW - 2);
   const hasLiquid = level > 0.005;
-  const surfaceRy = surfaceHW * 0.14 + 1.5;
+  const surfaceRy = surfaceHW * 0.105 + 1.2;
+  const liquidBottom = geom.cup.bottom + 30;
+  const liquidBodyD = liquidBodyPath(liquidTop, surfaceHW, surfaceRy, liquidBottom);
+  const surfaceBackArcD = surfaceBackArcPath(liquidTop, surfaceHW, surfaceRy);
 
   // colour-layered drinks (B-52, Black Velvet…): slice the liquid into bands.
-  const bands = layers && layers.length > 1 && hasLiquid ? layerBands(layers, liquidTop, geom.cup.bottom + 30) : null;
+  const bands = layers && layers.length > 1 && hasLiquid ? layerBands(layers, liquidTop, liquidBottom) : null;
   const surfHi = bands ? bands[bands.length - 1].hi : hi;
-  const surfShadow = bands ? bands[bands.length - 1].shadow : shadow;
+  const surfBody = bands ? bands[bands.length - 1].body : body;
+  const surfaceFrontColor = tintHex(surfBody, clearFam && !liquidColor ? 0.08 : 0.2);
+  const surfaceGlow = tintHex(surfHi, clearFam && !liquidColor ? 0.1 : 0.28);
+  const surfaceCenterOpacity = Math.min(0.96, aTop + (clearFam && !liquidColor ? 0.05 : 0.035));
+  const surfaceMidOpacity = Math.min(0.94, Math.max(aTop, aMid) + 0.015);
+  const surfaceEdgeOpacity = Math.max(0.42, Math.min(0.95, aTop));
+  const surfaceFrontOpacity = Math.max(0.38, Math.min(0.94, aTop));
   const baseHi = bands ? bands[0].hi : hi;
 
   // ── ice sizing & buoyancy, matched to the cup and the liquid level ──
@@ -277,6 +322,12 @@ export default function Glass({
           <stop offset="92%" stopColor={shadow} stopOpacity={0.26 * edgeK} />
           <stop offset="100%" stopColor={shadow} stopOpacity={0.5 * edgeK} />
         </linearGradient>
+        <radialGradient id={`surface-${uid}`} cx="42%" cy="30%" r="78%">
+          <stop offset="0%" stopColor={surfHi} stopOpacity={surfaceCenterOpacity} />
+          <stop offset="42%" stopColor={surfHi} stopOpacity={surfaceMidOpacity} />
+          <stop offset="76%" stopColor={surfaceFrontColor} stopOpacity={surfaceEdgeOpacity} />
+          <stop offset="100%" stopColor={surfaceFrontColor} stopOpacity={surfaceFrontOpacity} />
+        </radialGradient>
         {/* inner-wall ambient occlusion → glass thickness / volume at the edges */}
         <linearGradient id={`wallAO-${uid}`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#140d04" stopOpacity="0.5" />
@@ -342,6 +393,9 @@ export default function Glass({
       {/* liquid, clipped to the bowl interior */}
       {hasLiquid && (
         <g clipPath={`url(#cup-${uid})`}>
+          {/* draw the surface first so the liquid body hides the lower half;
+              this avoids a bright overlap band at the front edge. */}
+          <ellipse cx="100" cy={liquidTop} rx={surfaceHW} ry={surfaceRy} fill={`url(#surface-${uid})`} opacity="1" />
           {bands ? (
             <>
               {/* the whole layered liquid as ONE rect + one continuous gradient
@@ -354,55 +408,51 @@ export default function Glass({
                   ))}
                 </linearGradient>
               </defs>
-              <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#lay-${uid})`} opacity="0.7" />
+              <path d={liquidBodyD} fill={`url(#lay-${uid})`} opacity="0.7" />
             </>
           ) : (
-            <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liquid-${uid})`} />
+            <path d={liquidBodyD} fill={`url(#liquid-${uid})`} />
           )}
           {/* wall shading — darker against the glass, a faint lit core in the middle */}
-          {!bands && <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liqEdge-${uid})`} />}
+          {!bands && <path d={liquidBodyD} fill={`url(#liqEdge-${uid})`} />}
           {/* light shaft through the liquid */}
-          <rect x="0" y={liquidTop} width="200" height={geom.cup.bottom + 30 - liquidTop} fill={`url(#liqlight-${uid})`} opacity="0.6" />
+          <path d={liquidBodyD} fill={`url(#liqlight-${uid})`} opacity="0.6" />
           {/* warm caustic pool gathered at the base */}
-          <ellipse cx="100" cy={geom.cup.bottom - 5} rx={surfaceHW * 0.74} ry="7" fill={baseHi} opacity="0.3" />
-          <ellipse cx="100" cy={geom.cup.bottom - 4} rx={surfaceHW * 0.4} ry="3.5" fill="#ffffff" opacity="0.16" />
-          {/* surface-tension shadow just beneath the meniscus */}
-          <ellipse cx="100" cy={liquidTop + surfaceRy + 2} rx={surfaceHW} ry={surfaceRy} fill={surfShadow} opacity="0.28" />
-          {/* meniscus disc */}
-          <ellipse cx="100" cy={liquidTop} rx={surfaceHW} ry={surfaceRy} fill={surfHi} opacity="0.6" />
-          {/* bright skin line on the surface */}
-          <ellipse
-            cx="100"
-            cy={liquidTop}
-            rx={surfaceHW}
-            ry={surfaceRy}
-            fill="none"
-            stroke="#fff6e2"
-            strokeOpacity="0.5"
-            strokeWidth="0.9"
-            className={detailed ? "surface-shimmer" : undefined}
-            style={detailed ? { transformOrigin: `100px ${liquidTop}px` } : undefined}
-          />
-          {/* dancing glint on the surface */}
+          <ellipse cx="100" cy={geom.cup.bottom - 5} rx={innerSurfaceHW * 0.74} ry="7" fill={baseHi} opacity="0.3" />
+          <ellipse cx="100" cy={geom.cup.bottom - 4} rx={innerSurfaceHW * 0.4} ry="3.5" fill="#ffffff" opacity="0.16" />
+          {/* liquid surface: a soft, thick meniscus rather than a hard circular rim */}
+          <path d={surfaceBackArcD} fill="none" stroke={surfaceGlow} strokeOpacity="0.26" strokeWidth="0.9" strokeLinecap="round" filter={`url(#soft-${uid})`} />
+          {/* drifting soft highlight; intentionally blurred so it does not read as a ring */}
           {detailed && (
-            <ellipse
-              cx={100 - surfaceHW * 0.28}
-              cy={liquidTop - 0.5}
-              rx={surfaceHW * 0.34}
-              ry={Math.max(1, surfaceRy * 0.5)}
-              fill="#ffffff"
-              className="glint-drift"
-              style={{ transformOrigin: `100px ${liquidTop}px` }}
-            />
+            <g className="glint-drift" style={{ transformOrigin: `100px ${liquidTop}px` }}>
+              <ellipse
+                cx={100 - innerSurfaceHW * 0.22}
+                cy={liquidTop - surfaceRy * 0.16}
+                rx={innerSurfaceHW * 0.42}
+                ry={Math.max(1.3, surfaceRy * 0.54)}
+                fill="#ffffff"
+                opacity={clearFam && !liquidColor ? "0.14" : "0.1"}
+                filter={`url(#soft-${uid})`}
+              />
+              <ellipse
+                cx={100 - innerSurfaceHW * 0.28}
+                cy={liquidTop - surfaceRy * 0.2}
+                rx={innerSurfaceHW * 0.2}
+                ry={Math.max(0.8, surfaceRy * 0.24)}
+                fill="#ffffff"
+                opacity={clearFam && !liquidColor ? "0.16" : "0.12"}
+                filter={`url(#soft-${uid})`}
+              />
+            </g>
           )}
           {/* swirl when chilled / stirred — a soft caustic that *orbits* the
               surface centre (offset blob + centre pivot), not a spinning bar */}
           {state === "swirling" && (
             <ellipse
-              cx={100 - surfaceHW * 0.34}
+              cx={100 - innerSurfaceHW * 0.34}
               cy={liquidTop + 3}
-              rx={surfaceHW * 0.26}
-              ry={surfaceHW * 0.2}
+              rx={innerSurfaceHW * 0.26}
+              ry={innerSurfaceHW * 0.2}
               fill="#ffffff"
               opacity="0.1"
               filter={detailed ? `url(#soft-${uid})` : undefined}
@@ -414,7 +464,7 @@ export default function Glass({
           {fizzy &&
             BUBBLES.map((b, i) => {
               const by = geom.cup.bottom - 3 - b.f * (geom.cup.bottom - 3 - liquidTop);
-              const bx = 100 + b.dx * surfaceHW * 0.78;
+              const bx = 100 + b.dx * innerSurfaceHW * 0.78;
               const rise = -(by - liquidTop - 1.5);
               return (
                 <circle
@@ -500,17 +550,8 @@ export default function Glass({
 
       {/* ── the rim, drawn smooth (outside the ink wobble) so the mouth stays soft ── */}
       <g>
-        {/* mouth: one clean soft ellipse (front lip + far rim seen through the glass) */}
+        {/* mouth: one clean soft ellipse */}
         <ellipse cx={rim.cx} cy={rim.cy} rx={rim.rx} ry={rim.ry} fill="none" stroke="#FBEFC9" strokeOpacity="0.52" strokeWidth="1.1" />
-        {/* lit front lip (lower arc) — soft, fading at the ends */}
-        <path
-          d={`M${rim.cx - rim.rx * 0.7},${rim.cy + rim.ry * 0.5} A${rim.rx} ${rim.ry} 0 0 0 ${rim.cx + rim.rx * 0.7},${rim.cy + rim.ry * 0.5}`}
-          fill="none"
-          stroke="#fff7e0"
-          strokeOpacity="0.4"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-        />
         {/* a faint roving glint on the back lip */}
         <path
           d={`M${rim.cx - rim.rx * 0.42},${rim.cy - rim.ry * 0.62} A${rim.rx} ${rim.ry} 0 0 1 ${rim.cx + rim.rx * 0.06},${rim.cy - rim.ry}`}

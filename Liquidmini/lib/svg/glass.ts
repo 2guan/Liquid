@@ -53,6 +53,16 @@ const BUBBLES: { dx: number; f: number; r: number; d: number; dur: number }[] = 
 
 type GlassGeom = ReturnType<typeof geomFor>;
 
+function tintHex(hex: string, amount: number): string {
+  const m = hex.replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(m)) return hex;
+  const mix = (i: number) => {
+    const c = parseInt(m.slice(i, i + 2), 16);
+    return Math.round(c + (255 - c) * amount).toString(16).padStart(2, "0");
+  };
+  return `#${mix(0)}${mix(2)}${mix(4)}`;
+}
+
 function cupHighlightPath(
   geom: GlassGeom,
   side: "left" | "right",
@@ -80,6 +90,31 @@ function cupHighlightPath(
 
   const points = [...outer, ...inner.reverse()];
   return points.map((p, i) => `${i === 0 ? "M" : "L"}${n(p.x)},${n(p.y)}`).join(" ") + " Z";
+}
+
+function liquidBodyPath(liquidTop: number, surfaceHW: number, surfaceRy: number, bottom: number): string {
+  const left = 100 - surfaceHW;
+  const right = 100 + surfaceHW;
+  const spillY = liquidTop + surfaceRy * 0.96;
+  return [
+    `M0,${n(spillY)}`,
+    `L${n(left)},${n(liquidTop)}`,
+    `C${n(left + surfaceHW * 0.34)},${n(liquidTop + surfaceRy * 0.78)}`,
+    `${n(right - surfaceHW * 0.34)},${n(liquidTop + surfaceRy * 0.78)}`,
+    `${n(right)},${n(liquidTop)}`,
+    `L200,${n(spillY)}`,
+    `L200,${n(bottom)}`,
+    `L0,${n(bottom)} Z`,
+  ].join(" ");
+}
+
+function surfaceBackArcPath(liquidTop: number, surfaceHW: number, surfaceRy: number): string {
+  return [
+    `M${n(100 - surfaceHW * 0.68)},${n(liquidTop - surfaceRy * 0.18)}`,
+    `C${n(100 - surfaceHW * 0.34)},${n(liquidTop - surfaceRy * 0.62)}`,
+    `${n(100 + surfaceHW * 0.28)},${n(liquidTop - surfaceRy * 0.58)}`,
+    `${n(100 + surfaceHW * 0.54)},${n(liquidTop - surfaceRy * 0.12)}`,
+  ].join(" ");
 }
 
 /** Build the full <svg> string for a glass. */
@@ -138,14 +173,24 @@ export function glassSvg(opts: GlassOpts): string {
 
   const level = Math.max(0, Math.min(1, fillLevel));
   const liquidTop = geom.cup.bottom - level * (geom.cup.bottom - geom.cup.top);
-  const surfaceHW = Math.max(2, halfWidthAt(geom, liquidTop) - 2);
+  const surfaceHW = Math.max(2, halfWidthAt(geom, liquidTop));
+  const innerSurfaceHW = Math.max(2, surfaceHW - 2);
   const hasLiquid = level > 0.005;
-  const surfaceRy = surfaceHW * 0.14 + 1.5;
+  const surfaceRy = surfaceHW * 0.105 + 1.2;
+  const liquidBottom = geom.cup.bottom + 30;
+  const liquidBodyD = liquidBodyPath(liquidTop, surfaceHW, surfaceRy, liquidBottom);
+  const surfaceBackArcD = surfaceBackArcPath(liquidTop, surfaceHW, surfaceRy);
 
   // colour-layered drinks (B-52, Black Velvet…): slice the liquid into bands.
-  const bands = layers && layers.length > 1 && hasLiquid ? layerBands(layers, liquidTop, geom.cup.bottom + 30) : null;
+  const bands = layers && layers.length > 1 && hasLiquid ? layerBands(layers, liquidTop, liquidBottom) : null;
   const surfHi = bands ? bands[bands.length - 1].hi : hi;
-  const surfShadow = bands ? bands[bands.length - 1].shadow : shadow;
+  const surfBody = bands ? bands[bands.length - 1].body : body;
+  const surfaceFrontColor = tintHex(surfBody, clearFam && !liquidColor ? 0.08 : 0.2);
+  const surfaceGlow = tintHex(surfHi, clearFam && !liquidColor ? 0.1 : 0.28);
+  const surfaceCenterOpacity = Math.min(0.96, aTop + (clearFam && !liquidColor ? 0.05 : 0.035));
+  const surfaceMidOpacity = Math.min(0.94, Math.max(aTop, aMid) + 0.015);
+  const surfaceEdgeOpacity = Math.max(0.42, Math.min(0.95, aTop));
+  const surfaceFrontOpacity = Math.max(0.38, Math.min(0.94, aTop));
   const baseHi = bands ? bands[0].hi : hi;
 
   const cupH = geom.cup.bottom - geom.cup.top;
@@ -232,6 +277,12 @@ export function glassSvg(opts: GlassOpts): string {
       <stop offset="92%" stop-color="${shadow}" stop-opacity="${n(0.26 * edgeK)}"/>
       <stop offset="100%" stop-color="${shadow}" stop-opacity="${n(0.5 * edgeK)}"/>
     </linearGradient>
+    <radialGradient id="surface-${uid}" cx="42%" cy="30%" r="78%">
+      <stop offset="0%" stop-color="${surfHi}" stop-opacity="${n(surfaceCenterOpacity)}"/>
+      <stop offset="42%" stop-color="${surfHi}" stop-opacity="${n(surfaceMidOpacity)}"/>
+      <stop offset="76%" stop-color="${surfaceFrontColor}" stop-opacity="${n(surfaceEdgeOpacity)}"/>
+      <stop offset="100%" stop-color="${surfaceFrontColor}" stop-opacity="${n(surfaceFrontOpacity)}"/>
+    </radialGradient>
     <linearGradient id="wallAO-${uid}" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#140d04" stop-opacity="0.5"/>
       <stop offset="13%" stop-color="#140d04" stop-opacity="0"/>
@@ -250,7 +301,7 @@ export function glassSvg(opts: GlassOpts): string {
     const bubbles = fizzy
       ? BUBBLES.map((b) => {
           const by = geom.cup.bottom - 3 - b.f * (geom.cup.bottom - 3 - liquidTop);
-          const bx = 100 + b.dx * surfaceHW * 0.78;
+          const bx = 100 + b.dx * innerSurfaceHW * 0.78;
           const rise = -(by - liquidTop - 1.5);
           const style = detailed
             ? ` class="bubble-rise" style="transform-box:fill-box;transform-origin:center;--rise:${n(rise)}px;animation-delay:${b.d}s;animation-duration:${b.dur}s"`
@@ -259,22 +310,21 @@ export function glassSvg(opts: GlassOpts): string {
         }).join("")
       : "";
     const swirl = state === "swirling"
-      ? `<ellipse cx="${n(100 - surfaceHW * 0.34)}" cy="${n(liquidTop + 3)}" rx="${n(surfaceHW * 0.26)}" ry="${n(surfaceHW * 0.2)}" fill="#ffffff" opacity="0.1" ${detailed ? `filter="url(#soft-${uid})" ` : ""}class="animate-swirl-slow" style="transform-origin:100px ${n(liquidTop + 3)}px"/>`
+      ? `<ellipse cx="${n(100 - innerSurfaceHW * 0.34)}" cy="${n(liquidTop + 3)}" rx="${n(innerSurfaceHW * 0.26)}" ry="${n(innerSurfaceHW * 0.2)}" fill="#ffffff" opacity="0.1" ${detailed ? `filter="url(#soft-${uid})" ` : ""}class="animate-swirl-slow" style="transform-origin:100px ${n(liquidTop + 3)}px"/>`
       : "";
     const glint = detailed
-      ? `<ellipse cx="${n(100 - surfaceHW * 0.28)}" cy="${n(liquidTop - 0.5)}" rx="${n(surfaceHW * 0.34)}" ry="${n(Math.max(1, surfaceRy * 0.5))}" fill="#ffffff" class="glint-drift" style="transform-origin:100px ${n(liquidTop)}px"/>`
+      ? `<g class="glint-drift" style="transform-origin:100px ${n(liquidTop)}px"><ellipse cx="${n(100 - innerSurfaceHW * 0.22)}" cy="${n(liquidTop - surfaceRy * 0.16)}" rx="${n(innerSurfaceHW * 0.42)}" ry="${n(Math.max(1.3, surfaceRy * 0.54))}" fill="#ffffff" opacity="${clearFam && !liquidColor ? "0.14" : "0.1"}" filter="url(#soft-${uid})"/><ellipse cx="${n(100 - innerSurfaceHW * 0.28)}" cy="${n(liquidTop - surfaceRy * 0.2)}" rx="${n(innerSurfaceHW * 0.2)}" ry="${n(Math.max(0.8, surfaceRy * 0.24))}" fill="#ffffff" opacity="${clearFam && !liquidColor ? "0.16" : "0.12"}" filter="url(#soft-${uid})"/></g>`
       : "";
     const fillMarkup = bands
-      ? `<defs><linearGradient id="lay-${uid}" x1="0" y1="0" x2="0" y2="1">${layerGradientStops(bands, liquidTop, geom.cup.bottom + 30).map((s) => `<stop offset="${n(s.offset * 100)}%" stop-color="${s.color}"/>`).join("")}</linearGradient></defs><rect x="0" y="${n(liquidTop)}" width="200" height="${n(geom.cup.bottom + 30 - liquidTop)}" fill="url(#lay-${uid})" opacity="0.7"/>`
-      : `<rect x="0" y="${n(liquidTop)}" width="200" height="${n(geom.cup.bottom + 30 - liquidTop)}" fill="url(#liquid-${uid})"/><rect x="0" y="${n(liquidTop)}" width="200" height="${n(geom.cup.bottom + 30 - liquidTop)}" fill="url(#liqEdge-${uid})"/>`;
+      ? `<defs><linearGradient id="lay-${uid}" x1="0" y1="0" x2="0" y2="1">${layerGradientStops(bands, liquidTop, liquidBottom).map((s) => `<stop offset="${n(s.offset * 100)}%" stop-color="${s.color}"/>`).join("")}</linearGradient></defs><path d="${liquidBodyD}" fill="url(#lay-${uid})" opacity="0.7"/>`
+      : `<path d="${liquidBodyD}" fill="url(#liquid-${uid})"/><path d="${liquidBodyD}" fill="url(#liqEdge-${uid})"/>`;
     liquidGroup = `<g clip-path="url(#cup-${uid})">
+      <ellipse cx="100" cy="${n(liquidTop)}" rx="${n(surfaceHW)}" ry="${n(surfaceRy)}" fill="url(#surface-${uid})" opacity="1"/>
       ${fillMarkup}
-      <rect x="0" y="${n(liquidTop)}" width="200" height="${n(geom.cup.bottom + 30 - liquidTop)}" fill="url(#liqlight-${uid})" opacity="0.6"/>
-      <ellipse cx="100" cy="${n(geom.cup.bottom - 5)}" rx="${n(surfaceHW * 0.74)}" ry="7" fill="${baseHi}" opacity="0.3"/>
-      <ellipse cx="100" cy="${n(geom.cup.bottom - 4)}" rx="${n(surfaceHW * 0.4)}" ry="3.5" fill="#ffffff" opacity="0.16"/>
-      <ellipse cx="100" cy="${n(liquidTop + surfaceRy + 2)}" rx="${n(surfaceHW)}" ry="${n(surfaceRy)}" fill="${surfShadow}" opacity="0.28"/>
-      <ellipse cx="100" cy="${n(liquidTop)}" rx="${n(surfaceHW)}" ry="${n(surfaceRy)}" fill="${surfHi}" opacity="0.6"/>
-      <ellipse cx="100" cy="${n(liquidTop)}" rx="${n(surfaceHW)}" ry="${n(surfaceRy)}" fill="none" stroke="#fff6e2" stroke-opacity="0.5" stroke-width="0.9"${detailed ? ` class="surface-shimmer" style="transform-origin:100px ${n(liquidTop)}px"` : ""}/>
+      <path d="${liquidBodyD}" fill="url(#liqlight-${uid})" opacity="0.6"/>
+      <ellipse cx="100" cy="${n(geom.cup.bottom - 5)}" rx="${n(innerSurfaceHW * 0.74)}" ry="7" fill="${baseHi}" opacity="0.3"/>
+      <ellipse cx="100" cy="${n(geom.cup.bottom - 4)}" rx="${n(innerSurfaceHW * 0.4)}" ry="3.5" fill="#ffffff" opacity="0.16"/>
+      <path d="${surfaceBackArcD}" fill="none" stroke="${surfHi}" stroke-opacity="0.24" stroke-width="0.9" stroke-linecap="round" filter="url(#soft-${uid})"/>
       ${glint}${swirl}${bubbles}
     </g>`;
   }
@@ -317,7 +367,6 @@ export function glassSvg(opts: GlassOpts): string {
 
   const rimMarkup = `<g>
     <ellipse cx="${n(rim.cx)}" cy="${n(rim.cy)}" rx="${n(rim.rx)}" ry="${n(rim.ry)}" fill="none" stroke="#FBEFC9" stroke-opacity="0.52" stroke-width="1.1"/>
-    <path d="M${n(rim.cx - rim.rx * 0.7)},${n(rim.cy + rim.ry * 0.5)} A${n(rim.rx)} ${n(rim.ry)} 0 0 0 ${n(rim.cx + rim.rx * 0.7)},${n(rim.cy + rim.ry * 0.5)}" fill="none" stroke="#fff7e0" stroke-opacity="0.4" stroke-width="1.2" stroke-linecap="round"/>
     <path d="M${n(rim.cx - rim.rx * 0.42)},${n(rim.cy - rim.ry * 0.62)} A${n(rim.rx)} ${n(rim.ry)} 0 0 1 ${n(rim.cx + rim.rx * 0.06)},${n(rim.cy - rim.ry)}" fill="none" stroke="#ffffff" stroke-opacity="0.3" stroke-width="0.9" stroke-linecap="round"${detailed ? ` class="rim-glint"` : ""}/>
   </g>`;
 

@@ -178,7 +178,7 @@ export interface GarnishLayerOpts {
   clipId?: string;
   liquidColor?: string;
   liquidShadow?: string;
-  /** no liquid — skip the waterline / submerge wash so botanicals just rest in the glass */
+  /** no liquid — skip the waterline so botanicals just rest in the glass */
   dry?: boolean;
 }
 
@@ -191,6 +191,7 @@ export function garnishLayer(opts: GarnishLayerOpts): string {
   const { specs, rim, cupTop, liquidTop, surfaceHW, layer, clipId } = opts;
   const liquidColor = opts.liquidColor ?? "#9A5826";
   const liquidShadow = opts.liquidShadow ?? "#3A1E0C";
+  const contactShadow = darken(liquidShadow, 0.42);
   const dry = opts.dry ?? false;
   if (!specs.length) return "";
   const uid = nextUid();
@@ -216,10 +217,11 @@ export function garnishLayer(opts: GarnishLayerOpts): string {
       const x = 100 + (i - (m - 1) / 2) * gap;
       const y = liquidTop + sItem * 0.16 + (i % 2 ? sItem * 0.22 : 0);
       const wl = liquidTop - y;
+      const tintMaskId = `garnishTint-${uid}-${i}`;
       const wet = dry
         ? ""
-        : `<ellipse cx="0" cy="0" rx="${n(sItem * 1.05)}" ry="${n(sItem * 1.05)}" fill="url(#submerge-${uid})"/><ellipse cx="0" cy="${n(wl)}" rx="${n(sItem * 0.86)}" ry="${n(Math.max(1, sItem * 0.16))}" fill="none" stroke="#fff7e6" stroke-opacity="0.5" stroke-width="0.8"/><ellipse cx="0" cy="${n(wl)}" rx="${n(sItem * 0.86)}" ry="${n(Math.max(1, sItem * 0.16))}" fill="#ffffff" opacity="0.08"/>`;
-      return `<g transform="translate(${n(x)} ${n(y)})"><ellipse cx="${n(sItem * 0.16)}" cy="${n(sItem * 0.62)}" rx="${n(sItem * 0.96)}" ry="${n(sItem * 0.34)}" fill="${liquidShadow}" opacity="0.32"/>${garnishShape(g.kind, g.color, sItem)}${wet}</g>`;
+        : `<defs><mask id="${tintMaskId}" maskUnits="userSpaceOnUse" x="${n(-sItem * 1.8)}" y="${n(-sItem * 3)}" width="${n(sItem * 3.6)}" height="${n(sItem * 5)}">${garnishShape(g.kind, "#ffffff", sItem)}</mask></defs><rect x="${n(-sItem * 1.8)}" y="${n(wl)}" width="${n(sItem * 3.6)}" height="${n(sItem * 3)}" fill="${liquidColor}" opacity="0.18" mask="url(#${tintMaskId})"/><ellipse cx="0" cy="${n(wl)}" rx="${n(sItem * 0.86)}" ry="${n(Math.max(1, sItem * 0.16))}" fill="none" stroke="#fff8ea" stroke-opacity="0.28" stroke-width="0.65" filter="url(#garnishLine-${uid})"/><ellipse cx="0" cy="${n(wl)}" rx="${n(sItem * 0.86)}" ry="${n(Math.max(1, sItem * 0.16))}" fill="#ffffff" opacity="0.04" filter="url(#garnishLine-${uid})"/>`;
+      return `<g transform="translate(${n(x)} ${n(y)})"><ellipse cx="${n(sItem * 0.16)}" cy="${n(sItem * 0.58)}" rx="${n(sItem * 0.72)}" ry="${n(sItem * 0.24)}" fill="${contactShadow}" opacity="0.32" filter="url(#garnishShadow-${uid})"/>${garnishShape(g.kind, g.color, sItem)}${wet}</g>`;
     }).join("");
 
     const dustMarkup = dust
@@ -232,12 +234,8 @@ export function garnishLayer(opts: GarnishLayerOpts): string {
 
     return `<g${clipId ? ` clip-path="url(#${clipId})"` : ""}>
       <defs>
-        <linearGradient id="submerge-${uid}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${liquidColor}" stop-opacity="0"/>
-          <stop offset="42%" stop-color="${liquidColor}" stop-opacity="0"/>
-          <stop offset="78%" stop-color="${liquidColor}" stop-opacity="0.42"/>
-          <stop offset="100%" stop-color="${liquidShadow}" stop-opacity="0.55"/>
-        </linearGradient>
+        <filter id="garnishShadow-${uid}" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="0.9"/></filter>
+        <filter id="garnishLine-${uid}" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="0.35"/></filter>
       </defs>
       ${foamMarkup}${surfMarkup}${dustMarkup}
     </g>`;
@@ -266,8 +264,8 @@ export function garnishLayer(opts: GarnishLayerOpts): string {
     const rot = off * 26;
     const sTall = Math.max(7, Math.min(14, surfaceHW * 0.34));
     const grow = (tallH / (sTall * 2.8) > 1.6 ? 1.35 : 1) * (1 - Math.abs(off) * 0.12);
-    return `<g><ellipse cx="${n(ax + 1.5)}" cy="${n(baseY + 2.5)}" rx="${n(sTall * 0.8)}" ry="${n(Math.max(1.4, sTall * 0.24))}" fill="${liquidShadow}" opacity="0.28"/><g transform="translate(${n(ax)} ${n(baseY)}) rotate(${n(rot)})"><g transform="scale(${n(grow)})">${garnishShape(g.kind, g.color, sTall)}</g></g></g>`;
+    return `<g><ellipse cx="${n(ax + 1.5)}" cy="${n(baseY + 2.3)}" rx="${n(sTall * 0.58)}" ry="${n(Math.max(1.1, sTall * 0.18))}" fill="${contactShadow}" opacity="0.28" filter="url(#garnishShadow-${uid})"/><g transform="translate(${n(ax)} ${n(baseY)}) rotate(${n(rot)})"><g transform="scale(${n(grow)})">${garnishShape(g.kind, g.color, sTall)}</g></g></g>`;
   }).join("");
 
-  return `<g>${rimMarkup}${tallMarkup}</g>`;
+  return `<g><defs><filter id="garnishShadow-${uid}" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="0.9"/></filter></defs>${rimMarkup}${tallMarkup}</g>`;
 }

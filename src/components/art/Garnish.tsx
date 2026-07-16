@@ -393,10 +393,10 @@ interface GarnishLayerProps {
   layer: "back" | "front";
   /** clipPath id of the cup interior — keeps in-drink garnishes inside the glass */
   clipId?: string;
-  /** the drink's body / shadow colours — tint the submerged part of floaters */
+  /** the drink's body / shadow colours — tint only the submerged part of floaters */
   liquidColor?: string;
   liquidShadow?: string;
-  /** no liquid in the glass — skip the waterline / submerge wash so botanicals
+  /** no liquid in the glass — skip the waterline so botanicals
    *  just rest in the glass rather than reading as floating on nothing */
   dry?: boolean;
 }
@@ -410,6 +410,7 @@ interface GarnishLayerProps {
 export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, clipId, liquidColor = "#9A5826", liquidShadow = "#3A1E0C", dry = false }: GarnishLayerProps) {
   const uid = useId().replace(/:/g, "");
   if (!specs.length) return null;
+  const contactShadow = darken(liquidShadow, 0.42);
   const surf = specs.filter((g) => g.placement === "surface");
   const tall = specs.filter((g) => g.placement === "tall");
   const rimG = specs.find((g) => g.placement === "rim");
@@ -425,13 +426,12 @@ export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, 
     return (
       <g clipPath={clipId ? `url(#${clipId})` : undefined}>
         <defs>
-          {/* the drink's colour washes UP over the submerged part of a floater */}
-          <linearGradient id={`submerge-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={liquidColor} stopOpacity="0" />
-            <stop offset="42%" stopColor={liquidColor} stopOpacity="0" />
-            <stop offset="78%" stopColor={liquidColor} stopOpacity="0.42" />
-            <stop offset="100%" stopColor={liquidShadow} stopOpacity="0.55" />
-          </linearGradient>
+          <filter id={`garnishShadow-${uid}`} x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="0.9" />
+          </filter>
+          <filter id={`garnishLine-${uid}`} x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="0.35" />
+          </filter>
         </defs>
 
         {/* foam cap on the surface */}
@@ -453,16 +453,24 @@ export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, 
           const x = 100 + (i - (m - 1) / 2) * gap;
           const y = liquidTop + sItem * 0.16 + (i % 2 ? sItem * 0.22 : 0);
           const wl = liquidTop - y; // waterline in the floater's local coords
+          const tintMaskId = `garnishTint-${uid}-${i}`;
           return (
             <g key={`s${i}`} transform={`translate(${x} ${y})`}>
+              {!dry && (
+                <defs>
+                  <mask id={tintMaskId} maskUnits="userSpaceOnUse" x={-sItem * 1.8} y={-sItem * 3} width={sItem * 3.6} height={sItem * 5}>
+                    <Shape kind={g.kind} color="#ffffff" s={sItem} />
+                  </mask>
+                </defs>
+              )}
               {/* soft contact shadow cast down into the drink */}
-              <ellipse cx={sItem * 0.16} cy={sItem * 0.62} rx={sItem * 0.96} ry={sItem * 0.34} fill={liquidShadow} opacity="0.32" />
+              <ellipse cx={sItem * 0.16} cy={sItem * 0.58} rx={sItem * 0.72} ry={sItem * 0.24} fill={contactShadow} opacity="0.32" filter={`url(#garnishShadow-${uid})`} />
               {/* the garnish itself */}
               <Shape kind={g.kind} color={g.color} s={sItem} />
-              {/* liquid-only finishing: submerge wash + waterline meniscus */}
-              {!dry && <ellipse cx="0" cy="0" rx={sItem * 1.05} ry={sItem * 1.05} fill={`url(#submerge-${uid})`} />}
-              {!dry && <ellipse cx="0" cy={wl} rx={sItem * 0.86} ry={Math.max(1, sItem * 0.16)} fill="none" stroke="#fff7e6" strokeOpacity="0.5" strokeWidth="0.8" />}
-              {!dry && <ellipse cx="0" cy={wl} rx={sItem * 0.86} ry={Math.max(1, sItem * 0.16)} fill="#ffffff" opacity="0.08" />}
+              {/* liquid-only finishing: tint only the submerged part inside the garnish shape */}
+              {!dry && <rect x={-sItem * 1.8} y={wl} width={sItem * 3.6} height={sItem * 3} fill={liquidColor} opacity="0.18" mask={`url(#${tintMaskId})`} />}
+              {!dry && <ellipse cx="0" cy={wl} rx={sItem * 0.86} ry={Math.max(1, sItem * 0.16)} fill="none" stroke="#fff8ea" strokeOpacity="0.28" strokeWidth="0.65" filter={`url(#garnishLine-${uid})`} />}
+              {!dry && <ellipse cx="0" cy={wl} rx={sItem * 0.86} ry={Math.max(1, sItem * 0.16)} fill="#ffffff" opacity="0.04" filter={`url(#garnishLine-${uid})`} />}
             </g>
           );
         })}
@@ -481,6 +489,11 @@ export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, 
   // front: rim crust + tall sprigs resting on / rising from the lip
   return (
     <g>
+      <defs>
+        <filter id={`garnishShadow-${uid}`} x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="0.9" />
+        </filter>
+      </defs>
       {rimG &&
         Array.from({ length: 16 }, (_, i) => {
           const t = i / 15;
@@ -508,7 +521,7 @@ export function GarnishLayer({ specs, rim, cupTop, liquidTop, surfaceHW, layer, 
         return (
           <g key={`t${i}`}>
             {/* shadow where the stalk meets the surface / lip */}
-            <ellipse cx={ax + 1.5} cy={baseY + 2.5} rx={sTall * 0.8} ry={Math.max(1.4, sTall * 0.24)} fill={liquidShadow} opacity="0.28" />
+            <ellipse cx={ax + 1.5} cy={baseY + 2.3} rx={sTall * 0.58} ry={Math.max(1.1, sTall * 0.18)} fill={contactShadow} opacity="0.28" filter={`url(#garnishShadow-${uid})`} />
             <g transform={`translate(${ax} ${baseY}) rotate(${rot})`}>
               <g transform={`scale(${grow})`}>
                 <Shape kind={g.kind} color={g.color} s={sTall} />
