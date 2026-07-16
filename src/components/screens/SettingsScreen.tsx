@@ -53,7 +53,7 @@ export default function SettingsScreen({ layout }: { layout: LayoutMode }) {
         <p className="mt-3 font-cn text-[13px] leading-relaxed text-paper/60">
           夜色温柔，城市次第熄灯。这里没有喧嚣，只有一盏暖光、一段心事，和一杯为你而调的酒。说出此刻的心绪，光影便为你斟满杯盏，把悲欢酿成色泽与气味——或浓烈，或清浅，或层层流转。愿每一次微醺，都是与自己温柔相认的时刻。
         </p>
-        <p className="mt-3 font-ui text-[11px] text-paper/35">v1.04</p>
+        <p className="mt-3 font-ui text-[11px] text-paper/35">v1.05</p>
       </div>
     </div>
   );
