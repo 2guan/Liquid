@@ -179,11 +179,11 @@ export default function Glass({
   if (ice === "sphere") {
     // a proper "big rock" — nearly fills the tumbler
     iceR = Math.max(10, Math.min(interiorHW * 0.9, cupH * 0.52));
-    // floats ~90% submerged, but rests on the base when the pour is shallow
-    iceY = Math.min(liquidTop + iceR * 0.8, geom.cup.bottom - iceR - 1);
+    // always rests on the base (sinks to the bottom)
+    iceY = geom.cup.bottom - iceR - 1;
   } else if (ice === "cube") {
     iceR = Math.max(9, Math.min(interiorHW * 0.74, cupH * 0.44));
-    iceY = Math.min(liquidTop + iceR * 0.8, geom.cup.bottom - iceR - 2);
+    iceY = geom.cup.bottom - iceR - 2;
   } else if (ice === "crushed") {
     // crushed — a mound packing the lower cup
     iceR = Math.max(16, interiorHW * 0.96);

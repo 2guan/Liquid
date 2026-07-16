@@ -508,155 +508,317 @@ function drawIce(
   ctx.translate(cx, cy);
 
   if (type === "sphere") {
-    const gx = -0.26 * r;
-    const gy = -0.4 * r;
-    const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, 1.4 * r);
-    g.addColorStop(0, "rgba(255,255,255,0.6)");
-    g.addColorStop(0.2, withAlpha("#eef7fb", 0.26));
-    g.addColorStop(0.58, withAlpha(tint, 0.1));
-    g.addColorStop(0.86, withAlpha(tint, 0.16));
-    g.addColorStop(1, withAlpha(tint, 0.36));
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = g;
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.3)";
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
+    const chord = Math.sqrt(Math.max(0, r * r - wl * wl));
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.fillStyle = withAlpha(liquidColor, 0.4);
-    ctx.fillRect(-r, wl, 2 * r, 2 * r);
-    ctx.fillStyle = withAlpha(tint, 0.14);
-    ellipse(ctx, -0.22 * r, 0.4 * r, 0.78 * r, 0.58 * r);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.38)";
-    ctx.lineWidth = Math.max(0.8, r * 0.05);
-    ctx.beginPath();
-    ctx.moveTo(0.34 * r, 0.58 * r);
-    ctx.quadraticCurveTo(0.72 * r, 0.48 * r, 0.66 * r, 0.12 * r);
-    ctx.stroke();
-    ctx.fillStyle = "rgba(255,255,255,0.05)";
-    ellipse(ctx, -0.18 * r, -0.04 * r, 0.4 * r, 0.5 * r);
-    ctx.fill();
-    ctx.restore();
+    const getSphereGrad = (sub: boolean) => {
+      const gx = -0.28 * r;
+      const gy = -0.44 * r;
+      const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, 1.56 * r);
+      if (sub) {
+        g.addColorStop(0, "rgba(255,255,255,0.48)");
+        g.addColorStop(0.2, "rgba(246,251,255,0.32)");
+        g.addColorStop(0.54, withAlpha(tint, 0.22));
+        g.addColorStop(0.80, "rgba(184,209,220,0.16)");
+        g.addColorStop(1, "rgba(255,255,255,0.38)");
+      } else {
+        g.addColorStop(0, "rgba(255,255,255,0.82)");
+        g.addColorStop(0.2, "rgba(246,251,255,0.48)");
+        g.addColorStop(0.54, withAlpha(tint, 0.34));
+        g.addColorStop(0.80, "rgba(184,209,220,0.22)");
+        g.addColorStop(1, "rgba(255,255,255,0.52)");
+      }
+      return g;
+    };
 
-    // primary specular hot-spot + echo
-    ctx.save();
-    ctx.translate(-0.34 * r, -0.4 * r);
-    ctx.rotate((-30 * Math.PI) / 180);
-    ctx.fillStyle = "rgba(255,255,255,0.9)";
-    ellipse(ctx, 0, 0, 0.3 * r, 0.18 * r);
-    ctx.fill();
-    ctx.restore();
-    ctx.fillStyle = "rgba(255,255,255,0.7)";
-    ctx.beginPath();
-    ctx.arc(-0.1 * r, -0.18 * r, Math.max(0.8, r * 0.06), 0, Math.PI * 2);
-    ctx.fill();
+    const getSphHiGrad = (sub: boolean) => {
+      const gx = -0.28 * r;
+      const gy = -0.32 * r;
+      const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, 1.28 * r);
+      if (sub) {
+        g.addColorStop(0, "rgba(255,255,255,0.62)");
+        g.addColorStop(0.45, "rgba(255,255,255,0.18)");
+        g.addColorStop(1, "rgba(255,255,255,0)");
+      } else {
+        g.addColorStop(0, "rgba(255,255,255,0.86)");
+        g.addColorStop(0.45, "rgba(255,255,255,0.22)");
+        g.addColorStop(1, "rgba(255,255,255,0)");
+      }
+      return g;
+    };
 
-    // meniscus ring where the drink wraps the ice
-    if (Math.abs(wl) < r * 0.98) {
-      const chord = Math.sqrt(Math.max(0, r * r - wl * wl));
+    const renderSpherePiece = (sub: boolean) => {
+      ctx.save();
+      // Base sphere
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(0.8px)";
+      ctx.fillStyle = getSphereGrad(sub);
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Refractive Inner Highlights
       ctx.save();
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, Math.PI * 2);
       ctx.clip();
-      ctx.fillStyle = "rgba(255,255,255,0.1)";
-      ellipse(ctx, 0, wl, chord, Math.max(1, r * 0.08));
-      ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.5)";
-      ctx.lineWidth = 0.9;
-      ellipse(ctx, 0, wl, chord, Math.max(1, r * 0.08));
-      ctx.stroke();
-      ctx.restore();
-    }
 
-    // tiny internal bubbles
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.beginPath();
-    ctx.arc(0.3 * r, -0.12 * r, Math.max(0.6, r * 0.035), 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,0.38)";
-    ctx.beginPath();
-    ctx.arc(0.44 * r, 0.34 * r, Math.max(0.5, r * 0.026), 0, Math.PI * 2);
-    ctx.fill();
+      // Inner highlight 1 (super soft)
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(2.8px)";
+      ctx.fillStyle = "rgba(255,255,255," + (sub ? "0.06" : "0.08") + ")";
+      ctx.beginPath();
+      ellipse(ctx, -r * 0.2, r * 0.36, r * 0.72, r * 0.52);
+      ctx.fill();
+      ctx.restore();
+
+      // Inner highlight 2 (super soft)
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(2.8px)";
+      const px1 = r * 0.28, py1 = r * 0.28;
+      ctx.translate(px1, py1);
+      ctx.rotate((-24 * Math.PI) / 180);
+      ctx.fillStyle = "rgba(255,255,255," + (sub ? "0.16" : "0.22") + ")";
+      ctx.beginPath();
+      ellipse(ctx, 0, 0, r * 0.34, r * 0.16);
+      ctx.fill();
+      ctx.restore();
+
+      // Inner highlight 3 (medium soft)
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(1.2px)";
+      ctx.fillStyle = "rgba(255,255,255," + (sub ? "0.04" : "0.06") + ")";
+      ctx.beginPath();
+      ellipse(ctx, -r * 0.12, -r * 0.04, r * 0.36, r * 0.5);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.restore(); // restores clip()
+
+      // Main Specular Highlight (super soft)
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(2.8px)";
+      const px2 = -r * 0.32, py2 = -r * 0.4;
+      ctx.translate(px2, py2);
+      ctx.rotate((-30 * Math.PI) / 180);
+      ctx.fillStyle = getSphHiGrad(sub);
+      ctx.beginPath();
+      ellipse(ctx, 0, 0, r * 0.34, r * 0.2);
+      ctx.fill();
+      ctx.restore();
+
+      // Small details
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(1.2px)";
+      ctx.fillStyle = "rgba(255,255,255," + (sub ? "0.38" : "0.5") + ")";
+      ctx.beginPath();
+      ctx.arc(r * 0.3, -r * 0.12, Math.max(0.6, r * 0.034), 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(255,255,255," + (sub ? "0.26" : "0.36") + ")";
+      ctx.beginPath();
+      ctx.arc(r * 0.44, r * 0.34, Math.max(0.5, r * 0.026), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.restore();
+    };
+
+    if (waterY == null || wl == null) {
+      renderSpherePiece(false);
+    } else {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-r - 5, -r - 5, r * 2 + 10, wl + r + 5);
+      ctx.clip();
+      renderSpherePiece(false);
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-r - 5, wl, r * 2 + 10, 500);
+      ctx.clip();
+      renderSpherePiece(true);
+      ctx.restore();
+
+      // Waterline caustics
+      if (Math.abs(wl) < r * 0.98) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.clip();
+
+        if ("filter" in ctx) ctx.filter = "blur(0.5px)";
+        ctx.fillStyle = "rgba(255,255,255,0.25)";
+        ctx.beginPath();
+        ellipse(ctx, 0, wl, chord, Math.max(1.2, r * 0.09));
+        ctx.fill();
+
+        if ("filter" in ctx) ctx.filter = "none";
+        ctx.fillStyle = "rgba(255,255,255,0.38)";
+        ctx.beginPath();
+        ellipse(ctx, -chord * 0.18, wl - r * 0.02, chord * 0.62, Math.max(0.8, r * 0.035));
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
   } else if (type === "cube") {
     const sH = r;
     const d = r * 0.36;
-    const rad = r * 0.16;
-    // top face
-    ctx.beginPath();
-    ctx.moveTo(-sH + rad * 0.5, -sH);
-    ctx.lineTo(-sH + d, -sH - d);
-    ctx.lineTo(sH + d, -sH - d);
-    ctx.lineTo(sH - rad * 0.5, -sH);
-    ctx.closePath();
-    ctx.fillStyle = withAlpha(tint, 0.4);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.28)";
-    ctx.lineWidth = 0.7;
-    ctx.stroke();
-    // right face
-    ctx.beginPath();
-    ctx.moveTo(sH, -sH + rad * 0.5);
-    ctx.lineTo(sH + d, -sH - d);
-    ctx.lineTo(sH + d, sH - d);
-    ctx.lineTo(sH, sH - rad * 0.5);
-    ctx.closePath();
-    ctx.fillStyle = withAlpha(tint, 0.18);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.16)";
-    ctx.stroke();
-    // front face
-    const front = roundRectPath(-sH, -sH, 2 * sH, 2 * sH, rad);
-    const fg = ctx.createLinearGradient(-0.7 * sH, -sH, 0, sH);
-    fg.addColorStop(0, "rgba(255,255,255,0.42)");
-    fg.addColorStop(0.46, withAlpha(tint, 0.16));
-    fg.addColorStop(1, withAlpha(tint, 0.22));
-    ctx.fillStyle = fg;
-    ctx.fill(front);
-    ctx.strokeStyle = "rgba(255,255,255,0.32)";
-    ctx.lineWidth = 0.8;
-    ctx.stroke(front);
-    // clipped interior
-    ctx.save();
-    ctx.clip(front);
-    ctx.fillStyle = withAlpha(liquidColor, 0.38);
-    ctx.fillRect(-sH, wl, 2 * sH, 2 * sH);
-    ctx.strokeStyle = "rgba(255,255,255,0.16)";
-    ctx.lineWidth = Math.max(0.6, r * 0.04);
-    ctx.beginPath();
-    ctx.moveTo(-0.5 * sH, -sH);
-    ctx.lineTo(0.1 * sH, sH);
-    ctx.stroke();
-    ctx.strokeStyle = withAlpha(tint, 0.3);
-    ctx.lineWidth = Math.max(0.6, r * 0.05);
-    ctx.beginPath();
-    ctx.moveTo(0.55 * sH, -sH);
-    ctx.lineTo(-0.15 * sH, sH);
-    ctx.stroke();
-    if (Math.abs(wl) < sH) {
-      ctx.strokeStyle = "rgba(255,255,255,0.5)";
-      ctx.lineWidth = 0.9;
+    const rad = r * 0.22;
+
+    const getCubeFaceGrad = (face: "front" | "top" | "side", sub: boolean) => {
+      if (face === "front") {
+        const g = ctx.createLinearGradient(-0.7 * sH, -sH, 0, sH);
+        if (sub) {
+          g.addColorStop(0, "rgba(255,255,255,0.52)");
+          g.addColorStop(0.35, "rgba(247,252,255,0.38)");
+          g.addColorStop(0.72, withAlpha(tint, 0.26));
+          g.addColorStop(1, "rgba(215,236,244,0.20)");
+        } else {
+          g.addColorStop(0, "rgba(255,255,255,0.9)");
+          g.addColorStop(0.35, "rgba(247,252,255,0.72)");
+          g.addColorStop(0.72, withAlpha(tint, 0.56));
+          g.addColorStop(1, "rgba(215,236,244,0.48)");
+        }
+        return g;
+      } else if (face === "top") {
+        const g = ctx.createLinearGradient(0, 0, sH, sH);
+        if (sub) {
+          g.addColorStop(0, "rgba(255,255,255,0.52)");
+          g.addColorStop(1, "rgba(232,247,252,0.28)");
+        } else {
+          g.addColorStop(0, "rgba(255,255,255,0.9)");
+          g.addColorStop(1, "rgba(232,247,252,0.54)");
+        }
+        return g;
+      } else {
+        const g = ctx.createLinearGradient(0, 0, sH, sH);
+        if (sub) {
+          g.addColorStop(0, "rgba(245,251,255,0.38)");
+          g.addColorStop(1, "rgba(205,228,238,0.20)");
+        } else {
+          g.addColorStop(0, "rgba(245,251,255,0.62)");
+          g.addColorStop(1, "rgba(205,228,238,0.42)");
+        }
+        return g;
+      }
+    };
+
+    const getCubeHiGrad = (sub: boolean) => {
+      const gx = -0.28 * sH;
+      const gy = -0.44 * sH;
+      const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, 1.28 * sH);
+      if (sub) {
+        g.addColorStop(0, "rgba(255,255,255,0.48)");
+        g.addColorStop(0.6, "rgba(255,255,255,0.12)");
+        g.addColorStop(1, "rgba(255,255,255,0)");
+      } else {
+        g.addColorStop(0, "rgba(255,255,255,0.78)");
+        g.addColorStop(0.6, "rgba(255,255,255,0.18)");
+        g.addColorStop(1, "rgba(255,255,255,0)");
+      }
+      return g;
+    };
+
+    const renderCubePiece = (sub: boolean) => {
+      ctx.save();
+
+      const pTop = new Path2D(`M${-sH + rad * 0.7},${-sH} L${-sH + d},${-sH - d} L${sH + d},${-sH - d} L${sH - rad * 0.45},${-sH} Z`);
+      const pSide = new Path2D(`M${sH},${-sH + rad * 0.55} L${sH + d},${-sH - d} L${sH + d},${sH - d} L${sH},${sH - rad * 0.55} Z`);
+      const pFront = roundRectPath(-sH, -sH, 2 * sH, 2 * sH, rad);
+
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(0.4px)";
+      ctx.fillStyle = getCubeFaceGrad("top", sub);
+      ctx.globalAlpha = sub ? 0.48 : 0.78;
+      ctx.fill(pTop);
+      ctx.fillStyle = getCubeFaceGrad("side", sub);
+      ctx.globalAlpha = sub ? 0.42 : 0.72;
+      ctx.fill(pSide);
+      ctx.fillStyle = getCubeFaceGrad("front", sub);
+      ctx.globalAlpha = sub ? 0.44 : 0.72;
+      ctx.fill(pFront);
+      ctx.restore();
+
+      ctx.save();
+      ctx.clip(pFront);
+
+      // Main inner glow (super soft)
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(2.8px)";
+      ctx.fillStyle = getCubeHiGrad(sub);
+      ctx.translate(-sH * 0.26, -sH * 0.15);
+      ctx.rotate((-18 * Math.PI) / 180);
       ctx.beginPath();
-      ctx.moveTo(-sH, wl);
-      ctx.lineTo(sH, wl);
-      ctx.stroke();
-      ctx.fillStyle = "rgba(255,255,255,0.08)";
-      ctx.fillRect(-sH, wl, 2 * sH, Math.max(1.2, r * 0.08));
+      ellipse(ctx, 0, 0, sH * 0.52, sH * 0.7);
+      ctx.fill();
+      ctx.restore();
+
+      // Second soft highlight
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(1.2px)";
+      ctx.fillStyle = "rgba(255,255,255," + (sub ? "0.09" : "0.14") + ")";
+      ctx.translate(sH * 0.36, sH * 0.44);
+      ctx.rotate((-12 * Math.PI) / 180);
+      ctx.beginPath();
+      ellipse(ctx, 0, 0, sH * 0.42, sH * 0.16);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.restore(); // restores clip(pFront)
+
+      // Prism edge reflections (medium soft)
+      ctx.save();
+      if ("filter" in ctx) ctx.filter = "blur(1.2px)";
+      ctx.fillStyle = "rgba(255,255,255," + (sub ? "0.12" : "0.2") + ")";
+      ctx.beginPath();
+      const pShine = new Path2D(`M${-sH + rad * 0.5},${-sH + 0.5} C${-sH * 0.5},${-sH * 0.95} ${sH * 0.45},${-sH * 0.82} ${sH - rad * 0.4},${-sH + 1.4} L${sH - rad * 0.4},${-sH + rad * 0.23} C${sH * 0.34},${-sH * 0.7} ${-sH * 0.4},${-sH * 0.78} ${-sH + rad * 0.72},${-sH + rad * 0.22} Z`);
+      ctx.fill(pShine);
+
+      ctx.fillStyle = "rgba(255,255,255," + (sub ? "0.11" : "0.2") + ")";
+      ctx.beginPath();
+      ellipse(ctx, -sH * 0.6, sH * 0.84, sH * 0.14, sH * 0.06);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    if (waterY == null || wl == null) {
+      renderCubePiece(false);
+    } else {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-sH - 10, -sH - d - 10, sH * 2 + d + 20, wl + sH + d + 10);
+      ctx.clip();
+      renderCubePiece(false);
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-sH - 10, wl, sH * 2 + d + 20, 500);
+      ctx.clip();
+      renderCubePiece(true);
+      ctx.restore();
+
+      if (Math.abs(wl) < sH) {
+        ctx.save();
+        const pFront = roundRectPath(-sH, -sH, 2 * sH, 2 * sH, rad);
+        ctx.clip(pFront);
+
+        if ("filter" in ctx) ctx.filter = "blur(0.5px)";
+        ctx.fillStyle = "rgba(255,255,255,0.25)";
+        ctx.beginPath();
+        ellipse(ctx, 0, wl, sH * 0.94, Math.max(1.2, r * 0.07));
+        ctx.fill();
+
+        if ("filter" in ctx) ctx.filter = "none";
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        ctx.fillRect(-sH, wl, sH * 2, Math.max(1.5, r * 0.1));
+
+        ctx.restore();
+      }
     }
-    ctx.restore();
-    // lit melt-rounded edges
-    ctx.strokeStyle = "rgba(255,255,255,0.5)";
-    ctx.lineWidth = 1.3;
-    ctx.beginPath();
-    ctx.moveTo(-sH + rad, -sH);
-    ctx.arcTo(-sH, -sH, -sH, -sH + rad, rad);
-    ctx.lineTo(-sH, sH - rad);
-    ctx.stroke();
   } else {
     // crushed
     const k = r / 34;
@@ -695,9 +857,9 @@ function drawIceFill(
   hw: number,
 ): void {
   const isBullet = type === "bullets";
-  const piece = isBullet ? 30 : 38;
-  const stepX = piece * (isBullet ? 0.76 : 0.74);
-  const stepY = piece * (isBullet ? 0.58 : 0.60);
+  const piece = isBullet ? 26 : 42;
+  const stepX = piece * (isBullet ? 0.84 : 0.72);
+  const stepY = piece * (isBullet ? 0.65 : 0.58);
   const topInset = isBullet ? piece * 0.68 : piece * 0.88;
 
   const getCubeTopGrad = (sub: boolean) => {
@@ -772,9 +934,12 @@ function drawIceFill(
     return g;
   };
 
-  const pCubeRight = new Path2D("M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,15.5 Q 0,17 0,14.5 Z");
-  const pCubeLeft = new Path2D("M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,15.5 Q 0,17 0,14.5 Z");
+  const pCubeRight = new Path2D("M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,13.0 Q 0,14.5 0,12.0 Z");
+  const pCubeLeft = new Path2D("M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,13.0 Q 0,14.5 0,12.0 Z");
   const pCubeTop = new Path2D("M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8 Q 14.7,-8.5 12.5,-7.2 L 0,0 L -12.5,-7.2 Q -14.7,-8.5 -12.5,-9.8 Z");
+  const pCubeBottomCap = new Path2D("M 0,12.0 L -2.5,13.0 Q 0,14.5 2.5,13.0 Z");
+  const pCubeRightTopCap = new Path2D("M 12.5,-9.8 L 14.7,-8.5 L 12.5,-7.2 Z");
+  const pCubeLeftTopCap = new Path2D("M -12.5,-9.8 L -14.7,-8.5 L -12.5,-7.2 Z");
   const pCubeCoreTop = new Path2D("M -4.4,-3.4 L -0.9,-5.5 Q 0,-6.0 0.9,-5.5 L 4.4,-3.4 Q 5.2,-3.0 4.4,-2.5 L 0,0 L -4.4,-2.5 Q -5.2,-3.0 -4.4,-3.4 Z");
   const pCubeCoreLeft = new Path2D("M 0,0 L -4.4,-2.5 Q -5.2,-3.0 -5.2,-2.0 L -5.2,2.0 Q -5.2,3.0 -4.4,2.5 L -0.9,5.5 Q 0,6.0 0,5.1 Z");
   const pCubeCoreRight = new Path2D("M 0,0 L 4.4,-2.5 Q 5.2,-3.0 5.2,-2.0 L 5.2,2.0 Q 5.2,3.0 4.4,2.5 L 0.9,5.5 Q 0,6.0 0,5.1 Z");
@@ -787,7 +952,9 @@ function drawIceFill(
   for (let y = bot - piece * 0.5; y >= top + topInset; y -= stepY) {
     const rowI = Math.round((bot - y) / stepY);
     const stagger = rowI % 2 ? stepX * 0.5 : 0;
-    for (let x = cx - hw + piece * 0.5 + stagger; x <= cx + hw - piece * 0.4; x += stepX) {
+    const startOffset = piece * (isBullet ? 0.55 : 0.44);
+    const endOffset = piece * (isBullet ? 0.45 : 0.34);
+    for (let x = cx - hw + startOffset + stagger; x <= cx + hw - endOffset; x += stepX) {
       const jx = (((idx * 13) % 7) - 3) * piece * 0.05;
       const jy = (((idx * 7) % 5) - 2) * piece * 0.05;
       const rot = (((idx * 11) % 9) - 4) * (isBullet ? 11 : 7);
@@ -837,13 +1004,16 @@ function drawIceFill(
           ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeRight);
           ctx.fillStyle = getCubeLeftGrad(sub); ctx.fill(pCubeLeft);
           ctx.fillStyle = getCubeTopGrad(sub); ctx.fill(pCubeTop);
+          ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeBottomCap);
+          ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeRightTopCap);
+          ctx.fillStyle = getCubeLeftGrad(sub); ctx.fill(pCubeLeftTopCap);
 
           if ("filter" in ctx) ctx.filter = "blur(0.8px)";
           ctx.lineCap = "round";
 
           ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.16 : 0.35})`;
           ctx.lineWidth = 1.6;
-          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 14.5); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 12.0); ctx.stroke();
 
           ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.12 : 0.25})`;
           ctx.lineWidth = 1.0;
@@ -954,13 +1124,16 @@ function drawIceFill(
         ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeRight);
         ctx.fillStyle = getCubeLeftGrad(sub); ctx.fill(pCubeLeft);
         ctx.fillStyle = getCubeTopGrad(sub); ctx.fill(pCubeTop);
+        ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeBottomCap);
+        ctx.fillStyle = getCubeRightGrad(sub); ctx.fill(pCubeRightTopCap);
+        ctx.fillStyle = getCubeLeftGrad(sub); ctx.fill(pCubeLeftTopCap);
 
         if ("filter" in ctx) ctx.filter = "blur(0.8px)";
         ctx.lineCap = "round";
 
         ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.16 : 0.35})`;
         ctx.lineWidth = 1.6;
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 14.5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 12.0); ctx.stroke();
 
         ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.12 : 0.25})`;
         ctx.lineWidth = 1.0;

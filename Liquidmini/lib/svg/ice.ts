@@ -36,41 +36,82 @@ export function iceGroup(opts: IceGroupOpts): string {
   if (type === "sphere") {
     const clip = `sclip-${uid}`;
     const chord = wl != null ? Math.sqrt(Math.max(0, r * r - wl * wl)) : 0;
+
+    const renderSphere = (sub: boolean): string => `<g>
+      <circle r="${n(r)}" fill="url(#isph-${sub ? "sub" : "dry"}-${uid})" opacity="${sub ? 0.78 : 0.78}" filter="url(#sphereSoft-${uid})"/>
+      <g clip-path="url(#${clip})">
+        <ellipse cx="${n(-r * 0.2)}" cy="${n(r * 0.36)}" rx="${n(r * 0.72)}" ry="${n(r * 0.52)}" fill="#ffffff" opacity="${sub ? 0.06 : 0.08}" filter="url(#glowSoft-${uid})"/>
+        <ellipse cx="${n(r * 0.28)}" cy="${n(r * 0.28)}" rx="${n(r * 0.34)}" ry="${n(r * 0.16)}" fill="#ffffff" opacity="${sub ? 0.16 : 0.22}" filter="url(#glowSoft-${uid})" transform="rotate(-24 ${n(r * 0.28)} ${n(r * 0.28)})"/>
+        <ellipse cx="${n(-r * 0.12)}" cy="${n(-r * 0.04)}" rx="${n(r * 0.36)}" ry="${n(r * 0.5)}" fill="#ffffff" opacity="${sub ? 0.04 : 0.06}" filter="url(#iceGlow-${uid})"/>
+      </g>
+      <ellipse cx="${n(-r * 0.32)}" cy="${n(-r * 0.4)}" rx="${n(r * 0.34)}" ry="${n(r * 0.2)}" fill="url(#sphHi-${sub ? "sub" : "dry"}-${uid})" transform="rotate(-30 ${n(-r * 0.32)} ${n(-r * 0.4)})" filter="url(#glowSoft-${uid})"/>
+      <g filter="url(#iceGlow-${uid})">
+        <circle cx="${n(r * 0.3)}" cy="${n(-r * 0.12)}" r="${n(Math.max(0.6, r * 0.034))}" fill="#ffffff" opacity="${sub ? 0.38 : 0.5}"/>
+        <circle cx="${n(r * 0.44)}" cy="${n(r * 0.34)}" r="${n(Math.max(0.5, r * 0.026))}" fill="#ffffff" opacity="${sub ? 0.26 : 0.36}"/>
+      </g>
+    </g>`;
+
     return `<g transform="translate(${n(cx)} ${n(cy)})">
       <defs>
-        <radialGradient id="isph-${uid}" cx="36%" cy="28%" r="78%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.82"/>
-          <stop offset="20%" stop-color="#f6fbff" stop-opacity="0.48"/>
-          <stop offset="54%" stop-color="${tint}" stop-opacity="0.34"/>
-          <stop offset="80%" stop-color="#b8d1dc" stop-opacity="0.22"/>
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0.52"/>
-        </radialGradient>
-        <radialGradient id="sphHi-${uid}" cx="36%" cy="34%" r="64%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.86"/>
-          <stop offset="45%" stop-color="#ffffff" stop-opacity="0.22"/>
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-        </radialGradient>
-        <linearGradient id="wet-${uid}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/>
-          <stop offset="100%" stop-color="#dff5ff" stop-opacity="0.05"/>
-        </linearGradient>
         <clipPath id="${clip}"><circle r="${n(r)}"/></clipPath>
-        <filter id="iceSoft-${uid}" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="0.9"/></filter>
+        ${wl != null ? `
+        <clipPath id="dryClip-${uid}">
+          <rect x="${n(-r - 5)}" y="${n(-r - 5)}" width="${n(r * 2 + 10)}" height="${n(wl + r + 5)}" />
+        </clipPath>
+        <clipPath id="subClip-${uid}">
+          <rect x="${n(-r - 5)}" y="${n(wl)}" width="${n(r * 2 + 10)}" height="500" />
+        </clipPath>
+        ` : ""}
+        <filter id="cubeSoft-${uid}" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="0.4" />
+        </filter>
+        <filter id="iceSoft-${uid}" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="0.5" />
+        </filter>
+        <filter id="iceGlow-${uid}" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.2" />
+        </filter>
+        <filter id="glowSoft-${uid}" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.8" />
+        </filter>
+        <filter id="sphereSoft-${uid}" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="0.8" />
+        </filter>
+        <radialGradient id="isph-dry-${uid}" cx="36%" cy="28%" r="78%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.82" />
+          <stop offset="20%" stop-color="#f6fbff" stop-opacity="0.48" />
+          <stop offset="54%" stop-color="${tint}" stop-opacity="0.34" />
+          <stop offset="80%" stop-color="#b8d1dc" stop-opacity="0.22" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0.52" />
+        </radialGradient>
+        <radialGradient id="isph-sub-${uid}" cx="36%" cy="28%" r="78%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.48" />
+          <stop offset="20%" stop-color="#f6fbff" stop-opacity="0.32" />
+          <stop offset="54%" stop-color="${tint}" stop-opacity="0.22" />
+          <stop offset="80%" stop-color="#b8d1dc" stop-opacity="0.16" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0.38" />
+        </radialGradient>
+        <radialGradient id="sphHi-dry-${uid}" cx="36%" cy="34%" r="64%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.86" />
+          <stop offset="45%" stop-color="#ffffff" stop-opacity="0.22" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+        </radialGradient>
+        <radialGradient id="sphHi-sub-${uid}" cx="36%" cy="34%" r="64%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.62" />
+          <stop offset="45%" stop-color="#ffffff" stop-opacity="0.18" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+        </radialGradient>
       </defs>
-      <circle r="${n(r)}" fill="url(#isph-${uid})" opacity="0.78"/>
-      <g clip-path="url(#${clip})">
-        ${inWater ? `<rect x="${n(-r)}" y="${n(wl!)}" width="${n(r * 2)}" height="${n(r * 2)}" fill="url(#wet-${uid})"/>` : ""}
-        <ellipse cx="${n(-r * 0.2)}" cy="${n(r * 0.36)}" rx="${n(r * 0.72)}" ry="${n(r * 0.52)}" fill="#ffffff" opacity="0.08" filter="url(#iceSoft-${uid})"/>
-        <ellipse cx="${n(r * 0.28)}" cy="${n(r * 0.28)}" rx="${n(r * 0.34)}" ry="${n(r * 0.16)}" fill="#ffffff" opacity="0.22" filter="url(#iceSoft-${uid})" transform="rotate(-24 ${n(r * 0.28)} ${n(r * 0.28)})"/>
-        <ellipse cx="${n(-r * 0.12)}" cy="${n(-r * 0.04)}" rx="${n(r * 0.36)}" ry="${n(r * 0.5)}" fill="#ffffff" opacity="0.06"/>
-      </g>
-      <ellipse cx="${n(-r * 0.32)}" cy="${n(-r * 0.4)}" rx="${n(r * 0.34)}" ry="${n(r * 0.2)}" fill="url(#sphHi-${uid})" transform="rotate(-30 ${n(-r * 0.32)} ${n(-r * 0.4)})"/>
-      ${wl != null && Math.abs(wl) < r * 0.98 ? `<g clip-path="url(#${clip})">
-        <ellipse cx="0" cy="${n(wl)}" rx="${n(chord)}" ry="${n(Math.max(1.2, r * 0.09))}" fill="#ffffff" opacity="0.22" filter="url(#iceSoft-${uid})"/>
-        <ellipse cx="${n(-chord * 0.18)}" cy="${n(wl - r * 0.02)}" rx="${n(chord * 0.62)}" ry="${n(Math.max(0.8, r * 0.035))}" fill="#ffffff" opacity="0.34"/>
-      </g>` : ""}
-      <circle cx="${n(r * 0.3)}" cy="${n(-r * 0.12)}" r="${n(Math.max(0.6, r * 0.034))}" fill="#ffffff" opacity="0.5"/>
-      <circle cx="${n(r * 0.44)}" cy="${n(r * 0.34)}" r="${n(Math.max(0.5, r * 0.026))}" fill="#ffffff" opacity="0.36"/>
+      ${wl == null ? renderSphere(false) : `
+        <g clip-path="url(#dryClip-${uid})">${renderSphere(false)}</g>
+        <g clip-path="url(#subClip-${uid})">${renderSphere(true)}</g>
+        ${Math.abs(wl) < r * 0.98 ? `
+        <g clip-path="url(#${clip})">
+          <ellipse cx="0" cy="${n(wl)}" rx="${n(chord)}" ry="${n(Math.max(1.2, r * 0.09))}" fill="#ffffff" opacity="0.25" filter="url(#iceSoft-${uid})"/>
+          <ellipse cx="${n(-chord * 0.18)}" cy="${n(wl - r * 0.02)}" rx="${n(chord * 0.62)}" ry="${n(Math.max(0.8, r * 0.035))}" fill="#ffffff" opacity="0.38"/>
+        </g>
+        ` : ""}
+      `}
     </g>`;
   }
 
@@ -79,41 +120,90 @@ export function iceGroup(opts: IceGroupOpts): string {
     const d = r * 0.36;
     const rad = r * 0.22;
     const clip = `cclip-${uid}`;
+    const renderCube = (sub: boolean): string => `<g>
+      <g filter="url(#cubeSoft-${uid})">
+        <path d="M${n(-s + rad * 0.7)},${n(-s)} L${n(-s + d)},${n(-s - d)} L${n(s + d)},${n(-s - d)} L${n(s - rad * 0.45)},${n(-s)} Z" fill="url(#ictop-${sub ? "sub" : "dry"}-${uid})" opacity="${sub ? 0.48 : 0.78}"/>
+        <path d="M${n(s)},${n(-s + rad * 0.55)} L${n(s + d)},${n(-s - d)} L${n(s + d)},${n(s - d)} L${n(s)},${n(s - rad * 0.55)} Z" fill="url(#icside-${sub ? "sub" : "dry"}-${uid})" opacity="${sub ? 0.42 : 0.72}"/>
+        <rect x="${n(-s)}" y="${n(-s)}" width="${n(s * 2)}" height="${n(s * 2)}" rx="${n(rad)}" fill="url(#icf-${sub ? "sub" : "dry"}-${uid})" opacity="${sub ? 0.44 : 0.72}"/>
+      </g>
+      <g clip-path="url(#${clip})">
+        <ellipse cx="${n(-s * 0.26)}" cy="${n(-s * 0.15)}" rx="${n(s * 0.52)}" ry="${n(s * 0.7)}" fill="url(#ichi-${sub ? "sub" : "dry"}-${uid})" transform="rotate(-18 ${n(-s * 0.26)} ${n(-s * 0.15)})" filter="url(#glowSoft-${uid})"/>
+        <ellipse cx="${n(s * 0.36)}" cy="${n(s * 0.44)}" rx="${n(s * 0.42)}" ry="${n(s * 0.16)}" fill="#ffffff" opacity="${sub ? 0.09 : 0.14}" filter="url(#iceGlow-${uid})" transform="rotate(-12 ${n(s * 0.36)} ${n(s * 0.44)})"/>
+      </g>
+      <path d="M${n(-s + rad * 0.5)},${n(-s + 0.5)} C${n(-s * 0.5)},${n(-s * 0.95)} ${n(s * 0.45)},${n(-s * 0.82)} ${n(s - rad * 0.4)},${n(-s + 1.4)} L${n(s - rad * 0.4)},${n(-s + rad * 0.23)} C${n(s * 0.34)},${n(-s * 0.7)} ${n(-s * 0.4)},${n(-s * 0.78)} ${n(-s + rad * 0.72)},${n(-s + rad * 0.22)} Z" fill="#ffffff" opacity="${sub ? 0.12 : 0.2}" filter="url(#iceGlow-${uid})"/>
+      <ellipse cx="${n(-s * 0.6)}" cy="${n(s * 0.84)}" rx="${n(s * 0.14)}" ry="${n(s * 0.06)}" fill="#ffffff" opacity="${sub ? 0.11 : 0.2}" filter="url(#iceGlow-${uid})"/>
+    </g>`;
+
     return `<g transform="translate(${n(cx)} ${n(cy)})">
       <defs>
-        <linearGradient id="icf-${uid}" x1="0.12" y1="0" x2="0.82" y2="1">
+        <clipPath id="${clip}"><rect x="${n(-s)}" y="${n(-s)}" width="${n(s * 2)}" height="${n(s * 2)}" rx="${n(rad)}"/></clipPath>
+        ${wl != null ? `
+        <clipPath id="dryClip-${uid}">
+          <rect x="${n(-s - 10)}" y="${n(-s - d - 10)}" width="${n(s * 2 + d + 20)}" height="${n(wl + s + d + 10)}" />
+        </clipPath>
+        <clipPath id="subClip-${uid}">
+          <rect x="${n(-s - 10)}" y="${n(wl)}" width="${n(s * 2 + d + 20)}" height="500" />
+        </clipPath>
+        ` : ""}
+        <filter id="cubeSoft-${uid}" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="0.4" />
+        </filter>
+        <filter id="iceSoft-${uid}" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="0.5" />
+        </filter>
+        <filter id="iceGlow-${uid}" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.2" />
+        </filter>
+        <filter id="glowSoft-${uid}" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.8" />
+        </filter>
+        <linearGradient id="icf-dry-${uid}" x1="0.12" y1="0" x2="0.82" y2="1">
           <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
           <stop offset="35%" stop-color="#f7fcff" stop-opacity="0.72"/>
           <stop offset="72%" stop-color="${tint}" stop-opacity="0.56"/>
           <stop offset="100%" stop-color="#d7ecf4" stop-opacity="0.48"/>
         </linearGradient>
-        <linearGradient id="ictop-${uid}" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id="icf-sub-${uid}" x1="0.12" y1="0" x2="0.82" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.52"/>
+          <stop offset="35%" stop-color="#f7fcff" stop-opacity="0.38"/>
+          <stop offset="72%" stop-color="${tint}" stop-opacity="0.26"/>
+          <stop offset="100%" stop-color="#d7ecf4" stop-opacity="0.20"/>
+        </linearGradient>
+        <linearGradient id="ictop-dry-${uid}" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
           <stop offset="100%" stop-color="#e8f7fc" stop-opacity="0.54"/>
         </linearGradient>
-        <linearGradient id="icside-${uid}" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id="ictop-sub-${uid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.52"/>
+          <stop offset="100%" stop-color="#e8f7fc" stop-opacity="0.28"/>
+        </linearGradient>
+        <linearGradient id="icside-dry-${uid}" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stop-color="#f5fbff" stop-opacity="0.62"/>
           <stop offset="100%" stop-color="#cde4ee" stop-opacity="0.42"/>
         </linearGradient>
-        <radialGradient id="ichi-${uid}" cx="36%" cy="28%" r="64%">
+        <linearGradient id="icside-sub-${uid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f5fbff" stop-opacity="0.38"/>
+          <stop offset="100%" stop-color="#cde4ee" stop-opacity="0.20"/>
+        </linearGradient>
+        <radialGradient id="ichi-dry-${uid}" cx="36%" cy="28%" r="64%">
           <stop offset="0%" stop-color="#ffffff" stop-opacity="0.78"/>
           <stop offset="60%" stop-color="#ffffff" stop-opacity="0.18"/>
           <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
         </radialGradient>
-        <clipPath id="${clip}"><rect x="${n(-s)}" y="${n(-s)}" width="${n(s * 2)}" height="${n(s * 2)}" rx="${n(rad)}"/></clipPath>
-        <filter id="iceSoft-${uid}" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="0.85"/></filter>
+        <radialGradient id="ichi-sub-${uid}" cx="36%" cy="28%" r="64%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.48"/>
+          <stop offset="60%" stop-color="#ffffff" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+        </radialGradient>
       </defs>
-      <path d="M${n(-s + rad * 0.7)},${n(-s)} L${n(-s + d)},${n(-s - d)} L${n(s + d)},${n(-s - d)} L${n(s - rad * 0.45)},${n(-s)} Z" fill="url(#ictop-${uid})" opacity="0.78"/>
-      <path d="M${n(s)},${n(-s + rad * 0.55)} L${n(s + d)},${n(-s - d)} L${n(s + d)},${n(s - d)} L${n(s)},${n(s - rad * 0.55)} Z" fill="url(#icside-${uid})" opacity="0.72"/>
-      <rect x="${n(-s)}" y="${n(-s)}" width="${n(s * 2)}" height="${n(s * 2)}" rx="${n(rad)}" fill="url(#icf-${uid})" opacity="0.72"/>
-      <g clip-path="url(#${clip})">
-        ${inWater ? `<rect x="${n(-s)}" y="${n(wl!)}" width="${n(s * 2)}" height="${n(s * 2)}" fill="#effbff" opacity="0.08"/>` : ""}
-        <ellipse cx="${n(-s * 0.26)}" cy="${n(-s * 0.22)}" rx="${n(s * 0.52)}" ry="${n(s * 0.9)}" fill="url(#ichi-${uid})" transform="rotate(-18 ${n(-s * 0.26)} ${n(-s * 0.22)})"/>
-        <ellipse cx="${n(s * 0.36)}" cy="${n(s * 0.44)}" rx="${n(s * 0.42)}" ry="${n(s * 0.16)}" fill="#ffffff" opacity="0.14" filter="url(#iceSoft-${uid})" transform="rotate(-12 ${n(s * 0.36)} ${n(s * 0.44)})"/>
-        ${wl != null && Math.abs(wl) < s ? `<ellipse cx="0" cy="${n(wl)}" rx="${n(s * 0.94)}" ry="${n(Math.max(1.2, r * 0.07))}" fill="#ffffff" opacity="0.24" filter="url(#iceSoft-${uid})"/><rect x="${n(-s)}" y="${n(wl)}" width="${n(s * 2)}" height="${n(Math.max(1.5, r * 0.1))}" fill="#ffffff" opacity="0.06"/>` : ""}
-      </g>
-      <path d="M${n(-s + rad * 0.5)},${n(-s + 0.5)} C${n(-s * 0.5)},${n(-s * 0.95)} ${n(s * 0.45)},${n(-s * 0.82)} ${n(s - rad * 0.4)},${n(-s + 1.4)} L${n(s - rad * 0.4)},${n(-s + rad * 0.23)} C${n(s * 0.34)},${n(-s * 0.7)} ${n(-s * 0.4)},${n(-s * 0.78)} ${n(-s + rad * 0.72)},${n(-s + rad * 0.22)} Z" fill="#ffffff" opacity="0.2"/>
-      <ellipse cx="${n(-s * 0.6)}" cy="${n(s * 0.84)}" rx="${n(s * 0.14)}" ry="${n(s * 0.06)}" fill="#ffffff" opacity="0.2"/>
+      ${wl == null ? renderCube(false) : `
+        <g clip-path="url(#dryClip-${uid})">${renderCube(false)}</g>
+        <g clip-path="url(#subClip-${uid})">${renderCube(true)}</g>
+        ${Math.abs(wl) < s ? `
+          <ellipse cx="0" cy="${n(wl)}" rx="${n(s * 0.94)}" ry="${n(Math.max(1.2, r * 0.07))}" fill="#ffffff" opacity="0.25" filter="url(#iceSoft-${uid})"/>
+          <rect x="${n(-s)}" y="${n(wl)}" width="${n(s * 2)}" height="${n(Math.max(1.5, r * 0.1))}" fill="#ffffff" opacity="0.08"/>
+        ` : ""}
+      `}
     </g>`;
   }
 
@@ -122,9 +212,11 @@ export function iceGroup(opts: IceGroupOpts): string {
     const bot = fillBottom ?? cy + r;
     const hw = fillHW ?? r;
     const isBullet = type === "bullets";
-    const piece = isBullet ? 30 : 38;
-    const stepX = piece * (isBullet ? 0.76 : 0.74);
-    const stepY = piece * (isBullet ? 0.58 : 0.60);
+    const piece = isBullet ? 26 : 42;
+    const stepX = piece * (isBullet ? 0.84 : 0.72);
+    const stepY = piece * (isBullet ? 0.65 : 0.58);
+    const startOffset = piece * (isBullet ? 0.55 : 0.44);
+    const endOffset = piece * (isBullet ? 0.45 : 0.34);
     const pieces: string[] = [];
     const clipDefs: string[] = [];
     let idx = 0;
@@ -133,7 +225,7 @@ export function iceGroup(opts: IceGroupOpts): string {
     for (let y = bot - piece * 0.5; y >= top + topInset; y -= stepY) {
       const rowI = Math.round((bot - y) / stepY);
       const stagger = rowI % 2 ? stepX * 0.5 : 0;
-      for (let x = cx - hw + piece * 0.5 + stagger; x <= cx + hw - piece * 0.4; x += stepX) {
+      for (let x = cx - hw + startOffset + stagger; x <= cx + hw - endOffset; x += stepX) {
         const jx = (((idx * 13) % 7) - 3) * piece * 0.05;
         const jy = (((idx * 7) % 5) - 2) * piece * 0.05;
         const rot = (((idx * 11) % 9) - 4) * (isBullet ? 11 : 7);
@@ -171,14 +263,17 @@ export function iceGroup(opts: IceGroupOpts): string {
           } else {
             return `<g transform="rotate(${n(rot)}) scale(${n(scale)})">
               <g filter="url(#cubeSoft-${uid})">
-                <path d="M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,15.5 Q 0,17 0,14.5 Z" fill="url(#cubeRight-${sub ? "sub" : "dry"}-${uid})" />
-                <path d="M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,15.5 Q 0,17 0,14.5 Z" fill="url(#cubeLeft-${sub ? "sub" : "dry"}-${uid})" />
+                <path d="M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,13.0 Q 0,14.5 0,12.0 Z" fill="url(#cubeRight-${sub ? "sub" : "dry"}-${uid})" />
+                <path d="M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,13.0 Q 0,14.5 0,12.0 Z" fill="url(#cubeLeft-${sub ? "sub" : "dry"}-${uid})" />
                 <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8 Q 14.7,-8.5 12.5,-7.2 L 0,0 L -12.5,-7.2 Q -14.7,-8.5 -12.5,-9.8 Z" fill="url(#cubeTop-${sub ? "sub" : "dry"}-${uid})" />
+                <path d="M 0,12.0 L -2.5,13.0 Q 0,14.5 2.5,13.0 Z" fill="url(#cubeRight-${sub ? "sub" : "dry"}-${uid})" />
+                <path d="M 12.5,-9.8 L 14.7,-8.5 L 12.5,-7.2 Z" fill="url(#cubeRight-${sub ? "sub" : "dry"}-${uid})" />
+                <path d="M -12.5,-9.8 L -14.7,-8.5 L -12.5,-7.2 Z" fill="url(#cubeLeft-${sub ? "sub" : "dry"}-${uid})" />
               </g>
-              <path d="M 0,0 L 0,14.5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="${sub ? 0.16 : 0.35}" filter="url(#iceSoft-${uid})" fill="none" />
-              <path d="M 0,0 L -12.5,-7.2" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" opacity="${sub ? 0.12 : 0.25}" filter="url(#iceSoft-${uid})" fill="none" />
-              <path d="M 0,0 L 12.5,-7.2" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" opacity="${sub ? 0.12 : 0.25}" filter="url(#iceSoft-${uid})" fill="none" />
-              <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="${sub ? 0.15 : 0.38}" filter="url(#iceSoft-${uid})" fill="none" />
+              <path d="M 0,0 L 0,12.0" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" opacity="${sub ? 0.18 : 0.42}" filter="url(#iceSoft-${uid})" fill="none" />
+              <path d="M 0,0 L -12.5,-7.2" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" opacity="${sub ? 0.14 : 0.32}" filter="url(#iceSoft-${uid})" fill="none" />
+              <path d="M 0,0 L 12.5,-7.2" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" opacity="${sub ? 0.14 : 0.32}" filter="url(#iceSoft-${uid})" fill="none" />
+              <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8" stroke="#ffffff" stroke-width="1.1" stroke-linecap="round" opacity="${sub ? 0.18 : 0.48}" filter="url(#iceSoft-${uid})" fill="none" />
               <g filter="url(#iceGlow-${uid})" opacity="${sub ? 0.08 : 0.16}">
                 <path d="M -4.4,-3.4 L -0.9,-5.5 Q 0,-6.0 0.9,-5.5 L 4.4,-3.4 Q 5.2,-3.0 4.4,-2.5 L 0,0 L -4.4,-2.5 Q -5.2,-3.0 -4.4,-3.4 Z" fill="#ffffff" />
                 <path d="M 0,0 L -4.4,-2.5 Q -5.2,-3.0 -5.2,-2.0 L -5.2,2.0 Q -5.2,3.0 -4.4,2.5 L -0.9,5.5 Q 0,6.0 0,5.1 Z" fill="#ffffff" />
@@ -238,11 +333,14 @@ export function iceGroup(opts: IceGroupOpts): string {
         } else {
           return `<g transform="rotate(-5) scale(${n(scale)})">
             <g filter="url(#cubeSoft-${uid})">
-              <path d="M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,15.5 Q 0,17 0,14.5 Z" fill="url(#cubeRight-${sub ? "sub" : "dry"}-${uid})" />
-              <path d="M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,15.5 Q 0,17 0,14.5 Z" fill="url(#cubeLeft-${sub ? "sub" : "dry"}-${uid})" />
+              <path d="M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,13.0 Q 0,14.5 0,12.0 Z" fill="url(#cubeRight-${sub ? "sub" : "dry"}-${uid})" />
+              <path d="M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,13.0 Q 0,14.5 0,12.0 Z" fill="url(#cubeLeft-${sub ? "sub" : "dry"}-${uid})" />
               <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8 Q 14.7,-8.5 12.5,-7.2 L 0,0 L -12.5,-7.2 Q -14.7,-8.5 -12.5,-9.8 Z" fill="url(#cubeTop-${sub ? "sub" : "dry"}-${uid})" />
+              <path d="M 0,12.0 L -2.5,13.0 Q 0,14.5 2.5,13.0 Z" fill="url(#cubeRight-${sub ? "sub" : "dry"}-${uid})" />
+              <path d="M 12.5,-9.8 L 14.7,-8.5 L 12.5,-7.2 Z" fill="url(#cubeRight-${sub ? "sub" : "dry"}-${uid})" />
+              <path d="M -12.5,-9.8 L -14.7,-8.5 L -12.5,-7.2 Z" fill="url(#cubeLeft-${sub ? "sub" : "dry"}-${uid})" />
             </g>
-            <path d="M 0,0 L 0,14.5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="${sub ? 0.16 : 0.35}" filter="url(#iceSoft-${uid})" fill="none" />
+            <path d="M 0,0 L 0,12.0" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="${sub ? 0.16 : 0.35}" filter="url(#iceSoft-${uid})" fill="none" />
             <path d="M 0,0 L -12.5,-7.2" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" opacity="${sub ? 0.12 : 0.25}" filter="url(#iceSoft-${uid})" fill="none" />
             <path d="M 0,0 L 12.5,-7.2" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" opacity="${sub ? 0.12 : 0.25}" filter="url(#iceSoft-${uid})" fill="none" />
             <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="${sub ? 0.15 : 0.38}" filter="url(#iceSoft-${uid})" fill="none" />

@@ -156,10 +156,10 @@ export function glassSvg(opts: GlassOpts): string {
   let iceY: number;
   if (ice === "sphere") {
     iceR = Math.max(10, Math.min(interiorHW * 0.9, cupH * 0.52));
-    iceY = Math.min(liquidTop + iceR * 0.8, geom.cup.bottom - iceR - 1);
+    iceY = geom.cup.bottom - iceR - 1;
   } else if (ice === "cube") {
     iceR = Math.max(9, Math.min(interiorHW * 0.74, cupH * 0.44));
-    iceY = Math.min(liquidTop + iceR * 0.8, geom.cup.bottom - iceR - 2);
+    iceY = geom.cup.bottom - iceR - 2;
   } else if (ice === "crushed") {
     iceR = Math.max(16, interiorHW * 0.96);
     iceY = geom.cup.bottom - Math.min(iceR * 0.5, cupH * 0.42);
