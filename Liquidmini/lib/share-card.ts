@@ -602,33 +602,336 @@ function drawIce(ctx: any, type: string, cx: number, cy: number, r: number, wate
 function drawIceFill(ctx: any, type: string, cx: number, waterY: number, liquidColor: string, top: number, bot: number, hw: number): void {
   const tint = "#e3edf2";
   const isBullet = type === "bullets";
-  const piece = isBullet ? 26 : 34;
-  const stepX = piece * 0.92;
-  const stepY = piece * (isBullet ? 0.7 : 0.82);
-  const half = piece * 0.5;
+  const piece = isBullet ? 30 : 38;
+  const stepX = piece * (isBullet ? 0.76 : 0.74);
+  const stepY = piece * (isBullet ? 0.58 : 0.60);
+  const topInset = isBullet ? piece * 0.68 : piece * 0.88;
   ctx.save();
-  ctx.fillStyle = withAlpha(tint, 0.06);
-  ctx.fillRect(cx - hw, top - piece * 0.2, hw * 2, bot - top + piece * 0.4);
   let idx = 0;
-  for (let y = bot - piece * 0.5; y > top - piece * 0.1; y -= stepY) {
+  const getCubeTopGrad = (sub: boolean) => {
+    const g = ctx.createLinearGradient(-12.5, -15.5, 12.5, 0);
+    if (sub) {
+      g.addColorStop(0, "rgba(255,255,255,0.28)");
+      g.addColorStop(0.6, "rgba(224,242,254,0.12)");
+      g.addColorStop(1, "rgba(186,230,253,0.08)");
+    } else {
+      g.addColorStop(0, "rgba(255,255,255,0.92)");
+      g.addColorStop(0.6, "rgba(224,242,254,0.78)");
+      g.addColorStop(1, "rgba(186,230,253,0.65)");
+    }
+    return g;
+  };
+
+  const getCubeLeftGrad = (sub: boolean) => {
+    const g = ctx.createLinearGradient(-14.7, -7.2, 0, 15.5);
+    if (sub) {
+      g.addColorStop(0, "rgba(255,255,255,0.22)");
+      g.addColorStop(0.5, "rgba(240,249,255,0.1)");
+      g.addColorStop(1, "rgba(186,230,253,0.06)");
+    } else {
+      g.addColorStop(0, "rgba(255,255,255,0.86)");
+      g.addColorStop(0.5, "rgba(240,249,255,0.68)");
+      g.addColorStop(1, "rgba(186,230,253,0.52)");
+    }
+    return g;
+  };
+
+  const getCubeRightGrad = (sub: boolean) => {
+    const g = ctx.createLinearGradient(0, -7.2, 14.7, 15.5);
+    if (sub) {
+      g.addColorStop(0, "rgba(240,249,255,0.18)");
+      g.addColorStop(0.5, "rgba(186,230,253,0.08)");
+      g.addColorStop(1, "rgba(125,211,252,0.05)");
+    } else {
+      g.addColorStop(0, "rgba(240,249,255,0.78)");
+      g.addColorStop(0.5, "rgba(186,230,253,0.58)");
+      g.addColorStop(1, "rgba(125,211,252,0.44)");
+    }
+    return g;
+  };
+
+  const getBulletOuterGrad = (sub: boolean) => {
+    const g = ctx.createLinearGradient(-13, 0, 13, 0);
+    if (sub) {
+      g.addColorStop(0, "rgba(186,230,253,0.1)");
+      g.addColorStop(0.25, "rgba(255,255,255,0.32)");
+      g.addColorStop(0.55, "rgba(224,242,254,0.08)");
+      g.addColorStop(0.85, "rgba(125,211,252,0.06)");
+      g.addColorStop(1, "rgba(186,230,253,0.12)");
+    } else {
+      g.addColorStop(0, "rgba(186,230,253,0.78)");
+      g.addColorStop(0.25, "rgba(255,255,255,0.96)");
+      g.addColorStop(0.55, "rgba(224,242,254,0.65)");
+      g.addColorStop(0.85, "rgba(125,211,252,0.58)");
+      g.addColorStop(1, "rgba(186,230,253,0.76)");
+    }
+    return g;
+  };
+
+  const getBulletCavityGrad = (sub: boolean) => {
+    const g = ctx.createLinearGradient(0, -3, 0, 11);
+    if (sub) {
+      g.addColorStop(0, "rgba(186,230,253,0.12)");
+      g.addColorStop(1, "rgba(255,255,255,0.05)");
+    } else {
+      g.addColorStop(0, "rgba(159,193,208,0.7)");
+      g.addColorStop(1, "rgba(197,223,234,0.4)");
+    }
+    return g;
+  };
+
+  const pCubeRight = "M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,15.5 Q 0,17 0,14.5 Z";
+  const pCubeLeft = "M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,15.5 Q 0,17 0,14.5 Z";
+  const pCubeTop = "M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8 Q 14.7,-8.5 12.5,-7.2 L 0,0 L -12.5,-7.2 Q -14.7,-8.5 -12.5,-9.8 Z";
+  const pCubeCoreTop = "M -4.4,-3.4 L -0.9,-5.5 Q 0,-6.0 0.9,-5.5 L 4.4,-3.4 Q 5.2,-3.0 4.4,-2.5 L 0,0 L -4.4,-2.5 Q -5.2,-3.0 -4.4,-3.4 Z";
+  const pCubeCoreLeft = "M 0,0 L -4.4,-2.5 Q -5.2,-3.0 -5.2,-2.0 L -5.2,2.0 Q -5.2,3.0 -4.4,2.5 L -0.9,5.5 Q 0,6.0 0,5.1 Z";
+  const pCubeCoreRight = "M 0,0 L 4.4,-2.5 Q 5.2,-3.0 5.2,-2.0 L 5.2,2.0 Q 5.2,3.0 4.4,2.5 L 0.9,5.5 Q 0,6.0 0,5.1 Z";
+
+  const pBulletOuter = "M -13,-4 A 13,11 0 0 1 13,-4 L 13,11 A 13,3.5 0 0 1 -13,11 Z";
+  const pBulletCavity = "M -6,11 L -6,-3 A 6,6 0 0 1 6,-3 L 6,11 A 6,1.6 0 0 1 -6,11 Z";
+
+  for (let y = bot - piece * 0.5; y >= top + topInset; y -= stepY) {
     const rowI = Math.round((bot - y) / stepY);
     const stagger = rowI % 2 ? stepX * 0.5 : 0;
     for (let x = cx - hw + piece * 0.5 + stagger; x <= cx + hw - piece * 0.4; x += stepX) {
-      const px = x + (((idx * 13) % 7) - 3) * piece * 0.05;
-      const py = y + (((idx * 7) % 5) - 2) * piece * 0.05;
+      const jx = (((idx * 13) % 7) - 3) * piece * 0.05;
+      const jy = (((idx * 7) % 5) - 2) * piece * 0.05;
       const rot = (((idx * 11) % 9) - 4) * (isBullet ? 11 : 7);
-      const sub = py > waterY + piece * 0.12;
-      ctx.save(); ctx.translate(px, py); ctx.rotate((rot * Math.PI) / 180);
-      const w = piece, h = isBullet ? piece * 0.6 : piece, ry = isBullet ? -h / 2 : -half, rad = isBullet ? piece * 0.3 : piece * 0.22;
-      rr(ctx, -half, ry, w, h, rad); ctx.fillStyle = withAlpha(tint, isBullet ? 0.5 : 0.46); ctx.fill();
-      rr(ctx, -half, ry, w, h, rad); ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 0.6; ctx.stroke();
-      if (sub) { rr(ctx, -half, ry, w, h, rad); ctx.fillStyle = withAlpha(liquidColor, 0.28); ctx.fill(); }
-      ctx.strokeStyle = "rgba(255,255,255,0.42)"; ctx.lineWidth = 0.7; ctx.lineCap = "round";
-      const ey = -half * (isBullet ? 0.4 : 0.66);
-      ctx.beginPath(); ctx.moveTo(-half * 0.66, ey); ctx.lineTo(half * 0.5, ey); ctx.stroke();
-      ctx.restore(); idx++;
+      const px = x + jx;
+      const py = y + jy;
+
+      const localWaterY = waterY - py;
+      const scale = isBullet ? piece / 26 : piece / 34;
+      const pieceH = (isBullet ? 15 : 17) * scale;
+      const isSubmerged = localWaterY < -pieceH;
+      const isDry = localWaterY > pieceH;
+      const isIntersecting = !isDry && !isSubmerged;
+
+      const renderPiece = (sub: boolean) => {
+        ctx.save();
+        ctx.rotate((rot * Math.PI) / 180);
+        ctx.scale(scale, scale);
+
+        if (isBullet) {
+          if (ctx.filter !== undefined) ctx.filter = "blur(0.5px)";
+          ctx.fillStyle = getBulletOuterGrad(sub);
+          trace(ctx, pBulletOuter); ctx.fill();
+
+          ctx.fillStyle = getBulletCavityGrad(sub);
+          trace(ctx, pBulletCavity); ctx.fill();
+
+          if (ctx.filter !== undefined) ctx.filter = "blur(0.8px)";
+          ctx.lineCap = "round";
+
+          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.15 : 0.45})`;
+          ctx.lineWidth = 2.4;
+          ctx.beginPath(); ctx.moveTo(-9, -2); ctx.lineTo(-9, 8); ctx.stroke();
+
+          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.18 : 0.55})`;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath(); ctx.arc(-2, -6, 10, Math.PI, Math.PI * 1.5); ctx.stroke();
+
+          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.12 : 0.35})`;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.ellipse(0, 11, 13, 3.5, 0, 0, Math.PI); ctx.stroke();
+
+          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.1 : 0.25})`;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath(); ctx.ellipse(0, 11, 6, 1.6, 0, 0, Math.PI); ctx.stroke();
+        } else {
+          if (ctx.filter !== undefined) ctx.filter = "blur(0.5px)";
+          ctx.fillStyle = getCubeRightGrad(sub); trace(ctx, pCubeRight); ctx.fill();
+          ctx.fillStyle = getCubeLeftGrad(sub); trace(ctx, pCubeLeft); ctx.fill();
+          ctx.fillStyle = getCubeTopGrad(sub); trace(ctx, pCubeTop); ctx.fill();
+
+          if (ctx.filter !== undefined) ctx.filter = "blur(0.8px)";
+          ctx.lineCap = "round";
+
+          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.16 : 0.35})`;
+          ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 14.5); ctx.stroke();
+
+          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.12 : 0.25})`;
+          ctx.lineWidth = 1.0;
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-12.5, -7.2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(12.5, -7.2); ctx.stroke();
+
+          ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.15 : 0.38})`;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(-12.5, -9.8);
+          ctx.lineTo(-2.5, -15.5);
+          ctx.quadraticCurveTo(0, -17, 2.5, -15.5);
+          ctx.lineTo(12.5, -9.8);
+          ctx.stroke();
+
+          if (ctx.filter !== undefined) ctx.filter = "blur(1.6px)";
+          ctx.fillStyle = `rgba(255,255,255,${sub ? 0.08 : 0.16})`;
+          trace(ctx, pCubeCoreTop); ctx.fill();
+          trace(ctx, pCubeCoreLeft); ctx.fill();
+          trace(ctx, pCubeCoreRight); ctx.fill();
+        }
+
+        ctx.restore();
+      };
+
+      ctx.save();
+      ctx.translate(px, py);
+
+      if (isDry) {
+        renderPiece(false);
+      } else if (isSubmerged) {
+        renderPiece(true);
+      } else if (isIntersecting) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-50, localWaterY, 100, 100 - localWaterY);
+        ctx.clip();
+        renderPiece(true);
+        ctx.restore();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-50, -100, 100, 100 + localWaterY);
+        ctx.clip();
+        renderPiece(false);
+        ctx.restore();
+
+        ctx.save();
+        if (ctx.filter !== undefined) ctx.filter = "blur(0.8px)";
+        ctx.fillStyle = "rgba(255,255,255,0.25)";
+        ctx.beginPath();
+        ctx.ellipse(0, localWaterY, (isBullet ? 12 : 16) * scale, (isBullet ? 1.5 : 2) * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (ctx.filter !== undefined) ctx.filter = "none";
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.beginPath();
+        ctx.ellipse(0, localWaterY, (isBullet ? 8 : 10) * scale, (isBullet ? 0.6 : 0.8) * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      ctx.restore();
+      idx++;
     }
   }
+
+  if (idx === 0) {
+    const px = cx;
+    const py = (top + bot) * 0.5;
+    const localWaterY = waterY - py;
+    const scale = isBullet ? piece / 26 : piece / 34;
+    const pieceH = (isBullet ? 15 : 17) * scale;
+    const isSubmerged = localWaterY < -pieceH;
+    const isDry = localWaterY > pieceH;
+    const isIntersecting = !isDry && !isSubmerged;
+
+    const renderPiece = (sub: boolean) => {
+      ctx.save();
+      ctx.rotate((isBullet ? 0 : -5) * Math.PI / 180);
+      ctx.scale(scale, scale);
+
+      if (isBullet) {
+        if (ctx.filter !== undefined) ctx.filter = "blur(0.5px)";
+        ctx.fillStyle = getBulletOuterGrad(sub); trace(ctx, pBulletOuter); ctx.fill();
+        ctx.fillStyle = getBulletCavityGrad(sub); trace(ctx, pBulletCavity); ctx.fill();
+
+        if (ctx.filter !== undefined) ctx.filter = "blur(0.8px)";
+        ctx.lineCap = "round";
+
+        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.15 : 0.45})`;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(-9, -2); ctx.lineTo(-9, 8); ctx.stroke();
+
+        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.18 : 0.55})`;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.arc(-2, -6, 10, Math.PI, Math.PI * 1.5); ctx.stroke();
+
+        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.12 : 0.35})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.ellipse(0, 11, 13, 3.5, 0, 0, Math.PI); ctx.stroke();
+
+        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.1 : 0.25})`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.ellipse(0, 11, 6, 1.6, 0, 0, Math.PI); ctx.stroke();
+      } else {
+        if (ctx.filter !== undefined) ctx.filter = "blur(0.5px)";
+        ctx.fillStyle = getCubeRightGrad(sub); trace(ctx, pCubeRight); ctx.fill();
+        ctx.fillStyle = getCubeLeftGrad(sub); trace(ctx, pCubeLeft); ctx.fill();
+        ctx.fillStyle = getCubeTopGrad(sub); trace(ctx, pCubeTop); ctx.fill();
+
+        if (ctx.filter !== undefined) ctx.filter = "blur(0.8px)";
+        ctx.lineCap = "round";
+
+        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.16 : 0.35})`;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 14.5); ctx.stroke();
+
+        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.12 : 0.25})`;
+        ctx.lineWidth = 1.0;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-12.5, -7.2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(12.5, -7.2); ctx.stroke();
+
+        ctx.strokeStyle = `rgba(255,255,255,${sub ? 0.15 : 0.38})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(-12.5, -9.8);
+        ctx.lineTo(-2.5, -15.5);
+        ctx.quadraticCurveTo(0, -17, 2.5, -15.5);
+        ctx.lineTo(12.5, -9.8);
+        ctx.stroke();
+
+        if (ctx.filter !== undefined) ctx.filter = "blur(1.6px)";
+        ctx.fillStyle = `rgba(255,255,255,${sub ? 0.08 : 0.16})`;
+        trace(ctx, pCubeCoreTop); ctx.fill();
+        trace(ctx, pCubeCoreLeft); ctx.fill();
+        trace(ctx, pCubeCoreRight); ctx.fill();
+      }
+
+      ctx.restore();
+    };
+
+    ctx.save();
+    ctx.translate(px, py);
+
+    if (isDry) {
+      renderPiece(false);
+    } else if (isSubmerged) {
+      renderPiece(true);
+    } else if (isIntersecting) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-50, localWaterY, 100, 100 - localWaterY);
+      ctx.clip();
+      renderPiece(true);
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-50, -100, 100, 100 + localWaterY);
+      ctx.clip();
+      renderPiece(false);
+      ctx.restore();
+
+      ctx.save();
+      if (ctx.filter !== undefined) ctx.filter = "blur(0.8px)";
+      ctx.fillStyle = "rgba(255,255,255,0.25)";
+      ctx.beginPath();
+      ctx.ellipse(0, localWaterY, (isBullet ? 12 : 16) * scale, (isBullet ? 1.5 : 2) * scale, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (ctx.filter !== undefined) ctx.filter = "none";
+      ctx.fillStyle = "rgba(255,255,255,0.4)";
+      ctx.beginPath();
+      ctx.ellipse(0, localWaterY, (isBullet ? 8 : 10) * scale, (isBullet ? 0.6 : 0.8) * scale, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
   ctx.restore();
 }
 

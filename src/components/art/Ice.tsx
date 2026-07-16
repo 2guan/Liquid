@@ -21,6 +21,7 @@ export function IceGroup({
   fillTop,
   fillBottom,
   fillHW,
+  liquidColor,
 }: {
   type: IceType;
   cx: number;
@@ -168,12 +169,15 @@ export function IceGroup({
     const bot = fillBottom ?? cy + r;
     const hw = fillHW ?? r;
     const isBullet = type === "bullets";
-    const piece = isBullet ? 26 : 34;
-    const stepX = piece * 0.92;
-    const stepY = piece * (isBullet ? 0.7 : 0.82);
+    const piece = isBullet ? 30 : 38;
+    const stepX = piece * (isBullet ? 0.76 : 0.74);
+    const stepY = piece * (isBullet ? 0.58 : 0.60);
     const pieces: ReactNode[] = [];
+    const clipDefs: ReactNode[] = [];
     let idx = 0;
     const topInset = isBullet ? piece * 0.68 : piece * 0.88;
+    const liquid = liquidColor || "#e2f1f7";
+
     for (let y = bot - piece * 0.5; y >= top + topInset; y -= stepY) {
       const rowI = Math.round((bot - y) / stepY);
       const stagger = rowI % 2 ? stepX * 0.5 : 0;
@@ -183,42 +187,393 @@ export function IceGroup({
         const rot = (((idx * 11) % 9) - 4) * (isBullet ? 11 : 7);
         const px = x + jx;
         const py = y + jy;
-        const half = piece * 0.5;
-        const sub = waterY != null && py > waterY + piece * 0.12;
+
+        const localWaterY = waterY != null ? waterY - py : null;
+        const scale = isBullet ? piece / 26 : piece / 34;
+        const pieceH = (isBullet ? 15 : 17) * scale; // half-height of piece bounding box
+        const isSubmerged = localWaterY != null && localWaterY < -pieceH;
+        const isDry = localWaterY == null || localWaterY > pieceH;
+        const isIntersecting = !isDry && !isSubmerged && localWaterY != null;
+
+        // Dynamic clip paths for intersecting pieces
+        if (isIntersecting && localWaterY != null) {
+          clipDefs.push(
+            <clipPath id={`dryClip-${uid}-${idx}`} key={`dry-${idx}`}>
+              <rect x={-50} y={-100} width={100} height={100 + localWaterY} />
+            </clipPath>,
+            <clipPath id={`subClip-${uid}-${idx}`} key={`sub-${idx}`}>
+              <rect x={-50} y={localWaterY} width={100} height={100 - localWaterY} />
+            </clipPath>
+          );
+        }
+
+        // Render function for 3D shapes
+        const renderPiece = (sub: boolean) => {
+          if (isBullet) {
+            return (
+              <g transform={`rotate(${rot}) scale(${scale})`}>
+                {/* 1. Outer Shell (slightly softened to look wet/immersed) */}
+                <path
+                  d="M -13,-4 A 13,11 0 0 1 13,-4 L 13,11 A 13,3.5 0 0 1 -13,11 Z"
+                  fill={`url(#bulletOuter-${sub ? "sub" : "dry"}-${uid})`}
+                  filter={`url(#cubeSoft-${uid})`}
+                />
+                
+                {/* 2. Inner Hollow Cavity (softer edges) */}
+                <path
+                  d="M -6,11 L -6,-3 A 6,6 0 0 1 6,-3 L 6,11 A 6,1.6 0 0 1 -6,11 Z"
+                  fill={`url(#bulletCavity-${sub ? "sub" : "dry"}-${uid})`}
+                  filter={`url(#cubeSoft-${uid})`}
+                />
+                
+                {/* 3. Cylindrical Specular Highlight (blurry reflection) */}
+                <path
+                  d="M -9,-2 L -9,8"
+                  stroke="#ffffff"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  opacity={sub ? 0.15 : 0.45}
+                  filter={`url(#iceSoft-${uid})`}
+                  fill="none"
+                />
+                
+                {/* 4. Dome Highlight Arc (blurry highlight) */}
+                <path
+                  d="M -10,-6 A 10,8 0 0 1 -2,-13"
+                  stroke="#ffffff"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  opacity={sub ? 0.18 : 0.55}
+                  filter={`url(#iceSoft-${uid})`}
+                  fill="none"
+                />
+
+                {/* 5. Concentric bottom rims (blurry thickness highlights) */}
+                <path
+                  d="M -13,11 A 13,3.5 0 0 0 13,11"
+                  stroke="#ffffff"
+                  strokeWidth="1.2"
+                  opacity={sub ? 0.12 : 0.35}
+                  filter={`url(#iceSoft-${uid})`}
+                  fill="none"
+                />
+                <path
+                  d="M -6,11 A 6,1.6 0 0 0 6,11"
+                  stroke="#ffffff"
+                  strokeWidth="0.8"
+                  opacity={sub ? 0.1 : 0.25}
+                  filter={`url(#iceSoft-${uid})`}
+                  fill="none"
+                />
+              </g>
+            );
+          } else {
+            // Softened 3D Cube
+            return (
+              <g transform={`rotate(${rot}) scale(${scale})`}>
+                {/* 1. Faces Group (with a subtle blur to soften edges between faces and perimeter) */}
+                <g filter={`url(#cubeSoft-${uid})`}>
+                  {/* Right Face */}
+                  <path
+                    d="M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,15.5 Q 0,17 0,14.5 Z"
+                    fill={`url(#cubeRight-${sub ? "sub" : "dry"}-${uid})`}
+                  />
+                  {/* Left Face */}
+                  <path
+                    d="M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,15.5 Q 0,17 0,14.5 Z"
+                    fill={`url(#cubeLeft-${sub ? "sub" : "dry"}-${uid})`}
+                  />
+                  {/* Top Face */}
+                  <path
+                    d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8 Q 14.7,-8.5 12.5,-7.2 L 0,0 L -12.5,-7.2 Q -14.7,-8.5 -12.5,-9.8 Z"
+                    fill={`url(#cubeTop-${sub ? "sub" : "dry"}-${uid})`}
+                  />
+                </g>
+
+                {/* 2. Soft Edge Highlights (blurred to represent light refractions instead of hard lines) */}
+                <path d="M 0,0 L 0,14.5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" opacity={sub ? 0.16 : 0.35} filter={`url(#iceSoft-${uid})`} fill="none" />
+                <path d="M 0,0 L -12.5,-7.2" stroke="#ffffff" strokeWidth="1.0" strokeLinecap="round" opacity={sub ? 0.12 : 0.25} filter={`url(#iceSoft-${uid})`} fill="none" />
+                <path d="M 0,0 L 12.5,-7.2" stroke="#ffffff" strokeWidth="1.0" strokeLinecap="round" opacity={sub ? 0.12 : 0.25} filter={`url(#iceSoft-${uid})`} fill="none" />
+                
+                {/* Outer Rim Highlights (soft glow) */}
+                <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity={sub ? 0.15 : 0.38} filter={`url(#iceSoft-${uid})`} fill="none" />
+
+                {/* 3. Rounded Frosted Core (placed inside iceGlow for heavy blurring) */}
+                <g filter={`url(#iceGlow-${uid})`} opacity={sub ? 0.08 : 0.16}>
+                  <path d="M -4.4,-3.4 L -0.9,-5.5 Q 0,-6.0 0.9,-5.5 L 4.4,-3.4 Q 5.2,-3.0 4.4,-2.5 L 0,0 L -4.4,-2.5 Q -5.2,-3.0 -4.4,-3.4 Z" fill="#ffffff" />
+                  <path d="M 0,0 L -4.4,-2.5 Q -5.2,-3.0 -5.2,-2.0 L -5.2,2.0 Q -5.2,3.0 -4.4,2.5 L -0.9,5.5 Q 0,6.0 0,5.1 Z" fill="#ffffff" />
+                  <path d="M 0,0 L 4.4,-2.5 Q 5.2,-3.0 5.2,-2.0 L 5.2,2.0 Q 5.2,3.0 4.4,2.5 L 0.9,5.5 Q 0,6.0 0,5.1 Z" fill="#ffffff" />
+                </g>
+              </g>
+            );
+          }
+        };
+
         pieces.push(
-          <g key={idx} transform={`translate(${px} ${py}) rotate(${rot})`} opacity={sub ? 0.58 : 0.68}>
-            {isBullet ? (
+          <g key={idx} transform={`translate(${px} ${py})`}>
+            {isDry && renderPiece(false)}
+            {isSubmerged && renderPiece(true)}
+            {isIntersecting && (
               <>
-                <rect x={-half} y={-half * 0.6} width={piece} height={piece * 0.6} rx={piece * 0.3} fill={`url(#piece-${uid})`} />
-                <ellipse cx={-half * 0.28} cy={-half * 0.34} rx={piece * 0.26} ry={piece * 0.08} fill={`url(#pieceHi-${uid})`} />
-                <ellipse cx={half * 0.2} cy={half * 0.16} rx={piece * 0.32} ry={piece * 0.07} fill="#ffffff" opacity="0.1" />
-              </>
-            ) : (
-              <>
-                <rect x={-half} y={-half} width={piece} height={piece} rx={piece * 0.26} fill={`url(#piece-${uid})`} />
-                <ellipse cx={-half * 0.24} cy={-half * 0.28} rx={piece * 0.32} ry={piece * 0.16} fill={`url(#pieceHi-${uid})`} transform={`rotate(-18 ${-half * 0.24} ${-half * 0.28})`} />
-                <ellipse cx={half * 0.22} cy={half * 0.24} rx={piece * 0.32} ry={piece * 0.1} fill="#ffffff" opacity="0.1" />
+                <g clipPath={`url(#subClip-${uid}-${idx})`}>
+                  {renderPiece(true)}
+                </g>
+                <g clipPath={`url(#dryClip-${uid}-${idx})`}>
+                  {renderPiece(false)}
+                </g>
+                <ellipse
+                  cx={0}
+                  cy={localWaterY!}
+                  rx={(isBullet ? 12 : 16) * scale}
+                  ry={(isBullet ? 1.5 : 2) * scale}
+                  fill="#ffffff"
+                  opacity="0.25"
+                  filter={`url(#iceSoft-${uid})`}
+                />
+                <ellipse
+                  cx={0}
+                  cy={localWaterY!}
+                  rx={(isBullet ? 8 : 10) * scale}
+                  ry={(isBullet ? 0.6 : 0.8) * scale}
+                  fill="#ffffff"
+                  opacity="0.4"
+                />
               </>
             )}
-            {waterY != null && Math.abs(py - waterY) < piece * 0.55 && <ellipse cx="0" cy={waterY - py} rx={piece * 0.46} ry={piece * 0.05} fill="#ffffff" opacity="0.2" />}
-          </g>,
+          </g>
         );
         idx++;
       }
     }
+
+    if (pieces.length === 0) {
+      const px = cx;
+      const py = cy;
+      const localWaterY = waterY != null ? waterY - py : null;
+      const scale = isBullet ? piece / 26 : piece / 34;
+      const pieceH = (isBullet ? 15 : 17) * scale; // half-height of piece bounding box
+      const isSubmerged = localWaterY != null && localWaterY < -pieceH;
+      const isDry = localWaterY == null || localWaterY > pieceH;
+      const isIntersecting = !isDry && !isSubmerged && localWaterY != null;
+
+      if (isIntersecting && localWaterY != null) {
+        clipDefs.push(
+          <clipPath id={`dryClip-${uid}-fallback`} key="dry-fallback">
+            <rect x={-50} y={-100} width={100} height={100 + localWaterY} />
+          </clipPath>,
+          <clipPath id={`subClip-${uid}-fallback`} key="sub-fallback">
+            <rect x={-50} y={localWaterY} width={100} height={100 - localWaterY} />
+          </clipPath>
+        );
+      }
+
+      // Render function for 3D shapes
+      const renderPiece = (sub: boolean) => {
+        if (isBullet) {
+          return (
+            <g transform={`rotate(0) scale(${scale})`}>
+              {/* 1. Outer Shell (slightly softened to look wet/immersed) */}
+              <path
+                d="M -13,-4 A 13,11 0 0 1 13,-4 L 13,11 A 13,3.5 0 0 1 -13,11 Z"
+                fill={`url(#bulletOuter-${sub ? "sub" : "dry"}-${uid})`}
+                filter={`url(#cubeSoft-${uid})`}
+              />
+              
+              {/* 2. Inner Hollow Cavity (softer edges) */}
+              <path
+                d="M -6,11 L -6,-3 A 6,6 0 0 1 6,-3 L 6,11 A 6,1.6 0 0 1 -6,11 Z"
+                fill={`url(#bulletCavity-${sub ? "sub" : "dry"}-${uid})`}
+                filter={`url(#cubeSoft-${uid})`}
+              />
+              
+              {/* 3. Cylindrical Specular Highlight (blurry reflection) */}
+              <path
+                d="M -9,-2 L -9,8"
+                stroke="#ffffff"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                opacity={sub ? 0.15 : 0.45}
+                filter={`url(#iceSoft-${uid})`}
+                fill="none"
+              />
+              
+              {/* 4. Dome Highlight Arc (blurry highlight) */}
+              <path
+                d="M -10,-6 A 10,8 0 0 1 -2,-13"
+                stroke="#ffffff"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                opacity={sub ? 0.18 : 0.55}
+                filter={`url(#iceSoft-${uid})`}
+                fill="none"
+              />
+
+              {/* 5. Concentric bottom rims (blurry thickness highlights) */}
+              <path
+                d="M -13,11 A 13,3.5 0 0 0 13,11"
+                stroke="#ffffff"
+                strokeWidth="1.2"
+                opacity={sub ? 0.12 : 0.35}
+                filter={`url(#iceSoft-${uid})`}
+                fill="none"
+              />
+              <path
+                d="M -6,11 A 6,1.6 0 0 0 6,11"
+                stroke="#ffffff"
+                strokeWidth="0.8"
+                opacity={sub ? 0.1 : 0.25}
+                filter={`url(#iceSoft-${uid})`}
+                fill="none"
+              />
+            </g>
+          );
+        } else {
+          // Rounded 3D Cube
+          return (
+            <g transform={`rotate(-5) scale(${scale})`}>
+              {/* 1. Faces Group (with a subtle blur to soften edges between faces and perimeter) */}
+              <g filter={`url(#cubeSoft-${uid})`}>
+                {/* Right Face */}
+                <path
+                  d="M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,15.5 Q 0,17 0,14.5 Z"
+                  fill={`url(#cubeRight-${sub ? "sub" : "dry"}-${uid})`}
+                />
+                {/* 2. Left Face */}
+                <path
+                  d="M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,15.5 Q 0,17 0,14.5 Z"
+                  fill={`url(#cubeLeft-${sub ? "sub" : "dry"}-${uid})`}
+                />
+                {/* 3. Top Face */}
+                <path
+                  d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8 Q 14.7,-8.5 12.5,-7.2 L 0,0 L -12.5,-7.2 Q -14.7,-8.5 -12.5,-9.8 Z"
+                  fill={`url(#cubeTop-${sub ? "sub" : "dry"}-${uid})`}
+                />
+              </g>
+
+              {/* 2. Soft Edge Highlights (blurred to represent light refractions instead of hard lines) */}
+              <path d="M 0,0 L 0,14.5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" opacity={sub ? 0.16 : 0.35} filter={`url(#iceSoft-${uid})`} fill="none" />
+              <path d="M 0,0 L -12.5,-7.2" stroke="#ffffff" strokeWidth="1.0" strokeLinecap="round" opacity={sub ? 0.12 : 0.25} filter={`url(#iceSoft-${uid})`} fill="none" />
+              <path d="M 0,0 L 12.5,-7.2" stroke="#ffffff" strokeWidth="1.0" strokeLinecap="round" opacity={sub ? 0.12 : 0.25} filter={`url(#iceSoft-${uid})`} fill="none" />
+              
+              {/* Outer Rim Highlights (soft glow) */}
+              <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" opacity={sub ? 0.15 : 0.38} filter={`url(#iceSoft-${uid})`} fill="none" />
+
+              {/* 3. Rounded Frosted Core (placed inside iceGlow for heavy blurring) */}
+              <g filter={`url(#iceGlow-${uid})`} opacity={sub ? 0.08 : 0.16}>
+                <path d="M -4.4,-3.4 L -0.9,-5.5 Q 0,-6.0 0.9,-5.5 L 4.4,-3.4 Q 5.2,-3.0 4.4,-2.5 L 0,0 L -4.4,-2.5 Q -5.2,-3.0 -4.4,-3.4 Z" fill="#ffffff" />
+                <path d="M 0,0 L -4.4,-2.5 Q -5.2,-3.0 -5.2,-2.0 L -5.2,2.0 Q -5.2,3.0 -4.4,2.5 L -0.9,5.5 Q 0,6.0 0,5.1 Z" fill="#ffffff" />
+                <path d="M 0,0 L 5.6,-3.2 Q 6.6,-3.8 6.6,-2.5 L 6.6,2.5 Q 6.6,3.8 5.6,3.2 L 1.1,7.0 Q 0,7.65 0,6.5 Z" fill="#ffffff" />
+              </g>
+            </g>
+          );
+        }
+      };
+
+      pieces.push(
+        <g key="fallback" transform={`translate(${px} ${py})`}>
+          {isDry && renderPiece(false)}
+          {isSubmerged && renderPiece(true)}
+          {isIntersecting && (
+            <>
+              <g clipPath={`url(#subClip-${uid}-fallback)`}>
+                {renderPiece(true)}
+              </g>
+              <g clipPath={`url(#dryClip-${uid}-fallback)`}>
+                {renderPiece(false)}
+              </g>
+              <ellipse
+                cx={0}
+                cy={localWaterY!}
+                rx={(isBullet ? 12 : 16) * scale}
+                ry={(isBullet ? 1.5 : 2) * scale}
+                fill="#ffffff"
+                opacity="0.25"
+                filter={`url(#iceSoft-${uid})`}
+              />
+              <ellipse
+                cx={0}
+                cy={localWaterY!}
+                rx={(isBullet ? 8 : 10) * scale}
+                ry={(isBullet ? 0.6 : 0.8) * scale}
+                fill="#ffffff"
+                opacity="0.4"
+              />
+            </>
+          )}
+        </g>
+      );
+    }
+
     return (
       <g>
         <defs>
-          <linearGradient id={`piece-${uid}`} x1="0.18" y1="0" x2="0.92" y2="1">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.72" />
-          <stop offset="45%" stopColor="#f1fbff" stopOpacity="0.52" />
-          <stop offset="100%" stopColor="#d1e8f1" stopOpacity="0.36" />
+          {clipDefs}
+          <filter id={`cubeSoft-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="0.5" />
+          </filter>
+          <filter id={`iceSoft-${uid}`} x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="0.8" />
+          </filter>
+          <filter id={`iceGlow-${uid}`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.6" />
+          </filter>
+          {/* Bullet Ice Gradients */}
+          <linearGradient id={`bulletOuter-dry-${uid}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.78" />
+            <stop offset="25%" stopColor="#ffffff" stopOpacity="0.96" />
+            <stop offset="55%" stopColor="#e0f2fe" stopOpacity="0.65" />
+            <stop offset="85%" stopColor="#7dd3fc" stopOpacity="0.58" />
+            <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.76" />
           </linearGradient>
-          <radialGradient id={`pieceHi-${uid}`} cx="38%" cy="35%" r="64%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.74" />
-            <stop offset="72%" stopColor="#ffffff" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-          </radialGradient>
+          <linearGradient id={`bulletOuter-sub-${uid}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.1" />
+            <stop offset="25%" stopColor="#ffffff" stopOpacity="0.32" />
+            <stop offset="55%" stopColor="#e0f2fe" stopOpacity="0.08" />
+            <stop offset="85%" stopColor="#7dd3fc" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.12" />
+          </linearGradient>
+          <linearGradient id={`bulletCavity-dry-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#9fc1d0" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="#c5dfea" stopOpacity="0.4" />
+          </linearGradient>
+          <linearGradient id={`bulletCavity-sub-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0.05" />
+          </linearGradient>
+
+          {/* Sharp Cube Gradients */}
+          <linearGradient id={`cubeTop-dry-${uid}`} x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.92" />
+            <stop offset="60%" stopColor="#e0f2fe" stopOpacity="0.78" />
+            <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.65" />
+          </linearGradient>
+          <linearGradient id={`cubeTop-sub-${uid}`} x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.28" />
+            <stop offset="60%" stopColor="#e0f2fe" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.08" />
+          </linearGradient>
+
+          <linearGradient id={`cubeLeft-dry-${uid}`} x1="0" y1="0" x2="0.5" y2="1">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.86" />
+            <stop offset="50%" stopColor="#f0f9ff" stopOpacity="0.68" />
+            <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.52" />
+          </linearGradient>
+          <linearGradient id={`cubeLeft-sub-${uid}`} x1="0" y1="0" x2="0.5" y2="1">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
+            <stop offset="50%" stopColor="#f0f9ff" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.06" />
+          </linearGradient>
+
+          <linearGradient id={`cubeRight-dry-${uid}`} x1="0" y1="0" x2="0.5" y2="1">
+            <stop offset="0%" stopColor="#f0f9ff" stopOpacity="0.78" />
+            <stop offset="50%" stopColor="#bae6fd" stopOpacity="0.58" />
+            <stop offset="100%" stopColor="#7dd3fc" stopOpacity="0.44" />
+          </linearGradient>
+          <linearGradient id={`cubeRight-sub-${uid}`} x1="0" y1="0" x2="0.5" y2="1">
+            <stop offset="0%" stopColor="#f0f9ff" stopOpacity="0.18" />
+            <stop offset="50%" stopColor="#bae6fd" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#7dd3fc" stopOpacity="0.05" />
+          </linearGradient>
         </defs>
         {pieces}
       </g>

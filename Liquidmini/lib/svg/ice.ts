@@ -26,7 +26,7 @@ export function iceGroup(opts: IceGroupOpts): string {
   const { type, cx, cy } = opts;
   const r = opts.r ?? 26;
   const tint = opts.tint ?? "#e3edf2";
-  const { waterY, fillTop, fillBottom, fillHW } = opts;
+  const { waterY, fillTop, fillBottom, fillHW, liquidColor } = opts;
   if (type === "none") return "";
 
   const uid = nextUid();
@@ -122,12 +122,14 @@ export function iceGroup(opts: IceGroupOpts): string {
     const bot = fillBottom ?? cy + r;
     const hw = fillHW ?? r;
     const isBullet = type === "bullets";
-    const piece = isBullet ? 26 : 34;
-    const stepX = piece * 0.92;
-    const stepY = piece * (isBullet ? 0.7 : 0.82);
+    const piece = isBullet ? 30 : 38;
+    const stepX = piece * (isBullet ? 0.76 : 0.74);
+    const stepY = piece * (isBullet ? 0.58 : 0.60);
     const pieces: string[] = [];
+    const clipDefs: string[] = [];
     let idx = 0;
     const topInset = isBullet ? piece * 0.68 : piece * 0.88;
+    const liquid = liquidColor || "#e2f1f7";
     for (let y = bot - piece * 0.5; y >= top + topInset; y -= stepY) {
       const rowI = Math.round((bot - y) / stepY);
       const stagger = rowI % 2 ? stepX * 0.5 : 0;
@@ -137,30 +139,205 @@ export function iceGroup(opts: IceGroupOpts): string {
         const rot = (((idx * 11) % 9) - 4) * (isBullet ? 11 : 7);
         const px = x + jx;
         const py = y + jy;
-        const sub = waterY != null && py > waterY + piece * 0.12;
-        const half = piece * 0.5;
-        const body = isBullet
-          ? `<rect x="${n(-half)}" y="${n(-half * 0.6)}" width="${n(piece)}" height="${n(piece * 0.6)}" rx="${n(piece * 0.3)}" fill="url(#piece-${uid})"/><ellipse cx="${n(-half * 0.28)}" cy="${n(-half * 0.34)}" rx="${n(piece * 0.26)}" ry="${n(piece * 0.08)}" fill="url(#pieceHi-${uid})"/><ellipse cx="${n(half * 0.2)}" cy="${n(half * 0.16)}" rx="${n(piece * 0.32)}" ry="${n(piece * 0.07)}" fill="#ffffff" opacity="0.1"/>`
-          : `<rect x="${n(-half)}" y="${n(-half)}" width="${n(piece)}" height="${n(piece)}" rx="${n(piece * 0.26)}" fill="url(#piece-${uid})"/><ellipse cx="${n(-half * 0.24)}" cy="${n(-half * 0.28)}" rx="${n(piece * 0.32)}" ry="${n(piece * 0.16)}" fill="url(#pieceHi-${uid})" transform="rotate(-18 ${n(-half * 0.24)} ${n(-half * 0.28)})"/><ellipse cx="${n(half * 0.22)}" cy="${n(half * 0.24)}" rx="${n(piece * 0.32)}" ry="${n(piece * 0.1)}" fill="#ffffff" opacity="0.1"/>`;
-        const water = waterY != null && Math.abs(py - waterY) < piece * 0.55
-          ? `<ellipse cx="0" cy="${n(waterY - py)}" rx="${n(piece * 0.46)}" ry="${n(piece * 0.05)}" fill="#ffffff" opacity="0.2"/>`
-          : "";
-        pieces.push(`<g transform="translate(${n(px)} ${n(py)}) rotate(${n(rot)})" opacity="${sub ? "0.58" : "0.68"}">${body}${water}</g>`);
+
+        const localWaterY = waterY != null ? waterY - py : null;
+        const scale = isBullet ? piece / 26 : piece / 34;
+        const pieceH = (isBullet ? 15 : 17) * scale;
+        const isSubmerged = localWaterY != null && localWaterY < -pieceH;
+        const isDry = localWaterY == null || localWaterY > pieceH;
+        const isIntersecting = !isDry && !isSubmerged && localWaterY != null;
+
+        if (isIntersecting && localWaterY != null) {
+          clipDefs.push(
+            `<clipPath id="dryClip-${uid}-${idx}">
+              <rect x="-50" y="-100" width="100" height="${n(100 + localWaterY)}" />
+            </clipPath>`,
+            `<clipPath id="subClip-${uid}-${idx}">
+              <rect x="-50" y="${n(localWaterY)}" width="100" height="${n(100 - localWaterY)}" />
+            </clipPath>`
+          );
+        }
+
+        const renderPiece = (sub: boolean): string => {
+          if (isBullet) {
+            return `<g transform="rotate(${n(rot)}) scale(${n(scale)})">
+              <path d="M -13,-4 A 13,11 0 0 1 13,-4 L 13,11 A 13,3.5 0 0 1 -13,11 Z" fill="url(#bulletOuter-${sub ? "sub" : "dry"}-${uid})" filter="url(#cubeSoft-${uid})" />
+              <path d="M -6,11 L -6,-3 A 6,6 0 0 1 6,-3 L 6,11 A 6,1.6 0 0 1 -6,11 Z" fill="url(#bulletCavity-${sub ? "sub" : "dry"}-${uid})" filter="url(#cubeSoft-${uid})" />
+              <path d="M -9,-2 L -9,8" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="${sub ? 0.15 : 0.45}" filter="url(#iceSoft-${uid})" fill="none" />
+              <path d="M -10,-6 A 10,8 0 0 1 -2,-13" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" opacity="${sub ? 0.18 : 0.55}" filter="url(#iceSoft-${uid})" fill="none" />
+              <path d="M -13,11 A 13,3.5 0 0 0 13,11" stroke="#ffffff" stroke-width="1.2" opacity="${sub ? 0.12 : 0.35}" filter="url(#iceSoft-${uid})" fill="none" />
+              <path d="M -6,11 A 6,1.6 0 0 0 6,11" stroke="#ffffff" stroke-width="0.8" opacity="${sub ? 0.1 : 0.25}" filter="url(#iceSoft-${uid})" fill="none" />
+            </g>`;
+          } else {
+            return `<g transform="rotate(${n(rot)}) scale(${n(scale)})">
+              <g filter="url(#cubeSoft-${uid})">
+                <path d="M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,15.5 Q 0,17 0,14.5 Z" fill="url(#cubeRight-${sub ? "sub" : "dry"}-${uid})" />
+                <path d="M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,15.5 Q 0,17 0,14.5 Z" fill="url(#cubeLeft-${sub ? "sub" : "dry"}-${uid})" />
+                <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8 Q 14.7,-8.5 12.5,-7.2 L 0,0 L -12.5,-7.2 Q -14.7,-8.5 -12.5,-9.8 Z" fill="url(#cubeTop-${sub ? "sub" : "dry"}-${uid})" />
+              </g>
+              <path d="M 0,0 L 0,14.5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="${sub ? 0.16 : 0.35}" filter="url(#iceSoft-${uid})" fill="none" />
+              <path d="M 0,0 L -12.5,-7.2" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" opacity="${sub ? 0.12 : 0.25}" filter="url(#iceSoft-${uid})" fill="none" />
+              <path d="M 0,0 L 12.5,-7.2" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" opacity="${sub ? 0.12 : 0.25}" filter="url(#iceSoft-${uid})" fill="none" />
+              <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="${sub ? 0.15 : 0.38}" filter="url(#iceSoft-${uid})" fill="none" />
+              <g filter="url(#iceGlow-${uid})" opacity="${sub ? 0.08 : 0.16}">
+                <path d="M -4.4,-3.4 L -0.9,-5.5 Q 0,-6.0 0.9,-5.5 L 4.4,-3.4 Q 5.2,-3.0 4.4,-2.5 L 0,0 L -4.4,-2.5 Q -5.2,-3.0 -4.4,-3.4 Z" fill="#ffffff" />
+                <path d="M 0,0 L -4.4,-2.5 Q -5.2,-3.0 -5.2,-2.0 L -5.2,2.0 Q -5.2,3.0 -4.4,2.5 L -0.9,5.5 Q 0,6.0 0,5.1 Z" fill="#ffffff" />
+                <path d="M 0,0 L 5.6,-3.2 Q 6.6,-3.8 6.6,-2.5 L 6.6,2.5 Q 6.6,3.8 5.6,3.2 L 1.1,7.0 Q 0,7.65 0,6.5 Z" fill="#ffffff" />
+              </g>
+            </g>`;
+          }
+        };
+
+        const pieceContent: string[] = [];
+        if (isDry) pieceContent.push(renderPiece(false));
+        if (isSubmerged) pieceContent.push(renderPiece(true));
+        if (isIntersecting) {
+          pieceContent.push(
+            `<g clip-path="url(#subClip-${uid}-${idx})">${renderPiece(true)}</g>`,
+            `<g clip-path="url(#dryClip-${uid}-${idx})">${renderPiece(false)}</g>`,
+            `<ellipse cx="0" cy="${n(localWaterY!)}" rx="${n((isBullet ? 12 : 16) * scale)}" ry="${n((isBullet ? 1.5 : 2) * scale)}" fill="#ffffff" opacity="0.25" filter="url(#iceSoft-${uid})" />`,
+            `<ellipse cx="0" cy="${n(localWaterY!)}" rx="${n((isBullet ? 8 : 10) * scale)}" ry="${n((isBullet ? 0.6 : 0.8) * scale)}" fill="#ffffff" opacity="0.4" />`
+          );
+        }
+
+        pieces.push(`<g transform="translate(${n(px)} ${n(py)})">${pieceContent.join("")}</g>`);
         idx++;
       }
     }
+    if (pieces.length === 0) {
+      const px = cx;
+      const py = cy;
+      const localWaterY = waterY != null ? waterY - py : null;
+      const scale = isBullet ? piece / 26 : piece / 34;
+      const pieceH = (isBullet ? 15 : 17) * scale;
+      const isSubmerged = localWaterY != null && localWaterY < -pieceH;
+      const isDry = localWaterY == null || localWaterY > pieceH;
+      const isIntersecting = !isDry && !isSubmerged && localWaterY != null;
+
+      if (isIntersecting && localWaterY != null) {
+        clipDefs.push(
+          `<clipPath id="dryClip-${uid}-fallback">
+            <rect x="-50" y="-100" width="100" height="${n(100 + localWaterY)}" />
+          </clipPath>`,
+          `<clipPath id="subClip-${uid}-fallback">
+            <rect x="-50" y="${n(localWaterY)}" width="100" height="${n(100 - localWaterY)}" />
+          </clipPath>`
+        );
+      }
+
+      const renderPiece = (sub: boolean): string => {
+        if (isBullet) {
+          return `<g transform="rotate(0) scale(${n(scale)})">
+            <path d="M -13,-4 A 13,11 0 0 1 13,-4 L 13,11 A 13,3.5 0 0 1 -13,11 Z" fill="url(#bulletOuter-${sub ? "sub" : "dry"}-${uid})" filter="url(#cubeSoft-${uid})" />
+            <path d="M -6,11 L -6,-3 A 6,6 0 0 1 6,-3 L 6,11 A 6,1.6 0 0 1 -6,11 Z" fill="url(#bulletCavity-${sub ? "sub" : "dry"}-${uid})" filter="url(#cubeSoft-${uid})" />
+            <path d="M -9,-2 L -9,8" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="${sub ? 0.15 : 0.45}" filter="url(#iceSoft-${uid})" fill="none" />
+            <path d="M -10,-6 A 10,8 0 0 1 -2,-13" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" opacity="${sub ? 0.18 : 0.55}" filter="url(#iceSoft-${uid})" fill="none" />
+            <path d="M -13,11 A 13,3.5 0 0 0 13,11" stroke="#ffffff" stroke-width="1.2" opacity="${sub ? 0.12 : 0.35}" filter="url(#iceSoft-${uid})" fill="none" />
+            <path d="M -6,11 A 6,1.6 0 0 0 6,11" stroke="#ffffff" stroke-width="0.8" opacity="${sub ? 0.1 : 0.25}" filter="url(#iceSoft-${uid})" fill="none" />
+          </g>`;
+        } else {
+          return `<g transform="rotate(-5) scale(${n(scale)})">
+            <g filter="url(#cubeSoft-${uid})">
+              <path d="M 0,0 L 12.5,-7.2 Q 14.7,-8.5 14.7,-5.5 L 14.7,5.5 Q 14.7,8.5 12.5,7.2 L 2.5,15.5 Q 0,17 0,14.5 Z" fill="url(#cubeRight-${sub ? "sub" : "dry"}-${uid})" />
+              <path d="M 0,0 L -12.5,-7.2 Q -14.7,-8.5 -14.7,-5.5 L -14.7,5.5 Q -14.7,8.5 -12.5,7.2 L -2.5,15.5 Q 0,17 0,14.5 Z" fill="url(#cubeLeft-${sub ? "sub" : "dry"}-${uid})" />
+              <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8 Q 14.7,-8.5 12.5,-7.2 L 0,0 L -12.5,-7.2 Q -14.7,-8.5 -12.5,-9.8 Z" fill="url(#cubeTop-${sub ? "sub" : "dry"}-${uid})" />
+            </g>
+            <path d="M 0,0 L 0,14.5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="${sub ? 0.16 : 0.35}" filter="url(#iceSoft-${uid})" fill="none" />
+            <path d="M 0,0 L -12.5,-7.2" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" opacity="${sub ? 0.12 : 0.25}" filter="url(#iceSoft-${uid})" fill="none" />
+            <path d="M 0,0 L 12.5,-7.2" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" opacity="${sub ? 0.12 : 0.25}" filter="url(#iceSoft-${uid})" fill="none" />
+            <path d="M -12.5,-9.8 L -2.5,-15.5 Q 0,-17 2.5,-15.5 L 12.5,-9.8" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="${sub ? 0.15 : 0.38}" filter="url(#iceSoft-${uid})" fill="none" />
+            <g filter="url(#iceGlow-${uid})" opacity="${sub ? 0.08 : 0.16}">
+              <path d="M -4.4,-3.4 L -0.9,-5.5 Q 0,-6.0 0.9,-5.5 L 4.4,-3.4 Q 5.2,-3.0 4.4,-2.5 L 0,0 L -4.4,-2.5 Q -5.2,-3.0 -4.4,-3.4 Z" fill="#ffffff" />
+              <path d="M 0,0 L -4.4,-2.5 Q -5.2,-3.0 -5.2,-2.0 L -5.2,2.0 Q -5.2,3.0 -4.4,2.5 L -0.9,5.5 Q 0,6.0 0,5.1 Z" fill="#ffffff" />
+              <path d="M 0,0 L 5.6,-3.2 Q 6.6,-3.8 6.6,-2.5 L 6.6,2.5 Q 6.6,3.8 5.6,3.2 L 1.1,7.0 Q 0,7.65 0,6.5 Z" fill="#ffffff" />
+            </g>
+          </g>`;
+        }
+      };
+
+      const fallbackContent: string[] = [];
+      if (isDry) fallbackContent.push(renderPiece(false));
+      if (isSubmerged) fallbackContent.push(renderPiece(true));
+      if (isIntersecting) {
+        fallbackContent.push(
+          `<g clip-path="url(#subClip-${uid}-fallback)">${renderPiece(true)}</g>`,
+          `<g clip-path="url(#dryClip-${uid}-fallback)">${renderPiece(false)}</g>`,
+          `<ellipse cx="0" cy="${n(localWaterY!)}" rx="${n((isBullet ? 12 : 16) * scale)}" ry="${n((isBullet ? 1.5 : 2) * scale)}" fill="#ffffff" opacity="0.25" filter="url(#iceSoft-${uid})" />`,
+          `<ellipse cx="0" cy="${n(localWaterY!)}" rx="${n((isBullet ? 8 : 10) * scale)}" ry="${n((isBullet ? 0.6 : 0.8) * scale)}" fill="#ffffff" opacity="0.4" />`
+        );
+      }
+
+      pieces.push(`<g transform="translate(${n(px)} ${n(py)})">${fallbackContent.join("")}</g>`);
+    }
+
     return `<g>
       <defs>
-        <linearGradient id="piece-${uid}" x1="0.18" y1="0" x2="0.92" y2="1">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.72"/>
-          <stop offset="45%" stop-color="#f1fbff" stop-opacity="0.52"/>
-          <stop offset="100%" stop-color="#d1e8f1" stop-opacity="0.36"/>
+        ${clipDefs.join("")}
+        <filter id="cubeSoft-${uid}" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="0.5" />
+        </filter>
+        <filter id="iceSoft-${uid}" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="0.8" />
+        </filter>
+        <filter id="iceGlow-${uid}" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.6" />
+        </filter>
+        
+        <linearGradient id="bulletOuter-dry-${uid}" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#bae6fd" stop-opacity="0.78" />
+          <stop offset="25%" stop-color="#ffffff" stop-opacity="0.96" />
+          <stop offset="55%" stop-color="#e0f2fe" stop-opacity="0.65" />
+          <stop offset="85%" stop-color="#7dd3fc" stop-opacity="0.58" />
+          <stop offset="100%" stop-color="#bae6fd" stop-opacity="0.76" />
         </linearGradient>
-        <radialGradient id="pieceHi-${uid}" cx="38%" cy="35%" r="64%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.74"/>
-          <stop offset="72%" stop-color="#ffffff" stop-opacity="0.16"/>
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-        </radialGradient>
+        <linearGradient id="bulletOuter-sub-${uid}" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#bae6fd" stop-opacity="0.1" />
+          <stop offset="25%" stop-color="#ffffff" stop-opacity="0.32" />
+          <stop offset="55%" stop-color="#e0f2fe" stop-opacity="0.08" />
+          <stop offset="85%" stop-color="#7dd3fc" stop-opacity="0.06" />
+          <stop offset="100%" stop-color="#bae6fd" stop-opacity="0.12" />
+        </linearGradient>
+        <linearGradient id="bulletCavity-dry-${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#9fc1d0" stop-opacity="0.7" />
+          <stop offset="100%" stop-color="#c5dfea" stop-opacity="0.4" />
+        </linearGradient>
+        <linearGradient id="bulletCavity-sub-${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#bae6fd" stop-opacity="0.12" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05" />
+        </linearGradient>
+
+        <linearGradient id="cubeTop-dry-${uid}" x1="0" y1="0" x2="0.6" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.92" />
+          <stop offset="60%" stop-color="#e0f2fe" stop-opacity="0.78" />
+          <stop offset="100%" stop-color="#bae6fd" stop-opacity="0.65" />
+        </linearGradient>
+        <linearGradient id="cubeTop-sub-${uid}" x1="0" y1="0" x2="0.6" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28" />
+          <stop offset="60%" stop-color="#e0f2fe" stop-opacity="0.12" />
+          <stop offset="100%" stop-color="#bae6fd" stop-opacity="0.08" />
+        </linearGradient>
+
+        <linearGradient id="cubeLeft-dry-${uid}" x1="0" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.86" />
+          <stop offset="50%" stop-color="#f0f9ff" stop-opacity="0.68" />
+          <stop offset="100%" stop-color="#bae6fd" stop-opacity="0.52" />
+        </linearGradient>
+        <linearGradient id="cubeLeft-sub-${uid}" x1="0" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22" />
+          <stop offset="50%" stop-color="#f0f9ff" stop-opacity="0.1" />
+          <stop offset="100%" stop-color="#bae6fd" stop-opacity="0.06" />
+        </linearGradient>
+
+        <linearGradient id="cubeRight-dry-${uid}" x1="0" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stop-color="#f0f9ff" stop-opacity="0.78" />
+          <stop offset="50%" stop-color="#bae6fd" stop-opacity="0.58" />
+          <stop offset="100%" stop-color="#7dd3fc" stop-opacity="0.44" />
+        </linearGradient>
+        <linearGradient id="cubeRight-sub-${uid}" x1="0" y1="0" x2="0.5" y2="1">
+          <stop offset="0%" stop-color="#f0f9ff" stop-opacity="0.18" />
+          <stop offset="50%" stop-color="#bae6fd" stop-opacity="0.08" />
+          <stop offset="100%" stop-color="#7dd3fc" stop-opacity="0.05" />
+        </linearGradient>
       </defs>
       ${pieces.join("")}
     </g>`;
