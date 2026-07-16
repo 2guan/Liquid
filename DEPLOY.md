@@ -4,9 +4,7 @@
 
 ## 一键部署
 
-### 使用 GitHub 构建好的镜像
-
-推送到 `main` 后，GitHub Actions 会发布镜像到 `ghcr.io/2guan/liquid:latest`。服务器只需要拉取并启动：
+推送到 `main` 后，GitHub Actions 会发布镜像到 `ghcr.io/2guan/liquid:latest`。默认 `docker-compose.yml` 同时配置了远端镜像和本地构建：能用 GitHub 构建好的镜像就用，找不到时会用本地 `Dockerfile` 构建。
 
 ```bash
 # 1. 准备环境变量（服务端密钥，永远不会进入浏览器）
@@ -14,9 +12,8 @@ cp .env.example .env
 #    编辑 .env，填入你的 DeepSeek Key（DEEPSEEK_API_KEY=sk-...）
 #    可选：修改 HOST_PORT 改变对外端口（默认 3210）
 
-# 2. 拉取 GitHub 构建好的镜像并后台启动
-docker compose -f docker-compose.ghcr.yml pull
-docker compose -f docker-compose.ghcr.yml up -d
+# 2. 启动
+docker compose up -d
 
 # 3. 访问
 #    http://<服务器IP>:3210
@@ -28,33 +25,19 @@ docker compose -f docker-compose.ghcr.yml up -d
 echo "<你的 GitHub token>" | docker login ghcr.io -u <你的 GitHub 用户名> --password-stdin
 ```
 
-### 在服务器本地构建镜像
-
-```bash
-# 1. 准备环境变量（服务端密钥，永远不会进入浏览器）
-cp .env.example .env
-#    编辑 .env，填入你的 DeepSeek Key（DEEPSEEK_API_KEY=sk-...）
-#    可选：修改 HOST_PORT 改变对外端口（默认 3210）
-
-# 2. 构建并后台启动
-docker compose up -d --build
-
-# 3. 访问
-#    http://<服务器IP>:3210
-```
+如果想强制在服务器本地重新构建，可以运行 `docker compose up -d --build`。
 
 ## 常用命令
 
 ```bash
-docker compose -f docker-compose.ghcr.yml logs -f      # 查看日志
-docker compose -f docker-compose.ghcr.yml ps           # 查看状态（含 healthcheck）
-docker compose -f docker-compose.ghcr.yml restart      # 重启
-docker compose -f docker-compose.ghcr.yml down         # 停止并移除容器
-docker compose -f docker-compose.ghcr.yml pull         # 拉取 GitHub 最新镜像
-docker compose -f docker-compose.ghcr.yml up -d        # 用最新本地镜像启动
+docker compose logs -f          # 查看日志
+docker compose ps               # 查看状态（含 healthcheck）
+docker compose restart          # 重启
+docker compose down             # 停止并移除容器
+docker compose pull             # 拉取 GitHub 最新镜像
+docker compose up -d            # 启动 / 更新容器
+docker compose up -d --build    # 强制本地重新构建后启动
 ```
-
-如果使用本地构建版 `docker-compose.yml`，把上面的 `-f docker-compose.ghcr.yml` 去掉即可。
 
 ## 说明
 

@@ -1,19 +1,21 @@
 # 微醺时刻 · The Sip & Sigh — production deployment
 #
 #   1. cp .env.example .env      # then fill in your DeepSeek key
-#   2. docker compose up -d --build
+#   2. docker compose up -d
 #   3. open http://<server-ip>:3210
 #
 # The DeepSeek key stays server-side: it is injected into the container at
 # runtime via env_file and read only by the /api/* route handlers. HOST_PORT is
 # read by compose (from the auto-loaded .env) to pick the published host port.
+# The image is published by GitHub Actions. If Compose cannot use the published
+# image, it can fall back to building from the local Dockerfile.
 
 services:
   atelier:
+    image: ghcr.io/2guan/liquid:latest
     build:
       context: .
       dockerfile: Dockerfile
-    image: liquid-atelier:latest
     container_name: liquid-atelier
     restart: unless-stopped
     # host:container — set HOST_PORT in .env to publish on a different host port
