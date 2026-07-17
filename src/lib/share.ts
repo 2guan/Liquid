@@ -4,6 +4,7 @@ import { liquidRamp, rampFromColor, isFizzy, layerBands, layerGradientStops } fr
 import { glassById, iceById } from "@/lib/data/catalog";
 import { geomFor, halfWidthAt, servedFill } from "@/lib/data/glasses";
 import { garnishesFor, type GarnishSpec, type GarnishKind } from "@/lib/data/garnish";
+import { glassSvg } from "../../Liquidmini/lib/svg/glass";
 
 /** The site the card's QR links back to (env-overridable, else the live origin). */
 function siteUrl(): string {
@@ -173,8 +174,9 @@ export async function renderShareCard(result: CocktailResult): Promise<HTMLCanva
   strokeRoundRect(ctx, 22, 22, W - 44, H - 44, 22, "rgba(200,164,93,0.42)", 1);
   strokeRoundRect(ctx, 32, 32, W - 64, H - 64, 15, "rgba(200,164,93,0.16)", 1);
 
-  // ── glass ──
-  drawGlass(ctx, result, hi, body, shadow, 124, 210, isFizzy(result.ingredients), garnishesFor(result.ingredients));
+  // ── glass: render the same SVG engine used by the on-screen glass so the
+  // exported card keeps highlights, ice and garnishes in sync with the page.
+  await drawGlassFromSvg(ctx, result, 124, 210);
 
   // ── text + rules ──
   let bodyRight = 0; // furthest right edge of the story body — signature aligns to it
@@ -244,8 +246,9 @@ function drawGlass(
   const s = targetH / (geom.content.bottom - geom.content.top);
   const level = result.fillLevel ?? servedFill(result.glass);
   const liquidTop = geom.cup.bottom - level * (geom.cup.bottom - geom.cup.top);
-  const surfHW = Math.max(2, halfWidthAt(geom, liquidTop) - 2);
-  const surfRy = surfHW * 0.14 + 1.5;
+  const surfHW = Math.max(2, halfWidthAt(geom, liquidTop));
+  const innerSurfaceHW = Math.max(2, surfHW - 2);
+  const surfRy = surfHW * 0.105 + 1.2;
   const fillBottom = geom.cup.bottom + 30;
   const cupH = geom.cup.bottom - geom.cup.top;
   const cb = geom.cup.bottom;
@@ -316,6 +319,7 @@ function drawGlass(
   }
   // colour-layered drinks (B-52…) fill as discrete bands; others as a gradient.
   // skip all liquid drawing when the glass is dry (garnish-only)
+  let surfaceGlow = lighten(hi, clearFam && !result.liquidColor ? 0.1 : 0.28);
   if (!dry) {
   const bands = result.layers && result.layers.length > 1 ? layerBands(result.layers, liquidTop, fillBottom) : null;
   if (bands) {
@@ -345,22 +349,32 @@ function drawGlass(
     ctx.fillRect(0, liquidTop, 200, fillBottom - liquidTop);
   }
   const surfHi = bands ? bands[bands.length - 1].hi : hi;
+  surfaceGlow = lighten(surfHi, clearFam && !result.liquidColor ? 0.1 : 0.28);
   const baseHi = bands ? bands[0].hi : hi;
   // warm caustic pool at the base
-  ctx.globalAlpha = 0.3;
+  ctx.globalAlpha = 0.28;
   ctx.fillStyle = baseHi;
-  ellipse(ctx, 100, cb - 5, surfHW * 0.74, 7);
+  ellipse(ctx, 100, cb - 5, innerSurfaceHW * 0.76, 7.2);
   ctx.fill();
   ctx.globalAlpha = 1;
-  // meniscus disc + bright skin line
-  ctx.globalAlpha = 0.55;
-  ctx.fillStyle = surfHi;
-  ellipse(ctx, 100, liquidTop, surfHW, surfRy);
+  ctx.globalAlpha = 0.13;
+  ctx.fillStyle = "#ffffff";
+  ellipse(ctx, 100, cb - 4, innerSurfaceHW * 0.34, 3.1);
   ctx.fill();
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = "rgba(255,246,226,0.5)";
-  ctx.lineWidth = 0.8;
+  // meniscus disc: colour comes from the liquid itself, with only soft white reflection.
+  const surface = ctx.createRadialGradient(100 - surfHW * 0.16, liquidTop - surfRy * 0.2, 0, 100 - surfHW * 0.16, liquidTop - surfRy * 0.2, surfHW * 1.1);
+  surface.addColorStop(0, withAlpha(surfHi, 0.92));
+  surface.addColorStop(0.42, withAlpha(surfHi, 0.8));
+  surface.addColorStop(0.76, withAlpha(body, 0.72));
+  surface.addColorStop(1, withAlpha(body, 0.58));
+  ctx.fillStyle = surface;
   ellipse(ctx, 100, liquidTop, surfHW, surfRy);
+  ctx.fill();
+  ctx.strokeStyle = withAlpha(surfHi, 0.24);
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  ctx.ellipse(100, liquidTop, surfHW, surfRy, 0, 0, Math.PI);
   ctx.stroke();
   // carbonation — static bubbles suspended through the drink
   if (fizzy) {
@@ -434,40 +448,86 @@ function drawGlass(
   ctx.stroke(new Path2D(rightHi));
   ctx.restore();
 
-  // ── front linework ──
-  ctx.fillStyle = "rgba(255,242,214,0.14)";
-  ellipse(ctx, 100, cb - 2, Math.max(4, halfWidthAt(geom, cb) - 5), 4.5);
-  ctx.fill();
-  // thick-glass base — dark refractive ring + a tight bright glint
-  ctx.strokeStyle = "rgba(35,23,8,0.42)";
-  ctx.lineWidth = 1.5;
-  ellipse(ctx, 100, cb - 0.5, Math.max(4, halfWidthAt(geom, cb) - 4), 3.4);
-  ctx.stroke();
-  ctx.fillStyle = "rgba(255,247,226,0.4)";
-  ellipse(ctx, 98, cb - 3, Math.max(2, halfWidthAt(geom, cb) * 0.3), 1.4);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(110,90,56,0.35)";
-  ctx.lineWidth = 2.4;
-  ctx.stroke(outline);
-  ctx.strokeStyle = "rgba(239,226,190,0.55)";
-  ctx.lineWidth = 1.2;
-  ctx.stroke(outline);
-  // mouth ellipse + lit front lip
-  ctx.strokeStyle = "rgba(251,239,201,0.7)";
-  ctx.lineWidth = 1.2;
-  ellipse(ctx, rim.cx, rim.cy, rim.rx, rim.ry);
-  ctx.stroke();
-  const lip = `M${rim.cx - rim.rx * 0.82},${rim.cy + rim.ry * 0.42} A${rim.rx} ${rim.ry} 0 0 0 ${rim.cx + rim.rx * 0.82},${rim.cy + rim.ry * 0.42}`;
-  ctx.strokeStyle = "rgba(255,247,224,0.5)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke(new Path2D(lip));
+  // Back lip of the glass: behind inserted garnishes, matching the SVG glass.
+  ctx.strokeStyle = "rgba(251,239,201,0.46)";
+  ctx.lineWidth = 1.1;
+  ctx.stroke(new Path2D(`M${rim.cx - rim.rx},${rim.cy} A${rim.rx} ${rim.ry} 0 0 1 ${rim.cx + rim.rx},${rim.cy}`));
+  ctx.strokeStyle = "rgba(255,255,255,0.3)";
+  ctx.lineWidth = 0.9;
+  ctx.stroke(new Path2D(`M${rim.cx - rim.rx * 0.42},${rim.cy - rim.ry * 0.62} A${rim.rx} ${rim.ry} 0 0 1 ${rim.cx + rim.rx * 0.06},${rim.cy - rim.ry}`));
 
-  // ── on-rim garnishes: salt/sugar crust + sprigs resting on the lip ──
+  // ── front linework ──
   if (garnishes.length) {
-    drawGarnishLayer(ctx, garnishes, "front", rim, geom.cup.top, liquidTop, surfHW, body, shadow, dry);
+    drawGarnishLayer(ctx, garnishes, "front", rim, geom.cup.top, liquidTop, surfHW, body, shadow, dry, surfaceGlow);
   }
 
+  ctx.fillStyle = "rgba(255,242,214,0.12)";
+  ellipse(ctx, 100, cb - 2, Math.max(4, halfWidthAt(geom, cb) - 5), 4.6);
+  ctx.fill();
+  // thick-glass base — dark refractive ring + a tight bright glint
+  ctx.strokeStyle = "rgba(35,23,8,0.36)";
+  ctx.lineWidth = 1.25;
+  ellipse(ctx, 100, cb - 0.5, Math.max(4, halfWidthAt(geom, cb) - 4), 3.5);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,247,226,0.28)";
+  ellipse(ctx, 98, cb - 3, Math.max(2, halfWidthAt(geom, cb) * 0.27), 1.35);
+  ctx.fill();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(-20, rim.cy + rim.ry * 0.45, 240, 320);
+  ctx.clip();
+  ctx.strokeStyle = "rgba(110,90,56,0.32)";
+  ctx.lineWidth = 2.2;
+  ctx.stroke(outline);
+  ctx.strokeStyle = "rgba(239,226,190,0.5)";
+  ctx.lineWidth = 1.2;
+  ctx.stroke(outline);
   ctx.restore();
+
+  ctx.strokeStyle = "rgba(251,239,201,0.56)";
+  ctx.lineWidth = 1.1;
+  ctx.stroke(new Path2D(`M${rim.cx - rim.rx},${rim.cy} A${rim.rx} ${rim.ry} 0 0 0 ${rim.cx + rim.rx},${rim.cy}`));
+
+  ctx.restore();
+}
+
+async function drawGlassFromSvg(
+  ctx: CanvasRenderingContext2D,
+  result: CocktailResult,
+  topY: number,
+  targetH: number,
+): Promise<void> {
+  const geom = geomFor(result.glass);
+  const contentH = geom.content.bottom - geom.content.top;
+  const scale = targetH / contentH;
+  const width = 200 * scale;
+  const height = width * 1.4;
+  const svg = glassSvg({
+    glassType: result.glass,
+    family: result.family,
+    liquidColor: result.liquidColor,
+    layers: result.layers,
+    ice: result.ice,
+    iceSeed: result.iceSeed,
+    fillLevel: result.fillLevel ?? servedFill(result.glass),
+    glow: false,
+    fizzy: isFizzy(result.ingredients),
+    garnishes: garnishesFor(result.ingredients),
+    size: width,
+    fit: false,
+    title: result.name,
+  });
+  const img = await loadSvgImage(svg);
+  ctx.drawImage(img, CX - 100 * scale, topY - geom.content.top * scale, width, height);
+}
+
+function loadSvgImage(svg: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  });
 }
 
 /** Crushed-ice shards (same field as <IceGroup>), authored on a ±34 canvas. */
@@ -1389,9 +1449,19 @@ function drawGarnishShape(ctx: CanvasRenderingContext2D, kind: GarnishKind, colo
       dot(0, 0, s * 0.26, lighten(color, 0.5));
       break;
     case "cinnamonStick":
-      ctx.fillStyle = color; ctx.fill(roundRectPath(-s * 0.32, -s * 2.6, s * 0.64, s * 2.6, s * 0.3));
-      ctx.fillStyle = darken(color, 0.25); ctx.fill(roundRectPath(-s * 0.32, -s * 2.6, s * 0.26, s * 2.6, s * 0.13));
-      ctx.globalAlpha = 0.7; ctx.fillStyle = lighten(color, 0.25); ctx.fill(roundRectPath(s * 0.06, -s * 2.6, s * 0.16, s * 2.6, s * 0.08)); ctx.globalAlpha = 1;
+      ctx.save();
+      ctx.scale(0.76, 1.18);
+      fillPath(`M${-s * 0.56},${-s * 2.48} C${-s * 0.72},${-s * 1.82} ${-s * 0.64},${-s * 0.68} ${-s * 0.48},${s * 0.08} C${-s * 0.22},${s * 0.24} ${s * 0.3},${s * 0.16} ${s * 0.52},${-s * 0.08} C${s * 0.42},${-s * 0.82} ${s * 0.58},${-s * 1.74} ${s * 0.46},${-s * 2.46} C${s * 0.18},${-s * 2.34} ${-s * 0.22},${-s * 2.32} ${-s * 0.56},${-s * 2.48} Z`, color);
+      ctx.globalAlpha = 0.78;
+      fillPath(`M${-s * 0.5},${-s * 2.42} C${-s * 0.32},${-s * 2.6} ${s * 0.18},${-s * 2.62} ${s * 0.42},${-s * 2.42} C${s * 0.1},${-s * 2.47} ${-s * 0.22},${-s * 2.42} ${-s * 0.42},${-s * 2.27} Z`, darken(color, 0.34));
+      ctx.globalAlpha = 0.52;
+      fillPath(`M${-s * 0.5},${-s * 2.16} C${-s * 0.62},${-s * 1.48} ${-s * 0.52},${-s * 0.56} ${-s * 0.34},${-s * 0.02} C${-s * 0.2},${s * 0.1} ${-s * 0.06},${s * 0.1} ${s * 0.08},${-s * 0.02} C${-s * 0.08},${-s * 0.66} ${-s * 0.14},${-s * 1.5} ${-s * 0.06},${-s * 2.18} Z`, darken(color, 0.18));
+      ctx.globalAlpha = 0.62;
+      strokePath(`M${-s * 0.58},${-s * 2.38} C${-s * 0.22},${-s * 2.22} ${s * 0.22},${-s * 2.22} ${s * 0.5},${-s * 2.4} M${s * 0.26},${-s * 2.28} C${s * 0.1},${-s * 1.42} ${s * 0.16},${-s * 0.56} ${s * 0.3},${-s * 0.1}`, lighten(color, 0.3), s * 0.08);
+      ctx.globalAlpha = 0.55;
+      strokePath(`M${-s * 0.23},${-s * 2.22} C${-s * 0.34},${-s * 1.48} ${-s * 0.28},${-s * 0.82} ${-s * 0.2},${-s * 0.18} M${s * 0.04},${-s * 2.14} C${-s * 0.04},${-s * 1.42} ${s * 0.04},${-s * 0.72} ${s * 0.08},${-s * 0.16} M${-s * 0.42},${-s * 1.82} C${-s * 0.1},${-s * 1.96} ${s * 0.24},${-s * 1.9} ${s * 0.43},${-s * 1.74} M${-s * 0.45},${-s * 1.16} C${-s * 0.1},${-s * 1.28} ${s * 0.26},${-s * 1.18} ${s * 0.43},${-s * 1.02} M${-s * 0.38},${-s * 0.52} C${-s * 0.06},${-s * 0.62} ${s * 0.24},${-s * 0.54} ${s * 0.38},${-s * 0.42}`, darken(color, 0.25), s * 0.04);
+      ctx.globalAlpha = 1;
+      ctx.restore();
       break;
     case "clove": {
       const one = (x: number, y: number, rot: number) => {
@@ -1494,6 +1564,7 @@ function drawGarnishLayer(
   liquidColor: string,
   liquidShadow: string,
   dry = false,
+  surfaceHighlight = "#fff8ea",
 ): void {
   const surf = specs.filter((g) => g.placement === "surface");
   const tall = specs.filter((g) => g.placement === "tall");
@@ -1565,17 +1636,37 @@ function drawGarnishLayer(
   tall.forEach((g, i) => {
     const m = tall.length;
     // fan the sprigs across the mouth and plant them into the drink (mirrors <GarnishLayer>)
-    const off = m === 1 ? 0.16 : i / (m - 1) - 0.5;
-    const ax = 100 + off * rim.rx * 1.2;
+    const sinksIntoLiquid = g.kind === "cinnamonStick" || g.kind === "vanillaPod" || g.kind === "chili";
+    const off = m === 1 ? (sinksIntoLiquid ? 0.28 : 0.16) : i / (m - 1) - 0.5;
+    const ax = 100 + off * rim.rx * 1.08;
     const restOnRim = liquidTop <= rim.cy + 6;
-    const baseY = restOnRim ? rim.cy + 1 : liquidTop - 2;
-    const rot = off * 26;
-    const sTall = Math.max(7, Math.min(14, surfHW * 0.34));
+    const surfaceY = restOnRim ? rim.cy + 1 : liquidTop - 2;
+    const rot = sinksIntoLiquid ? (m === 1 ? 22 : off * 38) : off * 26;
+    const isCinnamon = g.kind === "cinnamonStick";
+    const sTall = Math.max(7, Math.min(isCinnamon ? 17 : 14, surfHW * (isCinnamon ? 0.44 : 0.34)));
+    const baseY = !restOnRim && sinksIntoLiquid ? liquidTop + Math.max(13, sTall * 0.82) : surfaceY;
+    const isSubmerged = !restOnRim && sinksIntoLiquid && !dry;
     const grow = (tallH / (sTall * 2.8) > 1.6 ? 1.35 : 1) * (1 - Math.abs(off) * 0.12);
     // shadow where the stalk meets the surface / lip
     ctx.fillStyle = withAlpha(liquidShadow, 0.28);
-    ctx.beginPath(); ctx.ellipse(ax + 1.5, baseY + 2.5, sTall * 0.8, Math.max(1.4, sTall * 0.24), 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(ax + 1.5, surfaceY + 2.3, sTall * 0.58, Math.max(1.1, sTall * 0.18), 0, 0, TAU); ctx.fill();
     ctx.save(); ctx.translate(ax, baseY); ctx.rotate(deg(rot)); ctx.scale(grow, grow); drawGarnishShape(ctx, g.kind, g.color, sTall); ctx.restore();
+    if (isSubmerged) {
+      ctx.fillStyle = withAlpha(liquidColor, 0.66);
+      ctx.beginPath(); ctx.ellipse(ax + 0.7, liquidTop + sTall * 0.1, sTall * 0.92, Math.max(1.2, sTall * 0.2), 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = withAlpha(surfaceHighlight, 0.5);
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(ax - sTall * 0.9, liquidTop + sTall * 0.06);
+      ctx.bezierCurveTo(ax - sTall * 0.38, liquidTop - sTall * 0.14, ax + sTall * 0.44, liquidTop - sTall * 0.12, ax + sTall * 0.95, liquidTop + sTall * 0.06);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 0.55;
+      ctx.beginPath();
+      ctx.moveTo(ax - sTall * 0.54, liquidTop - sTall * 0.02);
+      ctx.bezierCurveTo(ax - sTall * 0.12, liquidTop - sTall * 0.13, ax + sTall * 0.36, liquidTop - sTall * 0.1, ax + sTall * 0.62, liquidTop + sTall * 0.02);
+      ctx.stroke();
+    }
   });
 }
 

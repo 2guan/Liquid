@@ -122,12 +122,12 @@ function maxMoodGarnishes(glass: GlassType): number {
   return 2;
 }
 
-export function addMoodGarnishes(ingredients: Ingredient[], family: SpiritFamily, glass: GlassType, keywords: string[], rng: Rng): Ingredient[] {
+export function addMoodGarnishes(ingredients: Ingredient[], family: SpiritFamily, glass: GlassType, keywords: string[], rng: Rng, minCount = 0): Ingredient[] {
   // Keep a little restraint: not every glass needs garnish, but most should
   // carry a visual accent in Mood mode.
   const roll = rng.next();
   const wanted = roll < 0.25 ? 0 : roll < 0.65 ? 1 : roll < 0.92 ? 2 : 3;
-  const count = Math.min(wanted, maxMoodGarnishes(glass));
+  const count = Math.min(Math.max(wanted, minCount), maxMoodGarnishes(glass));
   if (count <= 0) return ingredients;
 
   const deck = moodGarnishDeck(family, keywords);

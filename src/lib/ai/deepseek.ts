@@ -256,6 +256,7 @@ ${input.tags.length ? `心绪标签：${input.tags.join("、")}` : ""}
     result.glass,
     [input.text, ...input.tags].filter(Boolean),
     makeRng(hashString(`${input.text}:${input.tags.join(",")}:remote-mood-garnish`) || 1),
+    1,
   );
   result.ratio = result.ingredients.map((i) => i.parts ?? 1);
   result.steps = await generatePrepSteps(result, "心事模式");

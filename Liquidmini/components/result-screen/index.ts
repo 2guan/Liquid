@@ -1,6 +1,6 @@
 /** The Tasting Card — hero glass + open recipe book. Ported from ResultScreen.tsx. */
 import { modeById, glassById, iceById } from "../../lib/data/catalog";
-import { servedFill } from "../../lib/data/glasses";
+import { geomFor, servedFill } from "../../lib/data/glasses";
 import { liquidRamp, isFizzy, rampFromColor } from "../../lib/tokens";
 import { makePrepSteps, normalizePrepStepsGlass } from "../../lib/prepSteps";
 import { garnishesFor } from "../../lib/data/garnish";
@@ -14,6 +14,75 @@ import { sceneForFamily } from "../../lib/config";
 
 function dotColor(fam: string): string {
   return (liquidRamp[fam] || liquidRamp.default)[1];
+}
+
+function cardGlassSrc(result: any, targetH: number): string {
+  const geom = geomFor(result.glass);
+  const size = 200 * (targetH / (geom.content.bottom - geom.content.top));
+  return glassDataUri({
+    glassType: result.glass,
+    family: result.family,
+    liquidColor: result.liquidColor || undefined,
+    layers: result.layers && result.layers.length ? result.layers : undefined,
+    ice: result.ice,
+    iceSeed: result.iceSeed || undefined,
+    fillLevel: result.fillLevel != null ? result.fillLevel : servedFill(result.glass),
+    fizzy: isFizzy(result.ingredients),
+    garnishes: garnishesFor(result.ingredients),
+    glow: false,
+    size,
+    fit: false,
+    title: result.name,
+  });
+}
+
+function loadCanvasImage(node: any, src: string, done: (img: any | null) => void): void {
+  const tryLoad = (imageSrc: string, timeout: number, next: () => void) => {
+    const img = node.createImage();
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (ok) done(img);
+      else next();
+    };
+    const timer = setTimeout(() => finish(false), timeout);
+    img.onload = () => finish(true);
+    img.onerror = () => finish(false);
+    img.src = imageSrc;
+  };
+
+  let completed = false;
+  const complete = (img: any | null) => {
+    if (completed) return;
+    completed = true;
+    done(img);
+  };
+
+  const tryLocalFile = () => {
+    const marker = "data:image/svg+xml;base64,";
+    if (!src.startsWith(marker) || typeof wx === "undefined" || !wx.getFileSystemManager || !wx.env) {
+      complete(null);
+      return;
+    }
+    try {
+      let hash = 0;
+      for (let i = 0; i < src.length; i++) hash = (hash * 31 + src.charCodeAt(i)) >>> 0;
+      const filePath = `${wx.env.USER_DATA_PATH}/share-glass-${hash}.svg`;
+      wx.getFileSystemManager().writeFile({
+        filePath,
+        data: src.slice(marker.length),
+        encoding: "base64",
+        success: () => tryLoad(filePath, 6000, () => complete(null)),
+        fail: () => complete(null),
+      });
+    } catch (e) {
+      complete(null);
+    }
+  };
+
+  tryLoad(src, 6000, tryLocalFile);
 }
 
 Component({
@@ -161,20 +230,22 @@ Component({
             const ctx = node.getContext("2d");
             let dpr = 2;
             try { dpr = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 2; } catch (e) {}
-            const { W, H } = drawShareThumb(node, ctx, dpr, result);
-            const capture = () => wx.canvasToTempFilePath(
-              {
-                canvas: node,
-                x: 0, y: 0, width: W, height: H,
-                destWidth: W * dpr, destHeight: H * dpr,
-                fileType: "jpg",
-                success: (rr: any) => store.setShare(rr.tempFilePath, title),
-                fail: () => {},
-              },
-              this,
-            );
-            if (node.requestAnimationFrame) node.requestAnimationFrame(capture);
-            else capture();
+            loadCanvasImage(node, cardGlassSrc(result, 300), (glassImg) => {
+              const { W, H } = drawShareThumb(node, ctx, dpr, result, glassImg);
+              const capture = () => wx.canvasToTempFilePath(
+                {
+                  canvas: node,
+                  x: 0, y: 0, width: W, height: H,
+                  destWidth: W * dpr, destHeight: H * dpr,
+                  fileType: "jpg",
+                  success: (rr: any) => store.setShare(rr.tempFilePath, title),
+                  fail: () => {},
+                },
+                this,
+              );
+              if (node.requestAnimationFrame) node.requestAnimationFrame(capture);
+              else capture();
+            });
           });
       };
       run();
@@ -232,8 +303,8 @@ Component({
           const ctx = node.getContext("2d");
           let dpr = 2;
           try { dpr = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 2; } catch (e) {}
-          const render = (qrImg: any) => {
-            const { W, H } = drawShareCard(node, ctx, dpr, r, qrImg);
+          const render = (qrImg: any, glassImg: any) => {
+            const { W, H } = drawShareCard(node, ctx, dpr, r, qrImg, glassImg);
             const capture = () => wx.canvasToTempFilePath(
               {
                 canvas: node,
@@ -248,11 +319,14 @@ Component({
             if (node.requestAnimationFrame) node.requestAnimationFrame(capture);
             else capture();
           };
+          const renderWithGlass = (qrImg: any) => {
+            loadCanvasImage(node, cardGlassSrc(r, 210), (glassImg) => render(qrImg, glassImg));
+          };
           // load the mini-program code, but never let a missing/failed asset
           // block the export — fall back to the baked matrix.
           const qr = node.createImage();
-          qr.onload = () => render(qr);
-          qr.onerror = () => render(null);
+          qr.onload = () => renderWithGlass(qr);
+          qr.onerror = () => renderWithGlass(null);
           qr.src = "/assets/minicode.png";
         });
     },
