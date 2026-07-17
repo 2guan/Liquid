@@ -14,6 +14,10 @@ const VEIL_LINES = [
   "化学家在校准风味…",
 ];
 
+function seedItems(count: number, selected: string[] = []) {
+  return sampleSeeds(count).map((m) => ({ tag: m.tag, label: m.label, on: selected.indexOf(m.tag) > -1 }));
+}
+
 Component({
   options: { styleIsolation: "apply-shared" },
   data: {
@@ -22,7 +26,7 @@ Component({
     busy: false,
     veilLine: "",
     placeholder: MOOD_PROMPTS[0],
-    seeds: sampleSeeds(8).map((m) => ({ tag: m.tag, label: m.label })),
+    seeds: seedItems(8),
     emblem: emblemDataUri("mood", 54, "#D89C3A"),
     veilLogo: logoDataUri(64),
     charCount: 0,
@@ -34,7 +38,7 @@ Component({
   lifetimes: {
     attached() {
       // a fresh random 7–8 chips each time the screen opens
-      this.setData({ seeds: sampleSeeds(7 + Math.floor(Math.random() * 2)).map((m) => ({ tag: m.tag, label: m.label })) });
+      this.setData({ seeds: seedItems(7 + Math.floor(Math.random() * 2), this.data.tags) });
       let i = 0;
       this._promptTimer = setInterval(() => {
         i = (i + 1) % MOOD_PROMPTS.length;
@@ -57,7 +61,8 @@ Component({
       const tags = this.data.tags.includes(t)
         ? this.data.tags.filter((x) => x !== t)
         : [...this.data.tags, t];
-      this.setData({ tags });
+      const seeds = this.data.seeds.map((m: any) => ({ ...m, on: tags.indexOf(m.tag) > -1 }));
+      this.setData({ tags, seeds });
       sound.play("click");
     },
     inspire() {

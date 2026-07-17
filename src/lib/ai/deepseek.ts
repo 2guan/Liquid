@@ -14,7 +14,8 @@ import { GLASSES, isGlassId } from "@/lib/data/glasses";
 import { spiritById } from "@/lib/data/spirits";
 import { aromaticForFamily } from "@/lib/data/garnish";
 import { randomSignature, withSignature } from "./lexicon";
-import { assembleMixResult } from "./composer";
+import { addMoodGarnishes, assembleMixResult } from "./composer";
+import { makeRng, hashString } from "./rng";
 import { classifyMix, type AmountedPick } from "./magicMix";
 import type { MixAnalysis } from "./cocktailAI";
 
@@ -249,6 +250,14 @@ ${input.tags.length ? `心绪标签：${input.tags.join("、")}` : ""}
     { role: "user", content: user },
   ]);
   const result = normalizeResult(raw, { glass: "coupe", ice: "none", family: "default", ingredients: [] });
+  result.ingredients = addMoodGarnishes(
+    result.ingredients,
+    result.family,
+    result.glass,
+    [input.text, ...input.tags].filter(Boolean),
+    makeRng(hashString(`${input.text}:${input.tags.join(",")}:remote-mood-garnish`) || 1),
+  );
+  result.ratio = result.ingredients.map((i) => i.parts ?? 1);
   result.steps = await generatePrepSteps(result, "心事模式");
   return result;
 }

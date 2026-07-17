@@ -17,7 +17,7 @@ import { MOOD_SEEDS } from "../data/moods";
 import { composeFromMood, composePour, assembleMixResult } from "./composer";
 import { randomSignature, withSignature } from "./lexicon";
 import { hashString, makeRng } from "./rng";
-import { classifyMix, dominantFamily, type AmountedPick } from "./magicMix";
+import { classifyMix, dominantFamily, LIQUID_CATEGORIES, type AmountedPick } from "./magicMix";
 import { API_BASE } from "../config";
 
 /** Result of a Zen-mode flavour analysis. */
@@ -163,7 +163,7 @@ export class MockCocktailAI implements CocktailAI {
       name: p.name,
       nameEn: p.nameEn,
       amount: (p as AmountedPick).amount ?? amountFor(p.category),
-      parts: 1,
+      parts: LIQUID_CATEGORIES.has(p.category) ? 1 : 0,
       family: p.family,
     }));
 
@@ -232,10 +232,11 @@ function amountFor(category: string): string {
       return "10ml";
     case "bitters":
       return "2 dash";
-    case "fruit":
+    case "juice":
       return "20ml";
     case "mixer":
       return "顶部补满";
+    case "fruit":
     case "herb":
     case "garnish":
       return "适量";

@@ -61,7 +61,6 @@ export default function TopBar() {
         <RankBadge />
         <div className="flex items-center gap-1.5">
           <IconButton icon="trophy" label="成就" active={view === "achievements"} onClick={() => go("achievements")} />
-          <IconButton icon="journal" label="日记" active={view === "journal"} onClick={() => go("journal")} />
           <IconButton icon={anySound ? "sound-on" : "sound-off"} label={anySound ? "静音" : "开启音效"} onClick={toggleSound} />
           <IconButton icon="settings" label="设置" active={view === "settings"} onClick={() => go("settings")} />
         </div>

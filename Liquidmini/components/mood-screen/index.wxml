@@ -29,7 +29,7 @@
       <view
         wx:for="{{seeds}}"
         wx:key="tag"
-        class="m-chip {{tags.indexOf(item.tag) > -1 ? 'on' : ''}}"
+        class="m-chip {{item.on ? 'on' : ''}}"
         data-tag="{{item.tag}}"
         bindtap="toggleTag"
       >{{item.label}}</view>

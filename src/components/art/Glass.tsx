@@ -243,6 +243,8 @@ export default function Glass({
   }
 
   const rim = geom.rim;
+  const rimBackArcD = `M${rim.cx - rim.rx},${rim.cy} A${rim.rx} ${rim.ry} 0 0 1 ${rim.cx + rim.rx},${rim.cy}`;
+  const rimFrontArcD = `M${rim.cx - rim.rx},${rim.cy} A${rim.rx} ${rim.ry} 0 0 0 ${rim.cx + rim.rx},${rim.cy}`;
   const inkFilter = detailed ? `url(#ink-${uid})` : undefined;
   const windowSheenPath = cupHighlightPath(geom, "left", 0.1, 0.72, 0.42, 0.34, 8);
   const leftBloomPath = cupHighlightPath(geom, "left", 0.16, 0.88, 0.74, 0.11, 3.4);
@@ -338,6 +340,9 @@ export default function Glass({
         <clipPath id={`cup-${uid}`}>
           <path d={geom.outline} />
         </clipPath>
+        <clipPath id={`outline-front-${uid}`}>
+          <rect x="-20" y={rim.cy + rim.ry * 0.45} width="240" height="320" />
+        </clipPath>
         {detailed && (
           <filter id={`ink-${uid}`} x="-6%" y="-4%" width="112%" height="108%">
             <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="1" seed="6" result="n" />
@@ -351,6 +356,9 @@ export default function Glass({
         {/* heavier blur for a feathered, naturally-soft contact shadow */}
         <filter id={`softsh-${uid}`} x="-60%" y="-60%" width="220%" height="220%">
           <feGaussianBlur stdDeviation="3.4" />
+        </filter>
+        <filter id={`baseGlint-${uid}`} x="-25%" y="-50%" width="150%" height="200%">
+          <feGaussianBlur stdDeviation="0.45" />
         </filter>
       </defs>
 
@@ -418,8 +426,8 @@ export default function Glass({
           {/* light shaft through the liquid */}
           <path d={liquidBodyD} fill={`url(#liqlight-${uid})`} opacity="0.6" />
           {/* warm caustic pool gathered at the base */}
-          <ellipse cx="100" cy={geom.cup.bottom - 5} rx={innerSurfaceHW * 0.74} ry="7" fill={baseHi} opacity="0.3" />
-          <ellipse cx="100" cy={geom.cup.bottom - 4} rx={innerSurfaceHW * 0.4} ry="3.5" fill="#ffffff" opacity="0.16" />
+          <ellipse cx="100" cy={geom.cup.bottom - 5} rx={innerSurfaceHW * 0.76} ry="7.2" fill={baseHi} opacity="0.28" filter={`url(#soft-${uid})`} />
+          <ellipse cx="100" cy={geom.cup.bottom - 4} rx={innerSurfaceHW * 0.34} ry="3.1" fill="#ffffff" opacity="0.13" filter={`url(#baseGlint-${uid})`} />
           {/* liquid surface: a soft, thick meniscus rather than a hard circular rim */}
           <path d={surfaceBackArcD} fill="none" stroke={surfaceGlow} strokeOpacity="0.26" strokeWidth="0.9" strokeLinecap="round" filter={`url(#soft-${uid})`} />
           {/* drifting soft highlight; intentionally blurred so it does not read as a ring */}
@@ -501,7 +509,7 @@ export default function Glass({
         const gTop = dry ? geom.cup.bottom - (geom.cup.bottom - geom.cup.top) * 0.22 : liquidTop;
         const gHW = dry ? Math.max(3, halfWidthAt(geom, gTop) - 3) : surfaceHW;
         return (
-          <GarnishLayer layer="back" clipId={`cup-${uid}`} specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={gTop} surfaceHW={gHW} liquidColor={body} liquidShadow={shadow} dry={dry} />
+        <GarnishLayer layer="back" clipId={`cup-${uid}`} specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={gTop} surfaceHW={gHW} liquidColor={body} liquidShadow={shadow} surfaceHighlight={surfaceGlow} dry={dry} />
         );
       })()}
 
@@ -535,24 +543,9 @@ export default function Glass({
         </g>
       </g>
 
-      {/* ── front linework (hand-drawn ink) ── */}
-      <g filter={inkFilter}>
-        {/* base refraction sheen (thick glass catches warm light) */}
-        <ellipse cx="100" cy={geom.cup.bottom - 2} rx={Math.max(4, halfWidthAt(geom, geom.cup.bottom) - 5)} ry="4.5" fill="#fff2d6" opacity="0.14" />
-        {/* thick-glass base — a dark refractive ring + a tight bright glint */}
-        <ellipse cx="100" cy={geom.cup.bottom - 0.5} rx={Math.max(4, halfWidthAt(geom, geom.cup.bottom) - 4)} ry="3.4" fill="none" stroke="#231708" strokeOpacity="0.42" strokeWidth="1.5" />
-        <ellipse cx={100 - 2} cy={geom.cup.bottom - 3} rx={Math.max(2, halfWidthAt(geom, geom.cup.bottom) * 0.3)} ry="1.4" fill="#fff7e2" opacity="0.4" />
-
-        {/* etched double outline */}
-        <path d={geom.outline} fill="none" stroke="#6e5a38" strokeOpacity="0.32" strokeWidth="2.2" strokeLinejoin="round" />
-        <path d={geom.outline} fill="none" stroke="#EFE2BE" strokeOpacity="0.5" strokeWidth="1.2" strokeLinejoin="round" />
-      </g>
-
-      {/* ── the rim, drawn smooth (outside the ink wobble) so the mouth stays soft ── */}
+      {/* back half of the mouth, behind inserted garnishes */}
       <g>
-        {/* mouth: one clean soft ellipse */}
-        <ellipse cx={rim.cx} cy={rim.cy} rx={rim.rx} ry={rim.ry} fill="none" stroke="#FBEFC9" strokeOpacity="0.52" strokeWidth="1.1" />
-        {/* a faint roving glint on the back lip */}
+        <path d={rimBackArcD} fill="none" stroke="#FBEFC9" strokeOpacity="0.46" strokeWidth="1.1" />
         <path
           d={`M${rim.cx - rim.rx * 0.42},${rim.cy - rim.ry * 0.62} A${rim.rx} ${rim.ry} 0 0 1 ${rim.cx + rim.rx * 0.06},${rim.cy - rim.ry}`}
           fill="none"
@@ -564,10 +557,30 @@ export default function Glass({
         />
       </g>
 
-      {/* on-rim garnishes: salt/sugar crust + sprigs & sticks resting on the lip */}
+      {/* on-rim / inserted garnishes, drawn before the front glass edge so the
+          cup lip can sit visually in front of anything inside the drink. */}
       {garnishes && garnishes.length > 0 && (
-        <GarnishLayer layer="front" specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} liquidColor={body} liquidShadow={shadow} />
+        <GarnishLayer layer="front" specs={garnishes} rim={rim} cupTop={geom.cup.top} liquidTop={liquidTop} surfaceHW={surfaceHW} liquidColor={body} liquidShadow={shadow} surfaceHighlight={surfaceGlow} />
       )}
+
+      {/* ── front linework (hand-drawn ink) ── */}
+      <g filter={inkFilter}>
+        {/* base refraction sheen (thick glass catches warm light) */}
+        <ellipse cx="100" cy={geom.cup.bottom - 2} rx={Math.max(4, halfWidthAt(geom, geom.cup.bottom) - 5)} ry="4.6" fill="#fff2d6" opacity="0.12" filter={`url(#soft-${uid})`} />
+        {/* thick-glass base — a dark refractive ring + a tight bright glint */}
+        <ellipse cx="100" cy={geom.cup.bottom - 0.5} rx={Math.max(4, halfWidthAt(geom, geom.cup.bottom) - 4)} ry="3.5" fill="none" stroke="#231708" strokeOpacity="0.36" strokeWidth="1.25" />
+        <ellipse cx={100 - 2} cy={geom.cup.bottom - 3} rx={Math.max(2, halfWidthAt(geom, geom.cup.bottom) * 0.27)} ry="1.35" fill="#fff7e2" opacity="0.28" filter={`url(#baseGlint-${uid})`} />
+
+        {/* etched double outline */}
+        <path d={geom.outline} clipPath={`url(#outline-front-${uid})`} fill="none" stroke="#6e5a38" strokeOpacity="0.32" strokeWidth="2.2" strokeLinejoin="round" />
+        <path d={geom.outline} clipPath={`url(#outline-front-${uid})`} fill="none" stroke="#EFE2BE" strokeOpacity="0.5" strokeWidth="1.2" strokeLinejoin="round" />
+      </g>
+
+      {/* ── the rim, drawn smooth (outside the ink wobble) so the mouth stays soft ── */}
+      <g>
+        {/* front half of the mouth, in front of inserted garnishes */}
+        <path d={rimFrontArcD} fill="none" stroke="#FBEFC9" strokeOpacity="0.56" strokeWidth="1.1" />
+      </g>
     </svg>
   );
 }

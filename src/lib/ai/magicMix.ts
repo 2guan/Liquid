@@ -16,7 +16,7 @@ export const LIQUID_CATEGORIES = new Set([
   "liqueur",
   "fortified",
   "bitters",
-  "fruit",
+  "juice",
   "syrup",
   "mixer",
 ]);
@@ -42,13 +42,14 @@ export function defaultAmount(category: string): MixAmount {
       return { qty: 20, unit: "ml" };
     case "syrup":
       return { qty: 15, unit: "ml" };
-    case "fruit":
+    case "juice":
       return { qty: 30, unit: "ml" };
     case "mixer":
       return { qty: 60, unit: "ml" };
     case "bitters":
       return { qty: 2, unit: "dash" };
     case "herb":
+    case "fruit":
       return { qty: 1, unit: "份" };
     case "spice":
       return { qty: 1, unit: "份" };
@@ -127,7 +128,8 @@ const CATEGORY_FAMILY: Record<string, SpiritFamily> = {
   liqueur: "brandy",
   fortified: "vermouth",
   bitters: "campari",
-  fruit: "tequila",
+  juice: "tequila",
+  fruit: "default",
   herb: "absinthe",
   spice: "brandy",
   syrup: "cream",

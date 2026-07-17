@@ -20,6 +20,7 @@ export default function LibraryScreen({ layout }: { layout: LayoutMode }) {
   const [category, setCategory] = useState<SpiritCategory>("whisky");
   const [query, setQuery] = useState("");
   const selected = SPIRITS.find((s) => s.id === selectedId) ?? SPIRITS[0];
+  const bottleThumbSize = layout === "portrait" ? 27 : 29;
 
   const list = useMemo(
     () => (query.trim() ? searchSpirits(query) : spiritsByCategory(category)),
@@ -76,12 +77,12 @@ export default function LibraryScreen({ layout }: { layout: LayoutMode }) {
             <button
               key={s.id}
               onClick={() => setSelectedId(s.id)}
-              className={`flex flex-col items-center gap-0.5 rounded-lg border p-2 text-center transition-all ${
+              className={`min-w-0 overflow-hidden flex flex-col items-center gap-0.5 rounded-lg border p-2 text-center transition-all ${
                 active ? "border-gold/60 bg-gold/12" : "border-gold/15 hover:border-gold/35"
               }`}
             >
-              <span className="grid h-[72px] place-items-center">
-                <Bottle family={s.family} label={s.nameEn[0]} size={layout === "portrait" ? 46 : 56} glow={active} />
+              <span className="grid h-[72px] w-full place-items-center overflow-hidden">
+                <Bottle family={s.family} label={s.nameEn[0]} size={bottleThumbSize} glow={active} />
               </span>
               <span className={`max-w-full truncate font-cn text-[11px] ${active ? "text-gold-bright" : "text-paper/75"}`}>
                 {s.name.replace(/\s*\d.*$/, "")}

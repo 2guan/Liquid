@@ -46,6 +46,8 @@ export interface GarnishSpec {
   kind: GarnishKind;
   color: string;
   placement: GarnishPlacement;
+  fruit?: string;
+  variant?: string;
 }
 
 const PLACEMENT: Record<GarnishKind, GarnishPlacement> = {
@@ -83,7 +85,7 @@ const PLACEMENT: Record<GarnishKind, GarnishPlacement> = {
   drops: "surface",
 };
 
-const spec = (kind: GarnishKind, color: string): GarnishSpec => ({ kind, color, placement: PLACEMENT[kind] });
+const spec = (kind: GarnishKind, color: string, fruit?: string, variant?: string): GarnishSpec => ({ kind, color, placement: PLACEMENT[kind], fruit, variant });
 
 /** Map one ingredient name → the element it contributes to the glass (or null). */
 export function garnishFor(name: string, category?: string): GarnishSpec | null {
@@ -110,8 +112,13 @@ export function garnishFor(name: string, category?: string): GarnishSpec | null 
   // ── citrus peel twists ──
   if (n.includes("皮卷") || n.includes("橙皮") || n.includes("柠檬皮") || n.includes("葡萄柚皮") || /皮$/.test(n)) {
     const c = n.includes("柠檬") ? "#E8C84A" : n.includes("葡萄柚") ? "#E0654A" : "#E8923A";
-    return spec("citrusTwist", c);
+    const variant = n.includes("柠檬") ? "lemonTwist" : n.includes("葡萄柚") ? "grapefruitPeel" : "orangePeel";
+    return spec("citrusTwist", c, undefined, variant);
   }
+
+  // ── lemon-named herbs are botanicals, not lemon slices ──
+  if (/柠檬香蜂草|香蜂草/.test(n)) return spec("mintSprig", "#A8C25A", undefined, "lemonBalm");
+  if (/柠檬马鞭草|马鞭草/.test(n)) return spec("mintSprig", "#A8C26A", undefined, "verbena");
 
   // ── citrus wheels / wedges ──
   if (/柠檬|青柠|橙|血橙|葡萄柚|柚|金橘|脱水柑橘|莱姆/.test(n)) {
@@ -124,50 +131,76 @@ export function garnishFor(name: string, category?: string): GarnishSpec | null 
           : n.includes("柠檬")
             ? "#E8C84A"
             : "#E8923A";
-    return spec("citrusWheel", c);
+    const fruit = n.includes("青柠") || /莱姆/.test(n)
+      ? "lime"
+      : n.includes("脱水柑橘")
+        ? "driedCitrus"
+      : n.includes("血橙")
+        ? "bloodOrange"
+        : n.includes("葡萄柚")
+          ? "grapefruit"
+          : n.includes("柚")
+            ? "yuzu"
+            : n.includes("金橘")
+              ? "kumquat"
+              : n.includes("柠檬")
+                ? "lemon"
+                : "orange";
+    return spec("citrusWheel", c, fruit);
   }
 
   // ── cherries ──
   if (n.includes("樱桃")) return spec("cherry", "#9E1F2A");
 
   // ── berries ──
-  if (/草莓/.test(n)) return spec("berry", "#D83A4A");
-  if (/覆盆子|树莓/.test(n)) return spec("berry", "#C5304A");
-  if (/蓝莓/.test(n)) return spec("berry", "#4A4A8A");
-  if (/黑莓|黑加仑/.test(n)) return spec("berry", "#3A1E3A");
-  if (/蔓越莓/.test(n)) return spec("berry", "#B5283A");
-  if (/石榴/.test(n) && !n.includes("糖浆")) return spec("berry", "#A8283A");
-  if (/葡萄/.test(n) && !n.includes("葡萄酒") && !n.includes("葡萄柚")) return spec("berry", "#5A2A5A");
+  if (/草莓/.test(n)) return spec("berry", "#D83A4A", "strawberry");
+  if (/覆盆子|树莓/.test(n)) return spec("berry", "#C5304A", "raspberry");
+  if (/蓝莓/.test(n)) return spec("berry", "#4A4A8A", "blueberry");
+  if (/黑莓/.test(n)) return spec("berry", "#3A1E3A", "blackberry");
+  if (/黑加仑/.test(n)) return spec("berry", "#3A1E3A", "blackcurrant");
+  if (/蔓越莓/.test(n)) return spec("berry", "#B5283A", "cranberry");
+  if (/石榴/.test(n) && !n.includes("糖浆")) return spec("berry", "#A8283A", "pomegranate");
+  if (/葡萄/.test(n) && !n.includes("葡萄酒") && !n.includes("葡萄柚")) return spec("berry", "#5A2A5A", "grape");
 
   // ── other fresh fruit slices ──
-  if (/水蜜桃|蜜桃|桃子|^桃|白桃/.test(n)) return spec("fruitSlice", "#E8A86A");
-  if (/杏(?!仁)/.test(n)) return spec("fruitSlice", "#E0913A");
-  if (/李子|^李/.test(n)) return spec("fruitSlice", "#6E2A4A");
-  if (/苹果/.test(n)) return spec("fruitSlice", "#A8C24A");
-  if (/梨/.test(n)) return spec("fruitSlice", "#C9D08A");
-  if (/菠萝|凤梨/.test(n)) return spec("fruitSlice", "#E8C23A");
-  if (/芒果/.test(n)) return spec("fruitSlice", "#E8A82A");
-  if (/百香果/.test(n)) return spec("fruitSlice", "#D89A2A");
-  if (/西瓜/.test(n)) return spec("fruitSlice", "#E0566A");
-  if (/荔枝/.test(n)) return spec("fruitSlice", "#E8D0C8");
-  if (/无花果/.test(n)) return spec("fruitSlice", "#6E3A2A");
-  if (/哈密瓜|蜜瓜|甜瓜/.test(n)) return spec("fruitSlice", "#E8B06A");
-  if (/番石榴/.test(n)) return spec("fruitSlice", "#E07A6A");
+  if (/水蜜桃|蜜桃|桃子|^桃|白桃/.test(n)) return spec("fruitSlice", "#E8A86A", "peach");
+  if (/杏(?!仁)/.test(n)) return spec("fruitSlice", "#E0913A", "apricot");
+  if (/李子|^李/.test(n)) return spec("fruitSlice", "#6E2A4A", "plum");
+  if (/苹果/.test(n)) return spec("fruitSlice", "#A8C24A", "apple");
+  if (/梨/.test(n)) return spec("fruitSlice", "#C9D08A", "pear");
+  if (/菠萝|凤梨/.test(n)) return spec("fruitSlice", "#E8C23A", "pineapple");
+  if (/芒果/.test(n)) return spec("fruitSlice", "#E8A82A", "mango");
+  if (/百香果/.test(n)) return spec("fruitSlice", "#D89A2A", "passionFruit");
+  if (/西瓜/.test(n)) return spec("fruitSlice", "#E0566A", "watermelon");
+  if (/荔枝/.test(n)) return spec("fruitSlice", "#E8D0C8", "lychee");
+  if (/椰子/.test(n)) return spec("fruitSlice", "#EFE8D6", "coconut");
+  if (/无花果/.test(n)) return spec("fruitSlice", "#6E3A2A", "fig");
+  if (/哈密瓜|蜜瓜|甜瓜/.test(n)) return spec("fruitSlice", "#E8B06A", "melon");
+  if (/番石榴/.test(n)) return spec("fruitSlice", "#E07A6A", "guava");
 
   // ── herbs & botanicals (each species drawn distinctly) ──
-  if (/薄荷|留兰香|香蜂草|马鞭草/.test(n)) return spec("mintSprig", "#6EA84A"); // paired round leaves
-  if (/迷迭香/.test(n)) return spec("herbSprig", "#5A7A4A"); // needles
-  if (/百里香|龙蒿/.test(n)) return spec("thymeSprig", "#6E8A4A"); // tiny alternating leaves
-  if (/莳萝|茴香叶/.test(n)) return spec("dillSprig", "#7A9A4A"); // feathery fronds
-  if (/月桂/.test(n)) return spec("bayLeaf", "#4A6A3A"); // single long pointed leaf
-  if (/薰衣草/.test(n)) return spec("lavender", "#8A6AA8");
+  if (/留兰香/.test(n)) return spec("mintSprig", "#7EB05A", undefined, "spearmint");
+  if (/薄荷/.test(n)) return spec("mintSprig", "#6EA84A", undefined, "mint");
+  if (/迷迭香/.test(n)) return spec("herbSprig", "#5A7A4A", undefined, "rosemary"); // needles
+  if (/龙蒿/.test(n)) return spec("thymeSprig", "#6E8A4A", undefined, "tarragon");
+  if (/百里香/.test(n)) return spec("thymeSprig", "#6E8A4A", undefined, "thyme");
+  if (/茴香叶/.test(n)) return spec("dillSprig", "#7A9A4A", undefined, "fennel");
+  if (/莳萝/.test(n)) return spec("dillSprig", "#7E9A4A", undefined, "dill");
+  if (/月桂/.test(n)) return spec("bayLeaf", "#4A6A3A", undefined, "bay"); // single long pointed leaf
+  if (/薰衣草/.test(n)) return spec("lavender", "#8A6AA8", undefined, "lavender");
   if (/罗勒/.test(n)) return spec("basilLeaf", "#4E8A36"); // broad glossy leaf
   if (/鼠尾草/.test(n)) return spec("sageLeaf", "#8FA07C"); // soft grey-green leaf
-  if (/紫苏/.test(n)) return spec("leaf", "#7E5A8A"); // purple generic leaf
-  if (/香菜|香茅|苦艾|啤酒花|芦荟/.test(n)) return spec("leaf", "#5A8A3A");
+  if (/紫苏/.test(n)) return spec("leaf", "#7E5A8A", undefined, "shiso");
+  if (/香菜/.test(n)) return spec("leaf", "#5A8A3A", undefined, "cilantro");
+  if (/香茅/.test(n)) return spec("leaf", "#A8B56A", undefined, "lemongrass");
+  if (/香兰叶/.test(n)) return spec("leaf", "#5A8A4A", undefined, "pandan");
+  if (/苦艾/.test(n)) return spec("leaf", "#8A9A5A", undefined, "wormwood");
+  if (/啤酒花/.test(n)) return spec("leaf", "#9AAB5A", undefined, "hops");
+  if (/芦荟/.test(n)) return spec("leaf", "#A8C28A", undefined, "aloe");
   if (/玫瑰|茉莉|桂花|紫罗兰|洋甘菊|接骨木花|食用花/.test(n)) {
     const c = n.includes("玫瑰") || n.includes("紫罗兰") ? "#C56A86" : n.includes("洋甘菊") || n.includes("桂花") ? "#E0B85A" : "#E6E2C8";
-    return spec("flower", c);
+    const variant = n.includes("玫瑰") ? "rose" : n.includes("茉莉") ? "jasmine" : n.includes("桂花") ? "osmanthus" : n.includes("紫罗兰") ? "violet" : n.includes("洋甘菊") ? "chamomile" : n.includes("接骨木") ? "elderflower" : "edibleFlower";
+    return spec("flower", c, undefined, variant);
   }
 
   // ── spices ──
@@ -242,15 +275,16 @@ export function garnishesFor(ingredients: { name?: string; category?: string; am
   // Honour quantity: choosing 2 份肉桂棒 should show two sticks. Cap each kind at
   // 3 so a heavy hand reads as a little cluster, not a hedge.
   const all: GarnishSpec[] = [];
-  const kindCount = new Map<GarnishKind, number>();
+  const kindCount = new Map<string, number>();
   for (const ing of ingredients) {
     if (!ing?.name) continue;
     const g = garnishFor(ing.name, ing.category);
     if (!g) continue;
     for (let k = 0, pieces = pieceCount(ing.amount); k < pieces; k++) {
-      const c = kindCount.get(g.kind) ?? 0;
+      const key = `${g.kind}:${g.fruit ?? ""}:${g.variant ?? ""}`;
+      const c = kindCount.get(key) ?? 0;
       if (c >= 3) break;
-      kindCount.set(g.kind, c + 1);
+      kindCount.set(key, c + 1);
       all.push(g);
     }
   }

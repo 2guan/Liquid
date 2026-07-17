@@ -51,6 +51,95 @@ const ACCENTS: { name: string; nameEn: string; amount: string; family?: SpiritFa
   { name: "石榴糖浆", nameEn: "Grenadine", amount: "10ml", family: "grenadine" },
 ];
 
+type MoodGarnish = { name: string; nameEn: string; amount: string };
+
+const GARNISH_LIBRARY: Record<string, MoodGarnish[]> = {
+  bright: [
+    { name: "柠檬皮卷", nameEn: "Lemon Twist", amount: "1 卷" },
+    { name: "橙子片", nameEn: "Orange Slice", amount: "1 片" },
+    { name: "食用花", nameEn: "Edible Flower", amount: "1 朵" },
+  ],
+  forest: [
+    { name: "迷迭香", nameEn: "Rosemary", amount: "1 枝" },
+    { name: "百里香", nameEn: "Thyme", amount: "1 枝" },
+    { name: "青柠角", nameEn: "Lime Wedge", amount: "1 块" },
+  ],
+  lonely: [
+    { name: "肉桂", nameEn: "Cinnamon", amount: "1 根" },
+    { name: "无花果", nameEn: "Fig", amount: "半颗" },
+    { name: "紫罗兰", nameEn: "Violet", amount: "1 朵" },
+  ],
+  romantic: [
+    { name: "玫瑰花瓣", nameEn: "Rose Petal", amount: "1 片" },
+    { name: "荔枝", nameEn: "Lychee", amount: "1 颗" },
+    { name: "草莓", nameEn: "Strawberry", amount: "1 颗" },
+  ],
+  tropical: [
+    { name: "菠萝", nameEn: "Pineapple", amount: "1 片" },
+    { name: "椰子", nameEn: "Coconut", amount: "1 条" },
+    { name: "食用花", nameEn: "Edible Flower", amount: "1 朵" },
+  ],
+  midnight: [
+    { name: "樱桃", nameEn: "Cherry", amount: "1 颗" },
+    { name: "橙皮", nameEn: "Orange Peel", amount: "1 卷" },
+    { name: "八角", nameEn: "Star Anise", amount: "1 枚" },
+  ],
+  soft: [
+    { name: "茉莉", nameEn: "Jasmine", amount: "1 朵" },
+    { name: "葡萄", nameEn: "Grape", amount: "2 颗" },
+    { name: "薄荷叶", nameEn: "Fresh Mint", amount: "3 片" },
+  ],
+  amber: [
+    { name: "橙皮", nameEn: "Orange Peel", amount: "1 卷" },
+    { name: "肉桂", nameEn: "Cinnamon", amount: "1 根" },
+    { name: "樱桃", nameEn: "Cherry", amount: "1 颗" },
+  ],
+  green: [
+    { name: "薄荷叶", nameEn: "Fresh Mint", amount: "3 片" },
+    { name: "青柠角", nameEn: "Lime Wedge", amount: "1 块" },
+    { name: "迷迭香", nameEn: "Rosemary", amount: "1 枝" },
+  ],
+};
+
+function moodGarnishDeck(family: SpiritFamily, keywords: string[]): MoodGarnish[] {
+  const k = keywords.join("");
+  if (/薄荷|草|森林|树|苔|呼吸|清晨|青草/.test(k)) return GARNISH_LIBRARY.forest;
+  if (/海|椰子|沙滩|热带|自由|浪/.test(k)) return GARNISH_LIBRARY.tropical;
+  if (/玫瑰|花|心动|浪漫|暧昧|指尖|春/.test(k)) return GARNISH_LIBRARY.romantic;
+  if (/孤独|夜|雨|沉默|旧|思念|离别|远/.test(k)) return GARNISH_LIBRARY.lonely;
+  if (/气泡|阳光|柑橘|微风|欢|笑|庆|好消息/.test(k)) return GARNISH_LIBRARY.bright;
+  if (/梦|月|静|软|温柔|安/.test(k)) return GARNISH_LIBRARY.soft;
+  if (family === "rum") return GARNISH_LIBRARY.tropical;
+  if (family === "absinthe") return GARNISH_LIBRARY.green;
+  if (family === "campari" || family === "wine") return GARNISH_LIBRARY.romantic;
+  if (family === "whisky" || family === "whiskyPeat" || family === "brandy") return GARNISH_LIBRARY.amber;
+  return GARNISH_LIBRARY.bright;
+}
+
+function maxMoodGarnishes(glass: GlassType): number {
+  if (/coupe|martini|nick-nora|cocktail/.test(glass)) return 1;
+  if (/highball|collins|zombie|pilsner|hurricane/.test(glass)) return 3;
+  return 2;
+}
+
+function addMoodGarnishes(ingredients: Ingredient[], family: SpiritFamily, glass: GlassType, keywords: string[], rng: Rng): Ingredient[] {
+  const roll = rng.next();
+  const wanted = roll < 0.25 ? 0 : roll < 0.65 ? 1 : roll < 0.92 ? 2 : 3;
+  const count = Math.min(wanted, maxMoodGarnishes(glass));
+  if (count <= 0) return ingredients;
+
+  const deck = moodGarnishDeck(family, keywords);
+  const existing = new Set(ingredients.map((i) => i.name));
+  const picked: Ingredient[] = [];
+  for (const g of rng.pickN(deck, deck.length)) {
+    if (picked.length >= count) break;
+    if (existing.has(g.name)) continue;
+    picked.push({ ...g, parts: 0 });
+    existing.add(g.name);
+  }
+  return [...ingredients, ...picked];
+}
+
 const GLASS_BY_FAMILY: Record<SpiritFamily, GlassType> = {
   whisky: "glencairn",
   whiskyPeat: "glencairn",
@@ -212,14 +301,18 @@ export interface MoodComposeInput {
 export function composeFromMood(input: MoodComposeInput): CocktailResult {
   const seed = hashString(input.moodText + input.family + input.keywords.join());
   const rng = makeRng(seed || 1);
-  const { ingredients, ratio } = buildIngredients(input.family, rng, input.keywords);
+  const glass = GLASS_BY_FAMILY[input.family];
+  const base = buildIngredients(input.family, rng, input.keywords);
+  const garnishRng = makeRng(hashString(`${seed}:mood-garnish`) || 1);
+  const ingredients = addMoodGarnishes(base.ingredients, input.family, glass, input.keywords, garnishRng);
+  const ratio = ingredients.map((i) => i.parts ?? 1);
   const { name, nameEn } = composeName(input.family, rng, input.keywords[0]);
   const result: CocktailResult = {
     name,
     nameEn,
     ingredients,
     ratio,
-    glass: GLASS_BY_FAMILY[input.family],
+    glass,
     ice: ICE_BY_FAMILY[input.family],
     family: input.family,
     taste_profile: composeTaste(input.family, rng),

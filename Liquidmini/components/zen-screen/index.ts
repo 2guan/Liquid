@@ -335,9 +335,9 @@ Component({
 
       // the card shows the player's exact recipe — order, measures and all
       analysis.ingredients = items.map((it) => ({
-        name: it.name, nameEn: it.nameEn, amount: amountLabel(it.qty, it.unit), parts: 1, family: it.family,
+        name: it.name, nameEn: it.nameEn, amount: amountLabel(it.qty, it.unit), parts: itemVolumeMl(it) > 0 ? 1 : 0, family: it.family,
       }));
-      analysis.ratio = analysis.ingredients.map(() => 1);
+      analysis.ratio = analysis.ingredients.map((ing) => ing.parts || 0);
 
       const klass = classifyMix(picks);
       const liquidItems = items.filter((it) => itemVolumeMl(it) > 0);

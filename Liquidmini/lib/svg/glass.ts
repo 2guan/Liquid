@@ -215,6 +215,8 @@ export function glassSvg(opts: GlassOpts): string {
   }
 
   const rim = geom.rim;
+  const rimBackArcD = `M${n(rim.cx - rim.rx)},${n(rim.cy)} A${n(rim.rx)} ${n(rim.ry)} 0 0 1 ${n(rim.cx + rim.rx)},${n(rim.cy)}`;
+  const rimFrontArcD = `M${n(rim.cx - rim.rx)},${n(rim.cy)} A${n(rim.rx)} ${n(rim.ry)} 0 0 0 ${n(rim.cx + rim.rx)},${n(rim.cy)}`;
   const inkFilter = detailed ? `filter="url(#ink-${uid})"` : "";
   const windowSheenPath = cupHighlightPath(geom, "left", 0.1, 0.72, 0.42, 0.34, 8);
   const leftBloomPath = cupHighlightPath(geom, "left", 0.16, 0.88, 0.74, 0.11, 3.4);
@@ -290,9 +292,11 @@ export function glassSvg(opts: GlassOpts): string {
       <stop offset="100%" stop-color="#241808" stop-opacity="0.52"/>
     </linearGradient>
     <clipPath id="cup-${uid}"><path d="${geom.outline}"/></clipPath>
+    <clipPath id="outline-front-${uid}"><rect x="-20" y="${n(rim.cy + rim.ry * 0.45)}" width="240" height="320"/></clipPath>
     ${detailed ? `<filter id="ink-${uid}" x="-6%" y="-4%" width="112%" height="108%"><feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="1" seed="6" result="nz"/><feDisplacementMap in="SourceGraphic" in2="nz" scale="0.7" xChannelSelector="R" yChannelSelector="G"/></filter>` : ""}
     <filter id="soft-${uid}" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.3"/></filter>
     <filter id="softsh-${uid}" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.4"/></filter>
+    <filter id="baseGlint-${uid}" x="-25%" y="-50%" width="150%" height="200%"><feGaussianBlur stdDeviation="0.45"/></filter>
   </defs>`;
 
   // ── liquid group ──
@@ -322,8 +326,8 @@ export function glassSvg(opts: GlassOpts): string {
       <ellipse cx="100" cy="${n(liquidTop)}" rx="${n(surfaceHW)}" ry="${n(surfaceRy)}" fill="url(#surface-${uid})" opacity="1"/>
       ${fillMarkup}
       <path d="${liquidBodyD}" fill="url(#liqlight-${uid})" opacity="0.6"/>
-      <ellipse cx="100" cy="${n(geom.cup.bottom - 5)}" rx="${n(innerSurfaceHW * 0.74)}" ry="7" fill="${baseHi}" opacity="0.3"/>
-      <ellipse cx="100" cy="${n(geom.cup.bottom - 4)}" rx="${n(innerSurfaceHW * 0.4)}" ry="3.5" fill="#ffffff" opacity="0.16"/>
+      <ellipse cx="100" cy="${n(geom.cup.bottom - 5)}" rx="${n(innerSurfaceHW * 0.76)}" ry="7.2" fill="${baseHi}" opacity="0.28" filter="url(#soft-${uid})"/>
+      <ellipse cx="100" cy="${n(geom.cup.bottom - 4)}" rx="${n(innerSurfaceHW * 0.34)}" ry="3.1" fill="#ffffff" opacity="0.13" filter="url(#baseGlint-${uid})"/>
       <path d="${surfaceBackArcD}" fill="none" stroke="${surfHi}" stroke-opacity="0.24" stroke-width="0.9" stroke-linecap="round" filter="url(#soft-${uid})"/>
       ${glint}${swirl}${bubbles}
     </g>`;
@@ -338,10 +342,10 @@ export function glassSvg(opts: GlassOpts): string {
   const gTop = gDry ? geom.cup.bottom - (geom.cup.bottom - geom.cup.top) * 0.22 : liquidTop;
   const gHW = gDry ? Math.max(3, halfWidthAt(geom, gTop) - 3) : surfaceHW;
   const backGarnish = garnishes && garnishes.length > 0
-    ? garnishLayer({ layer: "back", clipId: `cup-${uid}`, specs: garnishes, rim, cupTop: geom.cup.top, liquidTop: gTop, surfaceHW: gHW, liquidColor: body, liquidShadow: shadow, dry: gDry })
+    ? garnishLayer({ layer: "back", clipId: `cup-${uid}`, specs: garnishes, rim, cupTop: geom.cup.top, liquidTop: gTop, surfaceHW: gHW, liquidColor: body, liquidShadow: shadow, surfaceHighlight: surfaceGlow, dry: gDry })
     : "";
   const frontGarnish = garnishes && garnishes.length > 0
-    ? garnishLayer({ layer: "front", specs: garnishes, rim, cupTop: geom.cup.top, liquidTop, surfaceHW, liquidColor: body, liquidShadow: shadow })
+    ? garnishLayer({ layer: "front", specs: garnishes, rim, cupTop: geom.cup.top, liquidTop, surfaceHW, liquidColor: body, liquidShadow: shadow, surfaceHighlight: surfaceGlow })
     : "";
 
   const optics = `<g clip-path="url(#cup-${uid})">
@@ -358,17 +362,18 @@ export function glassSvg(opts: GlassOpts): string {
   const baseHWring = Math.max(4, halfWidthAt(geom, geom.cup.bottom) - 4);
   const baseHWglint = Math.max(2, halfWidthAt(geom, geom.cup.bottom) * 0.3);
   const frontLinework = `<g ${inkFilter}>
-    <ellipse cx="100" cy="${n(geom.cup.bottom - 2)}" rx="${n(baseHWb)}" ry="4.5" fill="#fff2d6" opacity="0.14"/>
-    <ellipse cx="100" cy="${n(geom.cup.bottom - 0.5)}" rx="${n(baseHWring)}" ry="3.4" fill="none" stroke="#231708" stroke-opacity="0.42" stroke-width="1.5"/>
-    <ellipse cx="${n(100 - 2)}" cy="${n(geom.cup.bottom - 3)}" rx="${n(baseHWglint)}" ry="1.4" fill="#fff7e2" opacity="0.4"/>
-    <path d="${geom.outline}" fill="none" stroke="#6e5a38" stroke-opacity="0.32" stroke-width="2.2" stroke-linejoin="round"/>
-    <path d="${geom.outline}" fill="none" stroke="#EFE2BE" stroke-opacity="0.5" stroke-width="1.2" stroke-linejoin="round"/>
+    <ellipse cx="100" cy="${n(geom.cup.bottom - 2)}" rx="${n(baseHWb)}" ry="4.6" fill="#fff2d6" opacity="0.12" filter="url(#soft-${uid})"/>
+    <ellipse cx="100" cy="${n(geom.cup.bottom - 0.5)}" rx="${n(baseHWring)}" ry="3.5" fill="none" stroke="#231708" stroke-opacity="0.36" stroke-width="1.25"/>
+    <ellipse cx="${n(100 - 2)}" cy="${n(geom.cup.bottom - 3)}" rx="${n(baseHWglint * 0.9)}" ry="1.35" fill="#fff7e2" opacity="0.28" filter="url(#baseGlint-${uid})"/>
+    <path d="${geom.outline}" clip-path="url(#outline-front-${uid})" fill="none" stroke="#6e5a38" stroke-opacity="0.32" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="${geom.outline}" clip-path="url(#outline-front-${uid})" fill="none" stroke="#EFE2BE" stroke-opacity="0.5" stroke-width="1.2" stroke-linejoin="round"/>
   </g>`;
 
-  const rimMarkup = `<g>
-    <ellipse cx="${n(rim.cx)}" cy="${n(rim.cy)}" rx="${n(rim.rx)}" ry="${n(rim.ry)}" fill="none" stroke="#FBEFC9" stroke-opacity="0.52" stroke-width="1.1"/>
+  const rimBackMarkup = `<g>
+    <path d="${rimBackArcD}" fill="none" stroke="#FBEFC9" stroke-opacity="0.46" stroke-width="1.1"/>
     <path d="M${n(rim.cx - rim.rx * 0.42)},${n(rim.cy - rim.ry * 0.62)} A${n(rim.rx)} ${n(rim.ry)} 0 0 1 ${n(rim.cx + rim.rx * 0.06)},${n(rim.cy - rim.ry)}" fill="none" stroke="#ffffff" stroke-opacity="0.3" stroke-width="0.9" stroke-linecap="round"${detailed ? ` class="rim-glint"` : ""}/>
   </g>`;
+  const rimFrontMarkup = `<g><path d="${rimFrontArcD}" fill="none" stroke="#FBEFC9" stroke-opacity="0.56" stroke-width="1.1"/></g>`;
 
   // halo radius & centre clamped to the viewBox so the soft glow is never clipped
   const glowR = 98;
@@ -396,9 +401,10 @@ export function glassSvg(opts: GlassOpts): string {
     ${iceMarkup}
     ${backGarnish}
     ${optics}
-    ${frontLinework}
-    ${rimMarkup}
+    ${rimBackMarkup}
     ${frontGarnish}
+    ${frontLinework}
+    ${rimFrontMarkup}
   </svg>`;
 }
 

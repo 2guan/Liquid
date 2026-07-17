@@ -227,10 +227,10 @@ export default function ZenScreen({ layout }: { layout: LayoutMode }) {
       name: it.name,
       nameEn: it.nameEn,
       amount: amountLabel(it.qty, it.unit),
-      parts: 1,
+      parts: itemVolumeMl(it) > 0 ? 1 : 0,
       family: it.family,
     }));
-    analysis.ratio = analysis.ingredients.map(() => 1);
+    analysis.ratio = analysis.ingredients.map((ing) => ing.parts ?? 0);
     analysis.glass = glassType;
     analysis.ice = klass.onlyGarnish ? "none" : ice;
     analysis.family = items.length ? dominantFamily(items) : analysis.family;

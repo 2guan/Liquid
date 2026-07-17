@@ -85,7 +85,7 @@ Component({
       const r = pool.find((x) => x.id === id);
       if (!r) return;
       sound.play("click");
-      const pours = r.ingredients.map(() => 0);
+      const pours = r.ingredients.map((ing) => (ing.parts || 0) > 0 ? 1 : 0);
       this.setData({
         recipe: r,
         rGlass: r.glass, rFamily: r.family, rIce: r.ice, rName: r.name, rNameEn: r.nameEn,
